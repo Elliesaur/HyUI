@@ -17,7 +17,7 @@ dependencies {
 ```
 
 **Using Cursemaven (Gradle):**
-If the project is hosted on CurseForge, you can use [Cursemaven](https://www.cursemaven.com/) to easily add it as a dependency:
+You can use [Cursemaven](https://www.cursemaven.com/) to easily add it as a dependency:
 
 ```gradle
 repositories {
