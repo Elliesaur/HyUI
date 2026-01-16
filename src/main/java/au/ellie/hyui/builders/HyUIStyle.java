@@ -4,10 +4,17 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class HyUIStyle {
+    public enum Alignment {
+        Left, Center, Right, End, Start
+    }
+
     private Float fontSize;
     private Boolean renderBold;
     private Boolean renderUppercase;
     private String textColor;
+    private Alignment horizontalAlignment;
+    private Alignment verticalAlignment;
+    private Alignment alignment;
     private final Map<String, HyUIStyle> states = new HashMap<>();
     private final Map<String, Object> rawProperties = new HashMap<>();
 
@@ -48,6 +55,42 @@ public class HyUIStyle {
         return this;
     }
 
+    public HyUIStyle setHorizontalAlignment(Alignment horizontalAlignment) {
+        this.horizontalAlignment = horizontalAlignment;
+        return this;
+    }
+
+    public HyUIStyle setHorizontalAlignment(String horizontalAlignment) {
+        try {
+            this.horizontalAlignment = Alignment.valueOf(horizontalAlignment);
+        } catch (IllegalArgumentException ignored) {}
+        return this;
+    }
+
+    public HyUIStyle setVerticalAlignment(Alignment verticalAlignment) {
+        this.verticalAlignment = verticalAlignment;
+        return this;
+    }
+
+    public HyUIStyle setVerticalAlignment(String verticalAlignment) {
+        try {
+            this.verticalAlignment = Alignment.valueOf(verticalAlignment);
+        } catch (IllegalArgumentException ignored) {}
+        return this;
+    }
+
+    public HyUIStyle setAlignment(Alignment alignment) {
+        this.alignment = alignment;
+        return this;
+    }
+
+    public HyUIStyle setAlignment(String alignment) {
+        try {
+            this.alignment = Alignment.valueOf(alignment);
+        } catch (IllegalArgumentException ignored) {}
+        return this;
+    }
+
     public HyUIStyle setDisabledStyle(HyUIStyle style) {
         states.put("Disabled", style);
         return this;
@@ -77,6 +120,18 @@ public class HyUIStyle {
 
     public String getTextColor() {
         return textColor;
+    }
+
+    public Alignment getHorizontalAlignment() {
+        return horizontalAlignment;
+    }
+
+    public Alignment getVerticalAlignment() {
+        return verticalAlignment;
+    }
+
+    public Alignment getAlignment() {
+        return alignment;
     }
 
     public Map<String, HyUIStyle> getStates() {

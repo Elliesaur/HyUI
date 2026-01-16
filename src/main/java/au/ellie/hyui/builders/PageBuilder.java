@@ -8,6 +8,7 @@ import com.hypixel.hytale.server.core.entity.entities.player.pages.PageManager;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -29,6 +30,13 @@ public class PageBuilder {
      */
     public PageBuilder(PlayerRef playerRef) {
         this.playerRef = playerRef;
+    }
+    
+    /**
+     * Constructs a new instance of the PageBuilder class without dependency on player.
+     */
+    public PageBuilder() {
+        this.playerRef = null;
     }
 
     /**
@@ -90,8 +98,24 @@ public class PageBuilder {
      * @param store The store containing the entity data required to configure and display the page.
      */
     public void open(Store<EntityStore> store) {
+        assert playerRef != null : "Player reference cannot be null. Use override for open(Store<ECS>) if reusing this builder.";
         Player playerComponent = store.getComponent(playerRef.getReference(), Player.getComponentType());
         PageManager pageManager = playerComponent.getPageManager();
         pageManager.openCustomPage(playerRef.getReference(), store, new HyUIPage(playerRef, lifetime, uiFile, elements, editCallbacks));
+    }
+
+    /**
+     * Opens a custom UI page for the associated player using the provided store and player reference.
+     * This method retrieves the player's page manager and creates a new instance
+     * of the HyUIPage based on the specified parameters and fields defined in the
+     * class, then instructs the page manager to open the page.
+     *
+     * @param playerRefParam The player reference for whom the page is being opened.
+     * @param store The store containing the entity data required to configure and display the page.
+     */
+    public void open(@Nonnull PlayerRef playerRefParam, Store<EntityStore> store) {
+        Player playerComponent = store.getComponent(playerRefParam.getReference(), Player.getComponentType());
+        PageManager pageManager = playerComponent.getPageManager();
+        pageManager.openCustomPage(playerRefParam.getReference(), store, new HyUIPage(playerRefParam, lifetime, uiFile, elements, editCallbacks));
     }
 }

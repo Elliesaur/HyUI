@@ -9,6 +9,7 @@ public class UIElements {
     public static final String COLOR_PICKER = "ColorPicker";
     public static final String BUTTON = "Button";
     public static final String TEXT_FIELD = "TextField";
+    public static final String SLIDER = "Slider";
 
     // Macros (Common.ui)
     public static final String PAGE_OVERLAY = "PageOverlay";
@@ -25,7 +26,7 @@ public class UIElements {
     );
 
     public static final Set<String> MACRO_ELEMENTS = Set.of(
-            PAGE_OVERLAY, CONTAINER, TEXT_BUTTON, CANCEL_TEXT_BUTTON, CHECK_BOX_WITH_LABEL, MACRO_TEXT_FIELD, MACRO_NUMBER_FIELD, BACK_BUTTON, "Title"
+            PAGE_OVERLAY, CONTAINER, TEXT_BUTTON, CANCEL_TEXT_BUTTON, CHECK_BOX_WITH_LABEL, MACRO_TEXT_FIELD, MACRO_NUMBER_FIELD, BACK_BUTTON, "Title", SLIDER
     );
 
     private UIElements() {}

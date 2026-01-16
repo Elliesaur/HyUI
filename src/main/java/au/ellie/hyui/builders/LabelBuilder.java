@@ -31,6 +31,15 @@ public class LabelBuilder extends UIElementBuilder<LabelBuilder> {
     }
 
     /**
+     * Factory method to create a new instance of {@code LabelBuilder}.
+     *
+     * @return A new {@code LabelBuilder} instance for creating and customizing labels.
+     */
+    public static LabelBuilder label() {
+        return new LabelBuilder();
+    }
+
+    /**
      * Sets the text to be displayed by the label being built.
      *
      * @param text The text content to set for the label. This will replace any

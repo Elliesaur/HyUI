@@ -27,6 +27,15 @@ public class GroupBuilder extends UIElementBuilder<GroupBuilder> {
     }
 
     /**
+     * Factory method to create a new instance of {@code GroupBuilder}.
+     *
+     * @return A new {@code GroupBuilder} instance for creating and customizing a group.
+     */
+    public static GroupBuilder group() {
+        return new GroupBuilder();
+    }
+    
+    /**
      * Sets the layout mode for the group.
      * 
      * Choose from: Left, Top, TopScrolling, Right, Full.

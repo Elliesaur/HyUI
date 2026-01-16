@@ -77,6 +77,18 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                                     Double num = ctx.getValue("ANum", Double.class).orElse(0.0);
                                     playerRef.sendMessage(Message.raw("Text Field: " + text + ", Num: " + num));
                                 }))
+                        .addChild(SliderBuilder.slider()
+                                .withId("Hey")
+                                .withMax(300)
+                                .withMin(-50)
+                                .withStep(10)
+                                .withValue(51)
+                                .addEventListener(CustomUIEventBindingType.ValueChanged, (value, ctx) -> {
+                                    HyUIPlugin.getInstance().logInfo("Slider value changed to: " + value);
+                                    String text = ctx.getValue("MyTextField", String.class).orElse("N/A");
+                                    Integer num = ctx.getValue("Hey", Integer.class).orElse(0);
+                                    playerRef.sendMessage(Message.raw("Text Field: " + text + ", Num: " + num));
+                                }))
                         .addChild(ButtonBuilder.textButton()
                                 .withId("SecondButton")
                                 .withText("Text Button 2")

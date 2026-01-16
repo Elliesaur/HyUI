@@ -37,6 +37,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
     protected HyUIAnchor anchor;
     protected Boolean visible;
     protected Message tooltipTextSpan;
+    protected Integer flexWeight;
     protected final List<BiConsumer<UICommandBuilder, String>> editAfterCallbacks = new ArrayList<>();
     protected final List<BiConsumer<UICommandBuilder, String>> editBeforeCallbacks = new ArrayList<>();
 
@@ -203,6 +204,20 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
     }
 
     /**
+     * Sets the flex weight for the UI element.
+     * Flex weight determines how the element is sized relative to its siblings
+     * within a flex container.
+     *
+     * @param weight the flex weight value
+     * @return the builder instance of type {@code T} for method chaining
+     */
+    @SuppressWarnings("unchecked")
+    public T withFlexWeight(int weight) {
+        this.flexWeight = weight;
+        return (T) this;
+    }
+
+    /**
      * Registers a callback to modify the UI element after its initial configuration.
      * This method adds the provided callback to a list of "edit after" callbacks,
      * which will be executed after the element is built or modified.
@@ -296,6 +311,11 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
                 commands.set(selector + ".TooltipTextSpans", tooltipTextSpan);
             }
 
+            if (flexWeight != null) {
+                HyUIPlugin.getInstance().logInfo("Setting FlexWeight: " + flexWeight + " for " + selector);
+                commands.set(selector + ".FlexWeight", flexWeight);
+            }
+
             if (hyUIStyle != null) {
                 applyStyle(commands, selector + ".Style", hyUIStyle);
             }
@@ -313,6 +333,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
         if (elementPath.contains("CheckBox")) return "#HyUICheckBox";
         if (elementPath.contains("ColorPicker")) return "#HyUIColorPicker";
         if (elementPath.contains("NumberField")) return "#HyUINumberField";
+        if (elementPath.contains("Slider")) return "#HyUISlider";
         if (elementPath.contains("Label")) return "Label";
         if (elementPath.contains("Group")) return "Group";
         return elementPath;
@@ -386,6 +407,18 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
         if (style.getTextColor() != null && !unsupported.contains("TextColor")) {
             HyUIPlugin.getInstance().logInfo("Setting Style TextColor: " + style.getTextColor() + " for " + prefix);
             commands.set(prefix + ".TextColor", style.getTextColor());
+        }
+        if (style.getHorizontalAlignment() != null && !unsupported.contains("HorizontalAlignment")) {
+            HyUIPlugin.getInstance().logInfo("Setting Style HorizontalAlignment: " + style.getHorizontalAlignment() + " for " + prefix);
+            commands.set(prefix + ".HorizontalAlignment", style.getHorizontalAlignment().name());
+        }
+        if (style.getVerticalAlignment() != null && !unsupported.contains("VerticalAlignment")) {
+            HyUIPlugin.getInstance().logInfo("Setting Style VerticalAlignment: " + style.getVerticalAlignment() + " for " + prefix);
+            commands.set(prefix + ".VerticalAlignment", style.getVerticalAlignment().name());
+        }
+        if (style.getAlignment() != null && !unsupported.contains("Alignment")) {
+            HyUIPlugin.getInstance().logInfo("Setting Style Alignment: " + style.getAlignment() + " for " + prefix);
+            commands.set(prefix + ".Alignment", style.getAlignment().name());
         }
 
         style.getRawProperties().forEach((key, value) -> {

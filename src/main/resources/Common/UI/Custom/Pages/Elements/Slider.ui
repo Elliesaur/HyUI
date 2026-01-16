@@ -1,0 +1,8 @@
+$C = "../../Common.ui";
+Slider #HyUISlider {
+    Value: 0;
+    Min: 0;
+    Max: 100;
+    Step: 1;
+    Style: $C.@DefaultSliderStyle;
+}
