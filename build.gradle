@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'org.jetbrains.gradle.plugin.idea-ext' version '1.3'
+    id("com.gradleup.shadow") version "9.3.1"
 }
 
 ext {
@@ -29,7 +30,9 @@ javadoc {
 // compile against their code. This requires you to have Hytale installed using
 // the official launcher for now.
 dependencies {
-    implementation(files("$hytaleHome/install/$patchline/package/game/latest/Server/HytaleServer.jar"))
+    compileOnly(files("$hytaleHome/install/$patchline/package/game/latest/Server/HytaleServer.jar"))
+    runtimeOnly(files("$hytaleHome/install/$patchline/package/game/latest/Server/HytaleServer.jar"))
+    shadow 'org.jsoup:jsoup:1.22.1'
     implementation 'org.jsoup:jsoup:1.22.1'
 }
 
@@ -84,4 +87,11 @@ idea.project.settings.runConfigurations {
 
 repositories { 
     mavenCentral()
+}
+
+shadowJar {
+    archiveBaseName.set(project.name)
+    archiveClassifier.set('all')
+    
+    configurations = [project.configurations.shadow]
 }

@@ -1,5 +1,6 @@
 package au.ellie.hyui.html;
 
+import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.builders.LabelBuilder;
 import au.ellie.hyui.builders.PageBuilder;
 import au.ellie.hyui.builders.UIElementBuilder;
@@ -57,6 +58,8 @@ public class HtmlParser {
      */
     public List<UIElementBuilder<?>> parse(String html) {
         Document doc = Jsoup.parseBodyFragment(html);
+        new CssPreprocessor().process(doc);
+        HyUIPlugin.getInstance().logInfo("Document elements after preprocessing: " + doc.body().html());
         return parseChildren(doc.body());
     }
 
@@ -69,9 +72,14 @@ public class HtmlParser {
     public List<UIElementBuilder<?>> parseChildren(Element parent) {
         List<UIElementBuilder<?>> builders = new ArrayList<>();
         for (Node child : parent.childNodes()) {
+            HyUIPlugin.getInstance().logInfo("Parsing child node: " + child.nodeName());
+            
             if (child instanceof Element) {
+                HyUIPlugin.getInstance().logInfo("Parsing ELEMENT node: " + child.nodeName());
+                
                 UIElementBuilder<?> builder = handleElement((Element) child);
                 if (builder != null) {
+                    HyUIPlugin.getInstance().logInfo("Parsed element: " + builder.getClass().getSimpleName());
                     builders.add(builder);
                 }
             } else if (child instanceof TextNode) {

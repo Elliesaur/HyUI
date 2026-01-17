@@ -324,3 +324,33 @@ Mod authors can access the current values of other elements on the page within e
 ```
 
 The `UIContext` tracks values of elements that support them (TextField, NumberField, CheckBox, ColorPicker) automatically as they change in the UI. Values are initialized with whatever was set via `.withValue()` at build time.
+
+#### 10. Building with HYUIML (HTML/CSS)
+
+For those who prefer a more declarative approach, HyUI supports a subset of HTML and CSS called **HYUIML**. This allows you to define your UI structure and styling in a single markup string.
+
+```java
+String html = """
+    <style>
+        .my-label { color: #00FF00; font-weight: bold; }
+    </style>
+    <div>
+        <p class="my-label">Welcome to HYUIML!</p>
+        <button id="my-button">Click Me</button>
+    </div>
+    """;
+
+new PageBuilder(playerRef)
+    .fromHtml(html)
+    .addEventListener("my-button", CustomUIEventBindingType.Activating, (ignored, ctx) -> {
+        playerRef.sendMessage(Message.raw("Button clicked via HYUIML!"));
+    })
+    .open(store);
+```
+
+**Note:** HYUIML is **not** a full web engine. It has significant limitations:
+*   **CSS Support:** Only basic properties like `color`, `font-size`, `font-weight`, and Hytale-specific `anchor-*` properties are supported.
+*   **Layout:** Standard CSS layout (flex, grid, absolute positioning) is not supported. Use Hytale's layout modes and `flex-weight`.
+*   **ID Sanitization:** Internal IDs are strictly alphanumeric. Use your original IDs in Java code; HyUI handles the mapping automatically.
+
+For a full list of supported tags, attributes, and CSS properties, see the [HYUIML Documentation](hyuiml.md).

@@ -26,6 +26,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
     protected String elementPath;
     protected String uiFilePath;
     protected String id;
+    protected String userId;
     protected String style;
     protected HyUIStyle hyUIStyle;
     protected final List<UIEventListener<?>> listeners = new ArrayList<>();
@@ -52,6 +53,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
         this.elementPath = this.theme.format(elementPath);
         this.typeSelector = typeSelector;
         this.id = generateUniqueId();
+        this.userId = this.id;
     }
 
     protected abstract void onBuild(UICommandBuilder commands, UIEventBuilder events);
@@ -79,7 +81,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
     }
 
     public String getId() {
-        return id;
+        return userId;
     }
 
     /**
@@ -118,9 +120,24 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
     @SuppressWarnings("unchecked")
     public T withId(String id) {
         if (id != null) {
-            this.id = id;
+            this.userId = id;
+            this.id = sanitizeId(id);
         }
         return (T) this;
+    }
+
+    private String sanitizeId(String id) {
+        if (id == null) return null;
+        StringBuilder sb = new StringBuilder();
+        sb.append("HYUUID");
+        for (int i = 0; i < id.length(); i++) {
+            char c = id.charAt(i);
+            if (Character.isLetterOrDigit(c)) {
+                sb.append(c);
+            }
+        }
+        sb.append(idCounter++);
+        return sb.toString();
     }
 
     /**
@@ -500,6 +517,6 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
         } else {
             base = "Element";
         }
-        return base + (idCounter++);
+        return sanitizeId(base);
     }
 }

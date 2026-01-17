@@ -109,20 +109,21 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
     }
 
     private void handleElementEvents(UIElementBuilder<?> element, DynamicPageData data) {
-        String effectiveId = element.getEffectiveId();
+        String internalId = element.getEffectiveId();
+        String userId = element.getId();
 
-        if (effectiveId != null) {
+        if (internalId != null) {
             String target = data.getValue("Target");
 
             for (UIEventListener<?> listener : element.getListeners()) {
                 if (listener.type() == CustomUIEventBindingType.Activating && UIEventActions.BUTTON_CLICKED.equals(data.action)) {
-                    if (effectiveId.equals(target)) {
+                    if (internalId.equals(target)) {
                         ((UIEventListener<Void>) listener).callback().accept(null, this);
                     }
                 } else if (listener.type() == CustomUIEventBindingType.ValueChanged) {
                     Object finalValue = null;
 
-                    if (UIEventActions.VALUE_CHANGED.equals(data.action) && effectiveId.equals(target)) {
+                    if (UIEventActions.VALUE_CHANGED.equals(data.action) && internalId.equals(target)) {
                         String rawValue;
                         // If it's a value-changed action, use @Value (RefValue) for specific elements
                         if (element.usesRefValue()) {
@@ -135,8 +136,8 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
                             finalValue = element.parseValue(rawValue);
                         }
 
-                        if (finalValue != null && element.getId() != null) {
-                            elementValues.put(element.getId(), finalValue);
+                        if (finalValue != null && userId != null) {
+                            elementValues.put(userId, finalValue);
                         }
                     }
 

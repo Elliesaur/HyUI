@@ -59,20 +59,46 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
     }
     private void openHtmlTestGui(PlayerRef playerRef, Store<EntityStore> store) {
         String html = """
-            <div class="page-overlay" style="anchor: 150">
-                <div class="container" id="myContainer" data-hyui-title="HyUI HTML Parser Test" 
-                    style="anchor-left: 100; anchor-right: 100; anchor-top: 50; anchor-bottom: 50">
-                    
+            <style>
+                .page-overlay { 
+                    anchor: 150; 
+                }
+                .container 
+                { 
+                    anchor-left: 100; 
+                    anchor-right: 100; 
+                    anchor-top: 50; 
+                    anchor-bottom: 50; 
+                }
+                .title-text 
+                { 
+                    // This is a comment
+                    color: #ff0000; 
+                    font-weight: bold; 
+                    text-transform: uppercase; 
+                }
+                #welcome-msg { 
+                    /* Multi-line
+                       comment */
+                    font-size: 20; 
+                    color: #00ff00; 
+                }
+                .input-row { text-align: top; flex-weight: 1; color: #ff0000; }
+                input[type="text"] { flex-weight: 1; }
+                .cancel-btn { flex-weight: 2; }
+            </style>
+            <div class="page-overlay">
+                <div class="container" id="myContainer" data-hyui-title="HyUIML Parser Test">
                     <div class="container-title">
-                        <p style="color: #ff0000; font-weight: bold; text-transform: uppercase">
+                        <p class="title-text">
                             Text Here That Isnt The Title
                         </p>
                     </div>
                     <div class="container-contents">
-                        <p style="font-size: 20; color: #00ff00">Welcome to HyUI HTML parser!</p>
-                        <div style="text-align: top; flex-weight: 1">
+                        <p id="welcome-msg">Welcome to HyUIML parser!</p>
+                        <div class="input-row">
                              Free text here should be a label!
-                            <input type="text" id="myInput" style="flex-weight: 1"/>
+                            <input type="text" id="myInput"/>
                         </div>
                         <input type="number" value="42"/>
                         <input type="range" min="0" max="100" value="50" step="1"/>
@@ -83,19 +109,23 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                         <input type="color" value="#ff0000" 
                             style="anchor-width: 140; anchor-height: 120; anchor-left: 12"/>
                         <button id="btn1">Click Me!</button>
-                        <input type="reset" value="Cancel Operation" style="flex-weight: 2"/>
+                        <input type="reset" value="Cancel Operation" class="cancel-btn"/>
                     </div>
                 </div>
             </div>
             """;
-
         PageBuilder builder = PageBuilder.detachedPage()
-                .withLifetime(CustomPageLifetime.CanDismiss);
-
-        new HtmlParser().parseToPage(builder, html);
-        builder.addEventListener("btn1", CustomUIEventBindingType.Activating, (data, context) -> {
-            playerRef.sendMessage(Message.raw("Button clicked via PageBuilder ID lookup!"));
-        });
+                .fromHtml(html)
+                .withLifetime(CustomPageLifetime.CanDismiss)
+                .addEventListener("btn1", CustomUIEventBindingType.Activating, (data, ctx) -> {
+                    playerRef.sendMessage(Message.raw("Button clicked via PageBuilder ID lookup!: " + 
+                    ctx.getValue("myInput", String.class).orElse("N/A")));
+                })
+                .addEventListener("myInput", CustomUIEventBindingType.ValueChanged, String.class, (val) -> {
+                    playerRef.sendMessage(Message.raw("Input changed to: " + val));
+                });
+        
+        // Or ... if you don't like building in method chains or want something custom...
         builder.getById("myInput", TextFieldBuilder.class).ifPresent(input -> {
             input.addEventListener(CustomUIEventBindingType.ValueChanged, (val) -> {
                 playerRef.sendMessage(Message.raw("Input changed to: " + val));

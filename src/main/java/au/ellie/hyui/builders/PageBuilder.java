@@ -1,6 +1,8 @@
 package au.ellie.hyui.builders;
 
+import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.events.UIContext;
+import au.ellie.hyui.html.HtmlParser;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
@@ -93,6 +95,16 @@ public class PageBuilder {
     }
 
     /**
+     * Specifies the (html) HYUIML contents to parse to HyUI PageBuilder.
+     * 
+     * @param html
+     * @return
+     */
+    public PageBuilder fromHtml(String html) {
+        new HtmlParser().parseToPage(this, html);
+        return this;
+    }
+    /**
      * Adds a UI element to the page being built.
      *
      * @param element The UIElementBuilder instance representing the UI element to add.
@@ -132,28 +144,68 @@ public class PageBuilder {
 
     /**
      * Adds an event listener to an element by its ID.
-     *
+     * If no ID is found it will throw an IllegalArgumentException.
+     * 
+     * @param id       The ID of the element.
+     * @param type     The event type.
+     * @param valueClass The class of the value expected in the callback.
+     * @param callback The callback function.
+     * @param <V>      The type of the value.
+     * @return The current PageBuilder instance.
+     */
+    public <V> PageBuilder addEventListener(String id, CustomUIEventBindingType type, Class<V> valueClass, Consumer<V> callback) {
+        UIElementBuilder<?> element = elementRegistry.get(id);
+        if (element == null) {
+            throw new IllegalArgumentException("No element found with ID '" + id + "'. Please check your UI builder for elements with this ID to see if you misspelt the name.");
+        }
+        element.addEventListener(type, valueClass, callback);
+        return this;
+    }
+
+    /**
+     * Adds an event listener to an element by its ID with a default Object type.
+     * If no ID is found it will throw an IllegalArgumentException.
+     * 
      * @param id       The ID of the element.
      * @param type     The event type.
      * @param callback The callback function.
      * @return The current PageBuilder instance.
      */
     public PageBuilder addEventListener(String id, CustomUIEventBindingType type, Consumer<Object> callback) {
-        elementRegistry.get(id).addEventListener(type, Object.class, callback);
-        return this;
+        return addEventListener(id, type, Object.class, callback);
     }
 
     /**
      * Adds an event listener with context to an element by its ID.
-     *
+     * If no ID is found it will throw an IllegalArgumentException.
+     * 
+     * @param id       The ID of the element.
+     * @param type     The event type.
+     * @param valueClass The class of the value expected in the callback.
+     * @param callback The callback function.
+     * @param <V>      The type of the value.
+     * @return The current PageBuilder instance.
+     */
+    public <V> PageBuilder addEventListener(String id, CustomUIEventBindingType type, Class<V> valueClass, BiConsumer<V, UIContext> callback) {
+        UIElementBuilder<?> element = elementRegistry.get(id);
+        if (element == null) {
+            throw new IllegalArgumentException("No element found with ID '" + id + "'. Please check your UI builder for elements with this ID to see if you misspelt the name.");
+        }
+        element.addEventListenerWithContext(type, valueClass, callback);
+        return this;
+    }
+
+    /**
+     * Adds an event listener with context and default Object type to an element by its ID.
+     * If no ID is found it will throw an IllegalArgumentException.
+     * 
      * @param id       The ID of the element.
      * @param type     The event type.
      * @param callback The callback function.
      * @return The current PageBuilder instance.
      */
     public PageBuilder addEventListener(String id, CustomUIEventBindingType type, BiConsumer<Object, UIContext> callback) {
-        elementRegistry.get(id).addEventListenerWithContext(type, Object.class, callback);
-        return this;
+        return addEventListener(id, type, Object.class, callback);
     }
 
     /**
@@ -211,4 +263,5 @@ public class PageBuilder {
         PageManager pageManager = playerComponent.getPageManager();
         pageManager.openCustomPage(playerRefParam.getReference(), store, new HyUIPage(playerRefParam, lifetime, uiFile, getTopLevelElements(), editCallbacks));
     }
+    
 }
