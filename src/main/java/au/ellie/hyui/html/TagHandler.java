@@ -101,6 +101,8 @@ public interface TagHandler {
                     }
                     break;
                 case "text-align":
+                case "layout-mode":
+                case "layout":
                     // This maps to LayoutMode in some builders
                     if (builder instanceof au.ellie.hyui.builders.GroupBuilder) {
                         ((au.ellie.hyui.builders.GroupBuilder) builder).withLayoutMode(capitalize(value));

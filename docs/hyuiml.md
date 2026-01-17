@@ -63,7 +63,11 @@ You can include a `<style>` block at the beginning of your HYUIML:
 *   `font-size`: Numeric value.
 *   `font-weight`: `bold` or `normal`.
 *   `text-transform`: `uppercase` or `none`.
-*   `text-align`: `top`, `bottom`, `left`, `right`, `center`.
+*   `text-align`: `top`, `bottom`, `left`, `right`, `center`, `topscrolling`, `bottomscrolling`, `middlecenter`, `centermiddle`, `leftcenterwrap`. (Note: Maps to `LayoutMode` for `<div>`).
+*   `layout-mode`, `layout`: Alternative names for `text-align` specifically for setting the `LayoutMode` on a `<div>`.
+*   `vertical-align`: `top`, `bottom`, `center`.
+*   `horizontal-align`: `left`, `right`, `center`.
+*   `align`: Combines horizontal and vertical alignment (e.g., `center`).
 *   `flex-weight`: Numeric weight for layout.
 *   `anchor-*`: Maps to Hytale anchors (e.g., `anchor-left`, `anchor-top`, `anchor-width`, `anchor-height`).
 
