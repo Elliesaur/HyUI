@@ -42,7 +42,7 @@ public class HyUIMultiHud extends CustomUIHud {
 
     private void checkRefreshes() {
         PlayerRef playerRef = getPlayerRef();
-        if (!playerRef.getReference().isValid()) {
+        if (playerRef.getReference() == null) {
             // Player is no longer valid, cancel task and cleanup.
             if (refreshTask != null) {
                 HyUIPlugin.getLog().logInfo("Player is invalid, cancelling refresh task for multi-hud.");

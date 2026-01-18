@@ -8,6 +8,7 @@ Whether you are building a simple admin panel or a full-scale RPG menu system, H
 
 *   **Fluent Builder API:** Construct nested UI hierarchies (Groups, Buttons, Labels, etc.) using a clean, readable chain of methods.
 *   **Dynamic Element Injection:** Load base `.ui` files and inject dynamic elements into specific selectors at runtime using the `inside("#Selector")` system.
+*   **HYUIML (HTML/CSS):** Build interfaces using a familiar, declarative HTML-like syntax with CSS styling.
 *   **Event Handling Simplified:** Bind server-side logic directly to UI events (like `Activating` or `ValueChanged`) using simple lambda expressions.
 *   **Specialized Builders:** Includes ready-to-use builders for:
     *   **Buttons:** Standardized game-themed text buttons.
@@ -15,7 +16,6 @@ Whether you are building a simple admin panel or a full-scale RPG menu system, H
     *   **Containers:** Flexible Group builders with various layout modes.
 *   **Anchoring & Styling:** Robust support for `HyUIAnchor` for precise positioning and `HyUIStyle` for deep visual customization (colors, fonts, bold rendering, and disabled states).
 *   **Rich Tooltips:** Easily attach `Message` based tooltips to any UI element.
-*   **HYUIML (HTML/CSS):** Build interfaces using a familiar, declarative HTML-like syntax with CSS styling.
 *   **Multi-HUD Support:** Coexist with other mods using a smart HUD-chaining system that allows multiple HUD elements to be displayed simultaneously.
 *   **Periodic UI Refresh:** Built-in support for batched, periodic HUD updates with low performance overhead.
 *   **Advanced Logic (Escape Hatches):** Access raw `UICommandBuilder` instance at any point in the build process via `editElement` for properties not natively covered by the API.
