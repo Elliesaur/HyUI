@@ -4,7 +4,9 @@ HyUI is a fluent, builder-based library for creating and managing custom user in
 
 #### 0. Installation
 
-To use HyUI in your Hytale project, you can either include the JAR file directly or use Cursemaven if you are using Gradle.
+To use HyUI in your Hytale project, you can get started quickly by using the example project: [https://github.com/Elliesaur/Hytale-Example-UI-Project](https://github.com/Elliesaur/Hytale-Example-UI-Project)
+
+Otherwise, you can either include the JAR file directly or use Cursemaven if you are using Gradle.
 
 **Using the JAR file:**
 1. Download the latest `HyUI-0.X.0.jar` (replace X with version) from the CurseForge page (see [README](../README.md)).
@@ -168,7 +170,105 @@ You can easily control visibility and add rich-text tooltips to any element.
 .withTooltipTextSpan(Message.raw("This is a tooltip!"))
 ```
 
-#### 8. Full Example (Command Implementation)
+
+#### 8. Interacting with Elements at Runtime
+
+Mod authors can access the current values of other elements on the page within event listeners using the `UIContext` parameter.
+
+```java
+.addChild(ButtonBuilder.textButton()
+    .withId("SubmitButton")
+    .withText("Submit")
+    .addEventListener(CustomUIEventBindingType.Activating, (ignored, ctx) -> {
+        // Access value by ID set via .withId()
+        String username = ctx.getValue("UsernameField", String.class).orElse("");
+        Boolean rememberMe = ctx.getValue("RememberCheckBox", Boolean.class).orElse(false);
+        
+        playerRef.sendMessage(Message.raw("Logging in as: " + username + " (Remember: " + rememberMe + ")"));
+    }))
+```
+
+The `UIContext` tracks values of elements that support them (TextField, NumberField, CheckBox, ColorPicker) automatically as they change in the UI. Values are initialized with whatever was set via `.withValue()` at build time.
+
+####  9. Building with HYUIML (HTML/CSS)
+
+For those who prefer a more declarative approach, HyUI supports a subset of HTML and CSS called **HYUIML**. This allows you to define your UI structure and styling in a single markup string.
+
+```java
+String html = """
+    <style>
+        .my-label { color: #00FF00; font-weight: bold; }
+    </style>
+    <div>
+        <p class="my-label">Welcome to HYUIML!</p>
+        <button id="my-button">Click Me</button>
+    </div>
+    """;
+
+new PageBuilder(playerRef)
+    .fromHtml(html)
+    .addEventListener("my-button", CustomUIEventBindingType.Activating, (ignored, ctx) -> {
+        playerRef.sendMessage(Message.raw("Button clicked via HYUIML!"));
+    })
+    .open(store);
+```
+
+**Note:** HYUIML is **not** a full web engine. It has significant limitations:
+*   **CSS Support:** Only basic properties like `color`, `font-size`, `font-weight`, and Hytale-specific `anchor-*` properties are supported.
+*   **Layout:** Standard CSS layout (flex, grid, absolute positioning) is not supported. Use Hytale's layout modes and `flex-weight`.
+*   **ID Sanitization:** Internal IDs are strictly alphanumeric. Use your original IDs in Java code; HyUI handles the mapping automatically.
+
+For a full list of supported tags, attributes, and CSS properties, see the [HYUIML Documentation](hyuiml.md).
+
+#### 10. Working with HUDs
+
+HUDs (Heads-Up Displays) in HyUI are managed via the `HudBuilder`. While similar to pages, HUDs are handled differently in Hytale and by HyUI to allow multiple HUD elements to coexist.
+
+##### Creating and Showing a HUD
+You can create a HUD using a fluent API similar to `PageBuilder`.
+
+```java
+HyUIHud hud = HudBuilder.hudForPlayer(playerRef)
+    .fromHtml("<div style='anchor-top: 10; anchor-left: 10;'><p>My HUD</p></div>")
+    .show(store);
+```
+
+##### Automatic Multi-HUD Management
+Hytale only supports one `CustomUIHud` at a time. HyUI automatically handles this by using a `HyUIMultiHud` container. When you call `.show()`, HyUI:
+1. Checks if the player already has a `HyUIMultiHud`.
+2. If not, it creates one and sets it as the player's active HUD.
+3. Adds your new HUD instance to the multi-hud container.
+
+This ensures your HUDs don't overwrite each other or other mods using similar systems (like the "MultipleHud" mod).
+
+##### Periodic Refreshing
+If your HUD needs to update regularly (e.g., a timer or player stats), you can set a refresh rate.
+
+```java
+HudBuilder.hudForPlayer(playerRef)
+    // Refresh every 1 second
+    .withRefreshRate(1000)
+    .onRefresh(hud -> {
+        hud.getById("timer", LabelBuilder.class).ifPresent(label -> {
+            label.withText("Time: " + System.currentTimeMillis());
+        });
+    })
+    .show(store);
+```
+
+HyUI optimizes these refreshes by batching updates for all HUDs belonging to the same player.
+
+##### Toggling Visibility
+You can hide or show specific HUD instances within the multi-hud system:
+
+```java
+// Hides the root element of this specific HUD
+hud.hide();
+// Shows it again
+hud.unhide(); 
+```
+
+#### 12. Full Example for Page Implementation.
 
 The following example shows how to implement a command that opens a HyUI page. This includes the full `HyUITestGuiCommand.java` file.
 
@@ -305,52 +405,3 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
     }
 }
 ```
-
-#### 9. Interacting with Elements at Runtime
-
-Mod authors can access the current values of other elements on the page within event listeners using the `UIContext` parameter.
-
-```java
-.addChild(ButtonBuilder.textButton()
-    .withId("SubmitButton")
-    .withText("Submit")
-    .addEventListener(CustomUIEventBindingType.Activating, (ignored, ctx) -> {
-        // Access value by ID set via .withId()
-        String username = ctx.getValue("UsernameField", String.class).orElse("");
-        Boolean rememberMe = ctx.getValue("RememberCheckBox", Boolean.class).orElse(false);
-        
-        playerRef.sendMessage(Message.raw("Logging in as: " + username + " (Remember: " + rememberMe + ")"));
-    }))
-```
-
-The `UIContext` tracks values of elements that support them (TextField, NumberField, CheckBox, ColorPicker) automatically as they change in the UI. Values are initialized with whatever was set via `.withValue()` at build time.
-
-#### 10. Building with HYUIML (HTML/CSS)
-
-For those who prefer a more declarative approach, HyUI supports a subset of HTML and CSS called **HYUIML**. This allows you to define your UI structure and styling in a single markup string.
-
-```java
-String html = """
-    <style>
-        .my-label { color: #00FF00; font-weight: bold; }
-    </style>
-    <div>
-        <p class="my-label">Welcome to HYUIML!</p>
-        <button id="my-button">Click Me</button>
-    </div>
-    """;
-
-new PageBuilder(playerRef)
-    .fromHtml(html)
-    .addEventListener("my-button", CustomUIEventBindingType.Activating, (ignored, ctx) -> {
-        playerRef.sendMessage(Message.raw("Button clicked via HYUIML!"));
-    })
-    .open(store);
-```
-
-**Note:** HYUIML is **not** a full web engine. It has significant limitations:
-*   **CSS Support:** Only basic properties like `color`, `font-size`, `font-weight`, and Hytale-specific `anchor-*` properties are supported.
-*   **Layout:** Standard CSS layout (flex, grid, absolute positioning) is not supported. Use Hytale's layout modes and `flex-weight`.
-*   **ID Sanitization:** Internal IDs are strictly alphanumeric. Use your original IDs in Java code; HyUI handles the mapping automatically.
-
-For a full list of supported tags, attributes, and CSS properties, see the [HYUIML Documentation](hyuiml.md).

@@ -16,6 +16,8 @@ Whether you are building a simple admin panel or a full-scale RPG menu system, H
 *   **Anchoring & Styling:** Robust support for `HyUIAnchor` for precise positioning and `HyUIStyle` for deep visual customization (colors, fonts, bold rendering, and disabled states).
 *   **Rich Tooltips:** Easily attach `Message` based tooltips to any UI element.
 *   **HYUIML (HTML/CSS):** Build interfaces using a familiar, declarative HTML-like syntax with CSS styling.
+*   **Multi-HUD Support:** Coexist with other mods using a smart HUD-chaining system that allows multiple HUD elements to be displayed simultaneously.
+*   **Periodic UI Refresh:** Built-in support for batched, periodic HUD updates with low performance overhead.
 *   **Advanced Logic (Escape Hatches):** Access raw `UICommandBuilder` instance at any point in the build process via `editElement` for properties not natively covered by the API.
 
 ***
@@ -24,7 +26,9 @@ Whether you are building a simple admin panel or a full-scale RPG menu system, H
 
 #### 1\. Installation (Gradle)
 
-Add HyUI to your project via Cursemaven:
+You can get started quickly by using the example project: [https://github.com/Elliesaur/Hytale-Example-UI-Project](https://github.com/Elliesaur/Hytale-Example-UI-Project)
+
+Otherwise, add HyUI to your project via Cursemaven:
 
 ```
 repositories {
@@ -84,6 +88,7 @@ PageBuilder.detachedPage()
 | Builder            |Purpose                                                                        |
 | ------------------ |------------------------------------------------------------------------------ |
 | <code>PageBuilder</code> |The entry point for UI creation; manages file loading and opening for players. |
+| <code>HudBuilder</code> |The entry point for HUD creation; manages multi-HUD coexistence and periodic refreshes. |
 | <code>GroupBuilder</code> |A container used to organize and layout child elements.                        |
 | <code>ButtonBuilder</code> |For interactive buttons; supports <code>textButton()</code> for standard Hytale aesthetics. |
 | <code>LabelBuilder</code> |For displaying dynamic text with style and anchor support.                     |
