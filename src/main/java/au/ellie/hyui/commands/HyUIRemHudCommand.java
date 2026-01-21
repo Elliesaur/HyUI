@@ -21,11 +21,13 @@ public class HyUIRemHudCommand extends AbstractAsyncCommand {
     @Override
     protected CompletableFuture<Void> executeAsync(CommandContext commandContext) {
         if (commandContext.sender() instanceof Player) {
+            HyUIAddHudCommand.TEST.remove();
+            
             if (HyUIAddHudCommand.HUD_INSTANCES.isEmpty()) {
                 commandContext.sendMessage(Message.raw("No HUDs to remove!"));
                 return CompletableFuture.completedFuture(null);
             }
-
+            
             HyUIHud lastHud = HyUIAddHudCommand.HUD_INSTANCES.remove(HyUIAddHudCommand.HUD_INSTANCES.size() - 1);
             lastHud.remove();
             commandContext.sendMessage(Message.raw("Removed last HUD."));

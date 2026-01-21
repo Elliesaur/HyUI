@@ -1,7 +1,6 @@
 package au.ellie.hyui;
 
 import au.ellie.hyui.builders.HudBuilder;
-import au.ellie.hyui.builders.HyUIHud;
 import au.ellie.hyui.builders.LabelBuilder;
 import au.ellie.hyui.commands.HyUIAddHudCommand;
 import au.ellie.hyui.commands.HyUIRemHudCommand;
@@ -9,8 +8,6 @@ import au.ellie.hyui.commands.HyUIUpdateHudCommand;
 import au.ellie.hyui.commands.HyUITestGuiCommand;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.logger.HytaleLogger;
-import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.event.events.player.PlayerReadyEvent;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
@@ -19,9 +16,6 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
-import java.util.concurrent.CompletableFuture;
-
-import static com.hypixel.hytale.server.core.command.commands.player.inventory.InventorySeeCommand.MESSAGE_COMMANDS_ERRORS_PLAYER_NOT_IN_WORLD;
 
 public class HyUIPlugin extends JavaPlugin {
 
@@ -63,11 +57,11 @@ public class HyUIPlugin extends JavaPlugin {
                     PlayerRef playerRef = store.getComponent(ref, PlayerRef.getComponentType());
                     
                     String html = """
-                        <div style="layout: top"><p id="text"></p>
+                        <div style="layout: top;"><p id="text"></p>
                         <img src="lizard.png" width="100" height="60"></div>
                         """;
                     
-                    HyUIHud hud = HudBuilder.detachedHud()
+                    var hud = HudBuilder.detachedHud()
                             .fromHtml(html)
                             .withRefreshRate(1000)
                             .onRefresh((h) -> {

@@ -2,6 +2,7 @@ package au.ellie.hyui.commands;
 
 import au.ellie.hyui.builders.HudBuilder;
 import au.ellie.hyui.builders.HyUIHud;
+import au.ellie.hyui.builders.LabelBuilder;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -24,6 +25,8 @@ public class HyUIAddHudCommand extends AbstractAsyncCommand {
 
     public static final List<HyUIHud> HUD_INSTANCES = new ArrayList<>();
 
+    public static HyUIHud TEST;
+    
     public HyUIAddHudCommand() {
         super("add", "Adds a new HTML HUD");
         this.setPermissionGroup(GameMode.Adventure);
@@ -55,8 +58,8 @@ public class HyUIAddHudCommand extends AbstractAsyncCommand {
 
     private void addHud(PlayerRef playerRef, Store<EntityStore> store) {
         String html = """
-            <div id="Test" style="anchor-width: 280; anchor-height: 240; anchor-right: 1; anchor-top: 150">
-                <div style="background-color: #000000; layout-mode: top">
+            <div id="Test" style=" background-color: #000000; anchor-width: 280; anchor-height: 240; anchor-right: 1; anchor-top: 150">
+                <div style="layout-mode: top">
                     <label>
                         HUD Instance #""" + (HUD_INSTANCES.size() + 1) + """
                     </label>
@@ -65,14 +68,31 @@ public class HyUIAddHudCommand extends AbstractAsyncCommand {
             </div>
             """;
         
-        HyUIHud hud = HudBuilder.detachedHud()
+        if (TEST == null) {
+
+            HyUIHud hud = HudBuilder.detachedHud()
+                    .fromFile("Pages/replicate.ui")
+                    .editElement(uiCommandBuilder -> {
+                        uiCommandBuilder.set("#SecondaryTitle.Text", "Say Cheeze");
+                        uiCommandBuilder.set("#PrimaryTitle.Text", String.valueOf(System.currentTimeMillis()));
+                    })
+                    .withRefreshRate(1000)
+                    .onRefresh((h) -> {
+                    })
+                    .show(playerRef, store);
+
+            TEST = hud;
+        }
+        var hud2 = HudBuilder.detachedHud()
                 .fromHtml(html)
                 .withRefreshRate(1000)
                 .onRefresh((h) -> {
+                    h.getById("Hello", LabelBuilder.class).ifPresent((builder) -> {
+                        builder.withText("Hello, World! " + System.currentTimeMillis());
+                    });
                     //playerRef.sendMessage(Message.raw("HUD Refreshed!"));
                 })
                 .show(playerRef, store);
-        
-        HUD_INSTANCES.add(hud);
+        HUD_INSTANCES.add(hud2);
     }
 }
