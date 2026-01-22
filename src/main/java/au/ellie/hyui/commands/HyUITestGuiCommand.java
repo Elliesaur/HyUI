@@ -128,6 +128,11 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                                     data-hyui-effect-offset="0"></progress>
                                 <span class="item-icon" data-hyui-item-id="Tool_Pickaxe_Crude" style="anchor-width: 64; anchor-height: 64;"></span>
                                 <button id="btn1">Click Me!</button>
+                                <select id="myDropdown" data-hyui-showlabel="true" value="Entry1">
+                                    <option value="Entry1">First Entry</option>
+                                    <option value="Entry2">Second Entry</option>
+                                    <option value="Entry3">Third Entry</option>
+                                </select>
                                 <button id="btn2"><span class="item-icon" data-hyui-item-id="Tool_Pickaxe_Crude" style="anchor-width: 64; anchor-height: 64;"></span></button>
                                 <input type="reset" value="Cancel Operation" class="cancel-btn" style="font-size: 25px"/>
                             </div>
@@ -225,6 +230,9 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                 })
                 .addEventListener("myInput", CustomUIEventBindingType.ValueChanged, String.class, (val) -> {
                     playerRef.sendMessage(Message.raw("Input changed to: " + val));
+                })
+                .addEventListener("myDropdown", CustomUIEventBindingType.ValueChanged, String.class, (val) -> {
+                    playerRef.sendMessage(Message.raw("Dropdown changed to: " + val));
                 });
 
             // Or ... if you don't like building in method chains or want something custom...

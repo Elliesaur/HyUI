@@ -1,0 +1,7 @@
+$C = "../../Common.ui";
+$C.@DropdownBox #HyUIDropdownBox {
+    // Supports Anchor
+    // Supports MaxSelection which is int.
+    // Supports ShowLabel which is bool.
+    Style: $C.@DefaultDropdownBoxStyle;
+}

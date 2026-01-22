@@ -3,6 +3,7 @@ package au.ellie.hyui.builders;
 import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.elements.BackgroundSupported;
 import au.ellie.hyui.elements.LayoutModeSupported;
+import au.ellie.hyui.elements.ScrollbarStyleSupported;
 import au.ellie.hyui.elements.UIElements;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
@@ -10,10 +11,12 @@ import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 /**
  * Builder for the Container UI element.
  */
-public class ContainerBuilder extends UIElementBuilder<ContainerBuilder> implements LayoutModeSupported<ContainerBuilder>, BackgroundSupported<ContainerBuilder> {
+public class ContainerBuilder extends UIElementBuilder<ContainerBuilder> implements LayoutModeSupported<ContainerBuilder>, BackgroundSupported<ContainerBuilder>, ScrollbarStyleSupported<ContainerBuilder> {
     private String titleText;
     private String layoutMode;
     private HyUIPatchStyle background;
+    private String scrollbarStyleReference;
+    private String scrollbarStyleDocument;
 
     public ContainerBuilder() {
         super(UIElements.CONTAINER, "#HyUIContainer");
@@ -63,6 +66,23 @@ public class ContainerBuilder extends UIElementBuilder<ContainerBuilder> impleme
         return this.background;
     }
 
+    @Override
+    public ContainerBuilder withScrollbarStyle(String document, String styleReference) {
+        this.scrollbarStyleDocument = document;
+        this.scrollbarStyleReference = styleReference;
+        return this;
+    }
+
+    @Override
+    public String getScrollbarStyleReference() {
+        return this.scrollbarStyleReference;
+    }
+
+    @Override
+    public String getScrollbarStyleDocument() {
+        return this.scrollbarStyleDocument;
+    }
+
     /**
      * Add a child inside the #Content of the container.
      * @param child the element to add to the container's contents.
@@ -97,6 +117,7 @@ public class ContainerBuilder extends UIElementBuilder<ContainerBuilder> impleme
 
         applyLayoutMode(commands, selector);
         applyBackground(commands, selector);
+        applyScrollbarStyle(commands, selector);
 
         if (titleText != null) {
             String titleSelector = selector + " #Title #HyUIContainerTitle";

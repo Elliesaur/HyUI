@@ -12,6 +12,7 @@ public class UIElements {
     public static final String SLIDER = "Slider";
     public static final String PROGRESS_BAR = "ProgressBar";
     public static final String ITEM_ICON = "ItemIcon";
+    public static final String DROPDOWN_BOX = "DropdownBox";
 
     // Macros (Common.ui)
     public static final String PAGE_OVERLAY = "PageOverlay";

@@ -19,9 +19,11 @@ public class InputHandler implements TagHandler {
         switch (type) {
             case "text":
                 builder = TextFieldBuilder.textInput();
-                if (element.hasAttr("value")) {
-                    ((TextFieldBuilder) builder).withValue(element.attr("value"));
-                }
+                applyTextFieldAttributes((TextFieldBuilder) builder, element);
+                break;
+            case "password":
+                builder = TextFieldBuilder.textInput().withPassword(true);
+                applyTextFieldAttributes((TextFieldBuilder) builder, element);
                 break;
             case "number":
                 builder = NumberFieldBuilder.numberInput();
@@ -95,5 +97,22 @@ public class InputHandler implements TagHandler {
         }
 
         return builder;
+    }
+
+    private void applyTextFieldAttributes(TextFieldBuilder builder, Element element) {
+        if (element.hasAttr("value")) {
+            builder.withValue(element.attr("value"));
+        }
+        if (element.hasAttr("placeholder")) {
+            builder.withPlaceholderText(element.attr("placeholder"));
+        }
+        if (element.hasAttr("maxlength")) {
+            try {
+                builder.withMaxLength(Integer.parseInt(element.attr("maxlength")));
+            } catch (NumberFormatException ignored) {}
+        }
+        if (element.hasAttr("readonly")) {
+            builder.withReadOnly(true);
+        }
     }
 }

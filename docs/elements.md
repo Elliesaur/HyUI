@@ -2,6 +2,37 @@
 
 This page provides examples of common UI element combinations and configurations in HyUI.
 
+### Dropdown Box Example
+
+A `DropdownBox` allows players to select one or more options from a list.
+
+#### HYUIML Example
+
+```html
+<select id="myDropdown" data-hyui-showlabel="true" value="Entry1">
+    <option value="Entry1">First Entry</option>
+    <option value="Entry2">Second Entry</option>
+    <option value="Entry3">Third Entry</option>
+</select>
+```
+
+> **Warning**: When setting the `value` attribute on a `<select>` tag, ensure it matches the `value` attribute of one of the `<option>` children.
+
+#### Java Builder Example
+
+```java
+DropdownBoxBuilder.dropdownBox()
+    .withId("myDropdown")
+    .addEntry("Entry1", "First Entry")
+    .addEntry("Entry2", "Second Entry")
+    .withValue("Entry1") // Must match an entry name
+    .addEventListener(CustomUIEventBindingType.ValueChanged, (val) -> {
+        player.sendMessage(Message.raw("Selected: " + val));
+    });
+```
+
+> **Warning**: The value passed to `.withValue(String)` MUST exist within the entries added to the dropdown (via `.addEntry` or `.withEntries`). If it doesn't, the dropdown may fail to display correctly.
+
 ### Item Icon Button Example
 
 It is often useful to combine a button with an item icon and labels to create interactive inventory-style elements. 

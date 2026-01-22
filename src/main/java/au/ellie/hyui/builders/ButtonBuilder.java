@@ -21,7 +21,9 @@ import java.util.function.Consumer;
  * Builder for creating button UI elements. 
  * Buttons are interactive elements that can trigger actions when clicked.
  */
-public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements LayoutModeSupported<ButtonBuilder>, BackgroundSupported<ButtonBuilder> {
+public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements 
+        LayoutModeSupported<ButtonBuilder>,
+        BackgroundSupported<ButtonBuilder> {
     private String text;
     private String layoutMode;
     private HyUIPatchStyle background;

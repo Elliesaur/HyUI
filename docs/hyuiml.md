@@ -30,6 +30,7 @@ PageBuilder.pageForPlayer(playerRef)
 | `<label>`                 | `LabelBuilder` | Similar to `<p>`, often used for form field descriptions.         |
 | `<button>`                | `ButtonBuilder` | Standard buttons. Use `class="back-button"` for a back button.    |
 | `<input type="text">`     | `TextFieldBuilder` | Text input fields.                                                |
+| `<input type="password">` | `TextFieldBuilder` | Masked password input fields.                                     |
 | `<input type="number">`   | `NumberFieldBuilder` | Numeric input fields.                                             |
 | `<input type="range">`    | `SliderBuilder` | Sliders.                                                          |
 | `<input type="checkbox">` | `CheckBoxBuilder` | Toggle switches.                                                  |
@@ -38,6 +39,7 @@ PageBuilder.pageForPlayer(playerRef)
 | `<progress>`              | `ProgressBarBuilder` | Displays a progress bar.                                          |
 | `<span class="item-icon">` | `ItemIconBuilder` | Displays an item icon. Use `data-hyui-item-id` for the item icon. |
 | `<img>`                   | `ImageBuilder` | Displays an image. Use `src` for the path.                        |
+| `<select>`                | `DropdownBoxBuilder` | Dropdown selection lists. Use `<option>` children for entries.   |
 
 #### Attributes
 
@@ -48,6 +50,9 @@ HYUIML supports several standard and custom attributes:
 *   `value`: Sets the initial value for input elements.
 *   `min`, `max`, `step`: Specific to sliders (`input type="range"`).
 *   `checked`: Specific to checkboxes (`true` or `false`).
+*   `placeholder`: Hint text for text/password inputs.
+*   `maxlength`: Maximum character limit for text/password inputs.
+*   `readonly`: Makes text/password inputs read-only (`true` or `false`).
 *   `width`, `height`: Specific to `<img>` tag, maps to `anchor-width` and `anchor-height`.
 *   `data-hyui-title`: Specific to containers/overlays to set the header title.
 *   `data-hyui-tooltiptext`: Adds a tooltip to the element.
@@ -57,6 +62,10 @@ HYUIML supports several standard and custom attributes:
 *   `data-hyui-effect-width`, `data-hyui-effect-height`, `data-hyui-effect-offset`: Customizes the progress bar's effect appearance.
 *   `data-hyui-direction`: Progress bar fill direction (`start` or `end`).
 *   `data-hyui-alignment`: Progress bar orientation (`horizontal` or `vertical`).
+*   `data-hyui-allowunselection`: Specific to `<select>`, allows deselecting items.
+*   `data-hyui-maxselection`: Specific to `<select>`, number of maximum selectable items.
+*   `data-hyui-entryheight`: Specific to `<select>`, height of each dropdown entry.
+*   `data-hyui-showlabel`: Specific to `<select>`, boolean to show or hide the label.
 
 #### Styling with CSS
 

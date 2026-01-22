@@ -2,6 +2,7 @@ package au.ellie.hyui.builders;
 
 import au.ellie.hyui.elements.BackgroundSupported;
 import au.ellie.hyui.elements.LayoutModeSupported;
+import au.ellie.hyui.elements.ScrollbarStyleSupported;
 import au.ellie.hyui.elements.UIElements;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
@@ -9,9 +10,11 @@ import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 /**
  * Builder for the PageOverlay UI element.
  */
-public class PageOverlayBuilder extends UIElementBuilder<PageOverlayBuilder> implements LayoutModeSupported<PageOverlayBuilder>, BackgroundSupported<PageOverlayBuilder> {
+public class PageOverlayBuilder extends UIElementBuilder<PageOverlayBuilder> implements LayoutModeSupported<PageOverlayBuilder>, BackgroundSupported<PageOverlayBuilder>, ScrollbarStyleSupported<PageOverlayBuilder> {
     private String layoutMode;
     private HyUIPatchStyle background;
+    private String scrollbarStyleReference;
+    private String scrollbarStyleDocument;
 
     public PageOverlayBuilder() {
         super(UIElements.PAGE_OVERLAY, "#HyUIPageOverlay");
@@ -51,6 +54,23 @@ public class PageOverlayBuilder extends UIElementBuilder<PageOverlayBuilder> imp
     }
 
     @Override
+    public PageOverlayBuilder withScrollbarStyle(String document, String styleReference) {
+        this.scrollbarStyleDocument = document;
+        this.scrollbarStyleReference = styleReference;
+        return this;
+    }
+
+    @Override
+    public String getScrollbarStyleReference() {
+        return this.scrollbarStyleReference;
+    }
+
+    @Override
+    public String getScrollbarStyleDocument() {
+        return this.scrollbarStyleDocument;
+    }
+
+    @Override
     protected boolean supportsStyling() {
         return false;
     }
@@ -62,5 +82,6 @@ public class PageOverlayBuilder extends UIElementBuilder<PageOverlayBuilder> imp
 
         applyLayoutMode(commands, selector);
         applyBackground(commands, selector);
+        applyScrollbarStyle(commands, selector);
     }
 }

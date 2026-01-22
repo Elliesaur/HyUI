@@ -18,6 +18,14 @@ import java.util.function.Consumer;
  */
 public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder> {
     private String value;
+    private String placeholderText;
+    private String placeholderStyle;
+    private Integer maxLength;
+    private Integer maxVisibleLines;
+    private Boolean readOnly;
+    private Boolean password;
+    private String passwordChar;
+    private Boolean autoGrow;
 
     /**
      * DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING.
@@ -78,6 +86,86 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder> {
     }
 
     /**
+     * Sets the placeholder text for the text field.
+     * @param placeholderText The placeholder text to set.
+     * @return This TextFieldBuilder instance for method chaining.
+     */
+    public TextFieldBuilder withPlaceholderText(String placeholderText) {
+        this.placeholderText = placeholderText;
+        return this;
+    }
+
+    /**
+     * Sets the style for the placeholder text.
+     * @param placeholderStyle The style reference for the placeholder text.
+     * @return This TextFieldBuilder instance for method chaining.
+     */
+    public TextFieldBuilder withPlaceholderStyle(String placeholderStyle) {
+        this.placeholderStyle = placeholderStyle;
+        return this;
+    }
+
+    /**
+     * Sets the maximum length of the text field.
+     * @param maxLength The maximum length to set.
+     * @return This TextFieldBuilder instance for method chaining.
+     */
+    public TextFieldBuilder withMaxLength(int maxLength) {
+        this.maxLength = maxLength;
+        return this;
+    }
+
+    /**
+     * Sets the maximum visible lines for the text field.
+     * @param maxVisibleLines The maximum number of visible lines to set.
+     * @return This TextFieldBuilder instance for method chaining.
+     */
+    public TextFieldBuilder withMaxVisibleLines(int maxVisibleLines) {
+        this.maxVisibleLines = maxVisibleLines;
+        return this;
+    }
+
+    /**
+     * Sets whether the text field is read-only.
+     * @param readOnly Whether the field should be read-only.
+     * @return This TextFieldBuilder instance for method chaining.
+     */
+    public TextFieldBuilder withReadOnly(boolean readOnly) {
+        this.readOnly = readOnly;
+        return this;
+    }
+
+    /**
+     * Sets whether the text field is in password mode.
+     * @param password Whether password mode should be enabled.
+     * @return This TextFieldBuilder instance for method chaining.
+     */
+    public TextFieldBuilder withPassword(boolean password) {
+        this.password = password;
+        return this;
+    }
+
+    /**
+     * Sets the character to display in password mode.
+     * @param passwordChar The password character to set.
+     * @return This TextFieldBuilder instance for method chaining.
+     */
+    public TextFieldBuilder withPasswordChar(String passwordChar) {
+        this.passwordChar = passwordChar;
+        return this;
+    }
+
+    /**
+     * Sets whether the text field should automatically grow with content.
+     * @param autoGrow Whether the field should automatically grow.
+     * @return This TextFieldBuilder instance for method chaining.
+     */
+    public TextFieldBuilder withAutoGrow(boolean autoGrow) {
+        this.autoGrow = autoGrow;
+        return this;
+    }
+
+    /**
      * Adds an event listener to the text field builder for handling a specific type of UI event.
      *
      * @param type The type of the event to bind the listener to. This specifies what kind of UI event 
@@ -119,6 +207,38 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder> {
         if (value != null) {
             HyUIPlugin.getLog().logInfo("Setting Value: " + value + " for " + selector);
             commands.set(selector + ".Value", value);
+        }
+
+        if (placeholderText != null) {
+            commands.set(selector + ".PlaceholderText", placeholderText);
+        }
+
+        if (placeholderStyle != null) {
+            commands.set(selector + ".PlaceholderStyle", placeholderStyle);
+        }
+
+        if (maxLength != null) {
+            commands.set(selector + ".MaxLength", maxLength);
+        }
+
+        if (maxVisibleLines != null) {
+            commands.set(selector + ".MaxVisibleLines", maxVisibleLines);
+        }
+
+        if (readOnly != null) {
+            commands.set(selector + ".ReadOnly", readOnly);
+        }
+
+        if (password != null) {
+            commands.set(selector + ".Password", password);
+        }
+
+        if (passwordChar != null) {
+            commands.set(selector + ".PasswordChar", passwordChar);
+        }
+
+        if (autoGrow != null) {
+            commands.set(selector + ".AutoGrow", autoGrow);
         }
 
         if (hyUIStyle == null && style != null) {
