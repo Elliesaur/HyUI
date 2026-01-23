@@ -118,7 +118,7 @@ public class HyUIShowcaseCommand extends AbstractAsyncCommand {
                 </div>
 
                 <!-- Tab Navigation -->
-                <nav class="tabs" data-tabs="templates:Templates:templates-content,timers:Timers:timers-content,components:Components:components-content" data-selected="templates" style="anchor-height: 50;">
+                <nav class="tabs" data-tabs="templates:Templates:templates-content,timers:Timers:timers-content,components:Components:components-content,items:Items:items-content" data-selected="templates" style="anchor-height: 50;">
                 </nav>
 
                 <!-- Content Area -->
@@ -204,6 +204,29 @@ public class HyUIShowcaseCommand extends AbstractAsyncCommand {
                         <div style="flex-direction: row; anchor-height: 60;">
                             <button id="demo-button" style="flex-weight: 1;">Click Me!</button>
                             <p style="color: #888888; flex-weight: 2; padding: 15;">Click to test event handling</p>
+                        </div>
+                    </div>
+
+                    <div id="items-content" class="tab-content" data-hyui-tab-id="items" style="flex-direction: column;">
+                        <p style="color: #4CAF50; font-size: 20; font-weight: bold; anchor-height: 30;">5. Item Display</p>
+                        <div style="flex-direction: row; anchor-height: 200; gap: 10;">
+                            <div style="background-color: #2a2a3e; padding: 15; flex-direction: column; align-items: center;">
+                                <p style="color: #888888; font-size: 15; anchor-height: 20;">Single Item</p>
+                                <span class="item-slot" data-hyui-item-id="Tool_Pickaxe_Crude" style="anchor-width: 64; anchor-height: 64;"></span>
+                            </div>
+                            <div style="background-color: #2a2a3e; padding: 15; flex-weight: 1; flex-direction: column;">
+                                <p style="color: #888888; font-size: 15; anchor-height: 20;">Item Grid (scrollable)</p>
+                                <div class="item-grid" data-hyui-slots-per-row="4" data-hyui-show-scrollbar="true" style="anchor-height: 150;">
+                                    <div class="item-grid-slot" data-hyui-item-id="Tool_Pickaxe_Crude" data-hyui-quantity="1"></div>
+                                    <div class="item-grid-slot" data-hyui-item-id="Tool_Pickaxe_Crude" data-hyui-quantity="2"></div>
+                                    <div class="item-grid-slot" data-hyui-item-id="Tool_Pickaxe_Crude" data-hyui-quantity="3"></div>
+                                    <div class="item-grid-slot" data-hyui-item-id="Tool_Pickaxe_Crude" data-hyui-quantity="4"></div>
+                                    <div class="item-grid-slot" data-hyui-item-id="Tool_Pickaxe_Crude" data-hyui-quantity="5"></div>
+                                    <div class="item-grid-slot" data-hyui-item-id="Tool_Pickaxe_Crude" data-hyui-quantity="6"></div>
+                                    <div class="item-grid-slot" data-hyui-item-id="Tool_Pickaxe_Crude" data-hyui-quantity="7"></div>
+                                    <div class="item-grid-slot" data-hyui-item-id="Tool_Pickaxe_Crude" data-hyui-quantity="8"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
