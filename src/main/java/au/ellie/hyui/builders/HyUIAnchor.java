@@ -57,6 +57,10 @@ public class HyUIAnchor {
         return this;
     }
 
+    public int getHeight() {
+        return height;
+    }
+
     public HyUIAnchor setFull(int full) {
         this.full = full;
         return this;

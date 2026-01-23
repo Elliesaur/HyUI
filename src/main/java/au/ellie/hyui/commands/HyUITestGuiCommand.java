@@ -152,8 +152,13 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
             html = """
                     <div class="page-overlay">
                         <div class="container" style="anchor-width: 800; anchor-height: 900;" id="myContainer" data-hyui-title="HyUIML Parser Test">
-                        <div style="anchor-left: 1; layout-mode: left;"><span class="item-slot" id="itemslot" data-hyui-item-id="Tool_Pickaxe_Crude" data-hyui-show-quality-background="true"
-                            data-hyui-show-quantity="true" style="anchor-width: 64; anchor-height: 64;"></span></div>
+                        <div style="anchor-left: 1; layout-mode: left;">
+                            <div style="layout-mode: top">
+                                <span class="item-slot" id="itemslot" data-hyui-item-id="Tool_Pickaxe_Crude" data-hyui-show-quality-background="true"
+                                data-hyui-show-quantity="true" style="anchor-width: 64; anchor-height: 64;"></span>
+                                <input type="number" value="42" min="-5" max="50" step="1.5" style="padding: 10; anchor-width: 50;"/>
+                            </div>
+                        </div>
                         <div style="layout-mode: right;">
                             <div class="item-grid" id="itemgrid" data-hyui-slots-per-row="6"
                                 style="anchor-width: 400; anchor-height: 400;">

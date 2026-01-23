@@ -353,17 +353,39 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
             String wrappingGroupId = getWrappingGroupId();
             HyUIPlugin.getLog().logInfo("Creating wrapping group: #" + wrappingGroupId + " for element: " + (typeSelector != null ? typeSelector : elementPath));
             
-            String inlineMarkup = "Group #" + wrappingGroupId + " {}";
+            StringBuilder inlineMarkup = new StringBuilder();
+            inlineMarkup.append("Group #").append(wrappingGroupId).append(" { ");
             
             // Handle background with opacity for the wrapping group
             if (this instanceof BackgroundSupported<?> bgSupported) {
                 HyUIPatchStyle bg = bgSupported.getBackground();
                 if (bg != null && bg.getTexturePath() == null && bg.getColor() != null && bg.getColor().contains("(")) {
-                    inlineMarkup = "Group #" + wrappingGroupId + " { Background: " + bg.getColor() + "; }";
+                    inlineMarkup.append("Background: ").append(bg.getColor()).append("; ");
                 }
             }
             
-            commands.appendInline(parentSelector, inlineMarkup);
+            if (padding != null) {
+                StringBuilder paddingMarkup = new StringBuilder();
+                if (padding.getLeft() != null) paddingMarkup.append("Left: ").append(padding.getLeft());
+                if (padding.getTop() != null) {
+                    if (paddingMarkup.length() > 0) paddingMarkup.append(", ");
+                    paddingMarkup.append("Top: ").append(padding.getTop());
+                }
+                if (padding.getRight() != null) {
+                    if (paddingMarkup.length() > 0) paddingMarkup.append(", ");
+                    paddingMarkup.append("Right: ").append(padding.getRight());
+                }
+                if (padding.getBottom() != null) {
+                    if (paddingMarkup.length() > 0) paddingMarkup.append(", ");
+                    paddingMarkup.append("Bottom: ").append(padding.getBottom());
+                }
+                if (paddingMarkup.length() > 0) {
+                    inlineMarkup.append("Padding: (").append(paddingMarkup).append("); ");
+                }
+            }
+
+            inlineMarkup.append("}");
+            commands.appendInline(parentSelector, inlineMarkup.toString());
             
             // The inner element should be inside the wrapping group
             String originalParent = parentSelector;
@@ -414,7 +436,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
                 commands.setObject(selector + ".Anchor", anchor.toHytaleAnchor());
             }
 
-            if (padding != null) {
+            if (padding != null && !wrapInGroup) {
                 HyUIPlugin.getLog().logInfo("Setting Padding for " + selector);
                 if (padding.getLeft() != null) commands.set(selector + ".Padding.Left", padding.getLeft());
                 if (padding.getTop() != null) commands.set(selector + ".Padding.Top", padding.getTop());

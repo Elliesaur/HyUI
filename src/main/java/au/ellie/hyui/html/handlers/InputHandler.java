@@ -37,8 +37,32 @@ public class InputHandler implements TagHandler {
                     numBuilder.withFormat(element.attr("format"));
                 }
                 if (element.hasAttr("data-hyui-max-decimal-places")) {
-                    ParseUtils.parseInt(element.attr("data-hyui-max-decimal-places"))
+                    ParseUtils.parseDouble(element.attr("data-hyui-max-decimal-places"))
                             .ifPresent(numBuilder::withMaxDecimalPlaces);
+                }
+                if (element.hasAttr("min")) {
+                    ParseUtils.parseDouble(element.attr("min"))
+                            .ifPresent(numBuilder::withMinValue);
+                }
+                if (element.hasAttr("max")) {
+                    ParseUtils.parseDouble(element.attr("max"))
+                            .ifPresent(numBuilder::withMaxValue);
+                }
+                if (element.hasAttr("step")) {
+                    ParseUtils.parseDouble(element.attr("step"))
+                            .ifPresent(numBuilder::withStep);
+                }
+                if (element.hasAttr("data-hyui-min")) {
+                    ParseUtils.parseDouble(element.attr("data-hyui-min"))
+                            .ifPresent(numBuilder::withMinValue);
+                }
+                if (element.hasAttr("data-hyui-max")) {
+                    ParseUtils.parseDouble(element.attr("data-hyui-max"))
+                            .ifPresent(numBuilder::withMaxValue);
+                }
+                if (element.hasAttr("data-hyui-step")) {
+                    ParseUtils.parseDouble(element.attr("data-hyui-step"))
+                            .ifPresent(numBuilder::withStep);
                 }
                 break;
             case "range":

@@ -6,6 +6,7 @@ import au.ellie.hyui.events.UIEventActions;
 import au.ellie.hyui.elements.UIElements;
 import au.ellie.hyui.theme.Theme;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
+import com.hypixel.hytale.server.core.ui.Value;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
@@ -25,7 +26,10 @@ import java.util.function.Consumer;
 public class NumberFieldBuilder extends UIElementBuilder<NumberFieldBuilder> {
     private Double value;
     private String format;
-    private Integer maxDecimalPlaces;
+    private Double maxDecimalPlaces;
+    private Double minValue;
+    private Double maxValue;
+    private Double step;
 
     /**
      * Do not use. Instead, use the static .numberInput().
@@ -33,10 +37,7 @@ public class NumberFieldBuilder extends UIElementBuilder<NumberFieldBuilder> {
      */
     public NumberFieldBuilder(Theme theme) {
         super(theme, UIElements.MACRO_NUMBER_FIELD, "#HyUINumberField");
-        withWrappingGroup(true);
-        if (theme == Theme.GAME_THEME) {
-            withUiFile("Pages/Elements/NumberInput.ui");
-        }
+        withWrappingGroup(false);
     }
 
     /**
@@ -77,8 +78,41 @@ public class NumberFieldBuilder extends UIElementBuilder<NumberFieldBuilder> {
      * @param maxDecimalPlaces the maximum decimal places
      * @return the current instance of {@code NumberFieldBuilder} for method chaining
      */
-    public NumberFieldBuilder withMaxDecimalPlaces(int maxDecimalPlaces) {
+    public NumberFieldBuilder withMaxDecimalPlaces(double maxDecimalPlaces) {
         this.maxDecimalPlaces = maxDecimalPlaces;
+        return this;
+    }
+
+    /**
+     * Sets the minimum allowed value for the number field.
+     *
+     * @param minValue the minimum value
+     * @return the current instance of {@code NumberFieldBuilder} for method chaining
+     */
+    public NumberFieldBuilder withMinValue(double minValue) {
+        this.minValue = minValue;
+        return this;
+    }
+
+    /**
+     * Sets the maximum allowed value for the number field.
+     *
+     * @param maxValue the maximum value
+     * @return the current instance of {@code NumberFieldBuilder} for method chaining
+     */
+    public NumberFieldBuilder withMaxValue(double maxValue) {
+        this.maxValue = maxValue;
+        return this;
+    }
+
+    /**
+     * Sets the step value for the number field.
+     *
+     * @param step the step value
+     * @return the current instance of {@code NumberFieldBuilder} for method chaining
+     */
+    public NumberFieldBuilder withStep(double step) {
+        this.step = step;
         return this;
     }
 
@@ -137,6 +171,42 @@ public class NumberFieldBuilder extends UIElementBuilder<NumberFieldBuilder> {
     }
 
     @Override
+    protected boolean hasCustomInlineContent() {
+        return true;
+    }
+
+    @Override
+    protected String generateCustomInlineContent() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("NumberField #" + getEffectiveId() + " { ");
+        if (maxDecimalPlaces != null || step != null || minValue != null || maxValue != null) {
+            sb.append("Format: (");
+            boolean needsComma = false;
+            if (maxDecimalPlaces != null) {
+                sb.append("MaxDecimalPlaces: ").append(maxDecimalPlaces);
+                needsComma = true;
+            }
+            if (step != null) {
+                if (needsComma) sb.append(", ");
+                sb.append("Step: ").append(step);
+                needsComma = true;
+            }
+            if (minValue != null) {
+                if (needsComma) sb.append(", ");
+                sb.append("MinValue: ").append(minValue);
+                needsComma = true;
+            }
+            if (maxValue != null) {
+                if (needsComma) sb.append(", ");
+                sb.append("MaxValue: ").append(maxValue);
+            }
+            sb.append("); ");
+        }
+        sb.append("Padding: (Horizontal: 10); }");
+        return sb.toString();
+    }
+
+    @Override
     protected void onBuild(UICommandBuilder commands, UIEventBuilder events) {
         String selector = getSelector();
         if (selector == null) return;
@@ -145,14 +215,27 @@ public class NumberFieldBuilder extends UIElementBuilder<NumberFieldBuilder> {
             HyUIPlugin.getLog().logInfo("Setting Value: " + value + " for " + selector);
             commands.set(selector + ".Value", value);
         }
-
-        // NOTE: Format cannot be set via commands.set() - Hytale expects NumberFieldFormat type, not String
-        // MaxDecimalPlaces must be defined inline in the .ui template file
-        // See: https://github.com/underscore95/hytale-ui-docs/blob/main/docs/UIElements/-C--NumberField.md
-
+        
         if (hyUIStyle == null && style != null) {
             HyUIPlugin.getLog().logInfo("Setting Style: " + style + " for " + selector);
             commands.set(selector + ".Style", style);
+        } else if (hyUIStyle == null) {
+            commands.set(selector + ".Style", Value.ref("Common.ui", "DefaultInputFieldStyle"));
+        }
+
+        if (!secondaryStyles.containsKey("PlaceholderStyle")) {
+            commands.set(selector + ".PlaceholderStyle", Value.ref("Common.ui", "DefaultInputFieldPlaceholderStyle"));
+        }
+        
+        commands.set(selector + ".Background", Value.ref("Common.ui", "InputBoxBackground"));
+
+        if (anchor == null || anchor.getHeight() < 38) {
+            if (anchor == null) {
+                anchor = new HyUIAnchor();
+            }
+            anchor.setHeight(38);
+            // Need to force anchor setting.
+            commands.setObject(selector + ".Anchor", anchor.toHytaleAnchor());
         }
 
         listeners.forEach(listener -> {

@@ -6,7 +6,7 @@ public class HyUIPluginLogger {
     
     private final HytaleLogger internalLogger = HytaleLogger.forEnclosingClass();
     
-    public static final boolean LOGGING_ENABLED = false;
+    public static final boolean LOGGING_ENABLED = true;
     
     public HyUIPluginLogger() {
         

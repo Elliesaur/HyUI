@@ -97,6 +97,51 @@ public class LabelBuilder extends UIElementBuilder<LabelBuilder> implements Back
     }
 
     @Override
+    protected boolean hasCustomInlineContent() {
+        return padding != null;
+    }
+
+    @Override
+    protected String generateCustomInlineContent() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(elementPath);
+        if (id != null && !wrapInGroup) {
+            sb.append(" #").append(id);
+        }
+        sb.append(" { ");
+
+        if (this instanceof BackgroundSupported<?> bgSupported) {
+            HyUIPatchStyle bg = bgSupported.getBackground();
+            if (bg != null && bg.getTexturePath() == null && bg.getColor() != null && bg.getColor().contains("(")) {
+                sb.append("Background: ").append(bg.getColor()).append("; ");
+            }
+        }
+
+        if (padding != null) {
+            StringBuilder paddingMarkup = new StringBuilder();
+            if (padding.getLeft() != null) paddingMarkup.append("Left: ").append(padding.getLeft());
+            if (padding.getTop() != null) {
+                if (paddingMarkup.length() > 0) paddingMarkup.append(", ");
+                paddingMarkup.append("Top: ").append(padding.getTop());
+            }
+            if (padding.getRight() != null) {
+                if (paddingMarkup.length() > 0) paddingMarkup.append(", ");
+                paddingMarkup.append("Right: ").append(padding.getRight());
+            }
+            if (padding.getBottom() != null) {
+                if (paddingMarkup.length() > 0) paddingMarkup.append(", ");
+                paddingMarkup.append("Bottom: ").append(padding.getBottom());
+            }
+            if (paddingMarkup.length() > 0) {
+                sb.append("Padding: (").append(paddingMarkup).append("); ");
+            }
+        }
+
+        sb.append("}");
+        return sb.toString();
+    }
+
+    @Override
     protected void onBuild(UICommandBuilder commands, UIEventBuilder events) {
         String selector = getSelector();
         if (selector == null) return;
