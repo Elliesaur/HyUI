@@ -56,7 +56,7 @@ public class HyUIPlugin extends JavaPlugin {
                 world.execute(() -> {
                     PlayerRef playerRef = store.getComponent(ref, PlayerRef.getComponentType());
                     
-                    /*String html = """
+                    String html = """
                         <div style="layout: top;"><p id="text"></p>
                         <img src="lizard.png" width="100" height="60"></div>
                         """;
@@ -68,7 +68,7 @@ public class HyUIPlugin extends JavaPlugin {
                                     builder.withText("Hello, World! " + System.currentTimeMillis());
                                 });
                             })
-                            .show(playerRef, store);*/
+                            .show(playerRef, store);
                 });
 
             });

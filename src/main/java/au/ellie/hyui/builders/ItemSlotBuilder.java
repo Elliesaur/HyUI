@@ -86,7 +86,8 @@ public class ItemSlotBuilder extends UIElementBuilder<ItemSlotBuilder> {
             commands.set(selector + ".ItemId", itemId);
         }
 
-        listeners.forEach(listener -> {
+        // Sadface.
+/*        listeners.forEach(listener -> {
             if (listener.type() == CustomUIEventBindingType.Dropped) {
                 String eventId = getEffectiveId();
                 events.addEventBinding(CustomUIEventBindingType.Dropped, selector,
@@ -94,6 +95,6 @@ public class ItemSlotBuilder extends UIElementBuilder<ItemSlotBuilder> {
                                 .append("Target", eventId),
                         false);
             }
-        });
+        });*/
     }
 }

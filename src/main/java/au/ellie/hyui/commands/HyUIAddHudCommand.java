@@ -70,7 +70,7 @@ public class HyUIAddHudCommand extends AbstractAsyncCommand {
         
         if (TEST == null) {
 
-            HyUIHud hud = HudBuilder.detachedHud()
+            /*HyUIHud hud = HudBuilder.detachedHud()
                     .fromFile("Pages/replicate.ui")
                     .editElement(uiCommandBuilder -> {
                         uiCommandBuilder.set("#SecondaryTitle.Text", "Say Cheeze");
@@ -81,7 +81,7 @@ public class HyUIAddHudCommand extends AbstractAsyncCommand {
                     })
                     .show(playerRef, store);
 
-            TEST = hud;
+            TEST = hud;*/
         }
         var hud2 = HudBuilder.detachedHud()
                 .fromHtml(html)

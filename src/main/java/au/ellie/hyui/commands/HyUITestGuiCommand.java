@@ -152,10 +152,10 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
             html = """
                     <div class="page-overlay">
                         <div class="container" style="anchor-width: 800; anchor-height: 900;" id="myContainer" data-hyui-title="HyUIML Parser Test">
-                        <div style="anchor-left: 1; layout-mode: left;"><span class="item-slot" data-hyui-item-id="Tool_Pickaxe_Crude" data-hyui-show-quality-background="true"
+                        <div style="anchor-left: 1; layout-mode: left;"><span class="item-slot" id="itemslot" data-hyui-item-id="Tool_Pickaxe_Crude" data-hyui-show-quality-background="true"
                             data-hyui-show-quantity="true" style="anchor-width: 64; anchor-height: 64;"></span></div>
                         <div style="layout-mode: right;">
-                            <div class="item-grid" data-hyui-slots-per-row="6"
+                            <div class="item-grid" id="itemgrid" data-hyui-slots-per-row="6"
                                 style="anchor-width: 400; anchor-height: 400;">
                                 <div class="item-grid-slot" data-hyui-item-id="Tool_Pickaxe_Crude"></div>
                                 <div class="item-grid-slot" data-hyui-item-id="Tool_Pickaxe_Crude"></div>
@@ -250,6 +250,15 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
             AtomicInteger clicks = new AtomicInteger();
             PageBuilder builder = PageBuilder.detachedPage()
                     .fromHtml(html)
+                    .addEventListener("itemgrid", CustomUIEventBindingType.Dropped, (data, ctx) -> {
+                        HyUIPlugin.getLog().logInfo("Item dropped on grid.");
+                    })
+                    .addEventListener("itemgrid", CustomUIEventBindingType.SlotClicking, (data, ctx) -> {
+                        HyUIPlugin.getLog().logInfo("Slot clicked on grid.");
+                    })
+                    .addEventListener("itemslot", CustomUIEventBindingType.Dropped, (data, ctx) -> {
+                        HyUIPlugin.getLog().logInfo("Slot dropped.");
+                    })
                     .withLifetime(CustomPageLifetime.CanDismiss);
                 /*.addEventListener("btn1", CustomUIEventBindingType.Activating, (data, ctx) -> {
                     playerRef.sendMessage(Message.raw("Button clicked via PageBuilder ID lookup!: " +
