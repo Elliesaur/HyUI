@@ -6,6 +6,6 @@ ItemGrid #HyUIItemGrid {
           SlotSize: 64,
           SlotIconSize: 64,
           SlotSpacing: 0,
-          SlotBackground: "../Common/BlockSelectorSlotBackground.png"
+          SlotBackground: "../../Common/BlockSelectorSlotBackground.png"
         );
 }
