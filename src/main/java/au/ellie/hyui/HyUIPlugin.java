@@ -43,7 +43,7 @@ public class HyUIPlugin extends JavaPlugin {
             this.getEventRegistry().registerGlobal(PlayerReadyEvent.class, event -> {
                 instance.logInfo("Player ready event triggered for " + event.getPlayer().getDisplayName());
                 
-                var player = event.getPlayer();
+                /*var player = event.getPlayer();
                 if (player == null) return;
 
                 Ref<EntityStore> ref = player.getReference();
@@ -67,7 +67,7 @@ public class HyUIPlugin extends JavaPlugin {
                                 });
                             })
                             .show(playerRef, store);
-                });
+                });*/
 
             });
         }

@@ -166,7 +166,10 @@ public class DropdownBoxBuilder extends UIElementBuilder<DropdownBoxBuilder> {
             HyUIPlugin.getLog().logInfo("Setting Entries for " + selector);
             commands.set(selector + ".Entries", entries);
         }
-
+        if (listeners.isEmpty()) {
+            // To handle data back to the .getValue, we need to add at least one listener.
+            addEventListener(CustomUIEventBindingType.ValueChanged, (_, _) -> {});
+        }
         listeners.forEach(listener -> {
             if (listener.type() == CustomUIEventBindingType.ValueChanged) {
                 String eventId = getEffectiveId();

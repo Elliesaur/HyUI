@@ -38,6 +38,7 @@ public class NumberFieldBuilder extends UIElementBuilder<NumberFieldBuilder> {
     public NumberFieldBuilder(Theme theme) {
         super(theme, UIElements.MACRO_NUMBER_FIELD, "#HyUINumberField");
         withWrappingGroup(false);
+        this.initialValue = 0.0;
     }
 
     /**
@@ -237,7 +238,10 @@ public class NumberFieldBuilder extends UIElementBuilder<NumberFieldBuilder> {
             // Need to force anchor setting.
             commands.setObject(selector + ".Anchor", anchor.toHytaleAnchor());
         }
-
+        if (listeners.isEmpty()) {
+            // To handle data back to the .getValue, we need to add at least one listener.
+            addEventListener(CustomUIEventBindingType.ValueChanged, (_, _) -> {});
+        }
         listeners.forEach(listener -> {
             if (listener.type() == CustomUIEventBindingType.ValueChanged) {
                 String eventId = getEffectiveId();

@@ -23,29 +23,29 @@ PageBuilder.pageForPlayer(playerRef)
 
 #### Supported Tags and Mappings
 
-| HTML Tag                  | HyUI Builder | Notes                                                             |
-|---------------------------| --- |-------------------------------------------------------------------|
-| `<div>`                   | `GroupBuilder` | Use for layout and containers.                                    |
-| `<div class="tab-content">` | `TabContentBuilder` | Tab content container linked to a tab ID.                      |
-| `<p>`                     | `LabelBuilder` | Standard text labels.                                             |
-| `<label>`                 | `LabelBuilder` | Similar to `<p>`, often used for form field descriptions.         |
+| HTML Tag                  | HyUI Builder | Notes                                                                                                                    |
+|---------------------------| --- |--------------------------------------------------------------------------------------------------------------------------|
+| `<div>`                   | `GroupBuilder` | Use for layout and containers.                                                                                           |
+| `<div class="tab-content">` | `TabContentBuilder` | Tab content container linked to a tab ID.                                                                                |
+| `<p>`                     | `LabelBuilder` | Standard text labels.                                                                                                    |
+| `<label>`                 | `LabelBuilder` | Similar to `<p>`, often used for form field descriptions.                                                                |
 | `<button>`                | `ButtonBuilder` | Standard buttons. Use `class="back-button"`, `class="secondary-button"`, or `class="tertiary-button"` for themed variants. |
-| `<input type="text">`     | `TextFieldBuilder` | Text input fields.                                                |
-| `<input type="password">` | `TextFieldBuilder` | Masked password input fields.                                     |
-| `<input type="number">`   | `NumberFieldBuilder` | Numeric input fields.                                             |
-| `<input type="range">`    | `SliderBuilder` | Sliders.                                                          |
-| `<input type="checkbox">` | `CheckBoxBuilder` | Toggle switches.                                                  |
-| `<input type="color">`    | `ColorPickerBuilder` | Color selectors.                                                  |
-| `<input type="reset">`    | `ButtonBuilder` | Specifically creates a `CancelTextButton`.                        |
-| `<progress>`              | `ProgressBarBuilder` | Displays a progress bar.                                          |
-| `<span class="item-icon">` | `ItemIconBuilder` | Displays an item icon. Use `data-hyui-item-id` for the item icon. |
-| `<span class="item-slot">` | `ItemSlotBuilder` | Displays a full item slot. Use `data-hyui-item-id` for the item.  |
-| `<div class="item-grid">` | `ItemGridBuilder` | Displays an item grid container.                                  |
-| `<div class="item-grid-slot">` | `ItemGridSlot` | Adds a slot entry inside an item grid.                         |
-| `<img>`                   | `ImageBuilder` | Displays an image. Use `src` for the path.                        |
-| `<select>`                | `DropdownBoxBuilder` | Dropdown selection lists. Use `<option>` children for entries.   |
-| `<sprite>`                | `SpriteBuilder` | Displays an animated sprite.                                     |
-| `<nav class="tabs">`      | `TabNavigationBuilder` | Tab navigation bar.                                      |
+| `<input type="text">`     | `TextFieldBuilder` | Text input fields. Requires a `value` to set to track values on events.                                                  |
+| `<input type="password">` | `TextFieldBuilder` | Masked password input fields. Requires a `value` to set to track values on events.                                       |
+| `<input type="number">`   | `NumberFieldBuilder` | Numeric input fields. Requires a `value` to set to track values on events.                                               |
+| `<input type="range">`    | `SliderBuilder` | Sliders. Requires a `value` to set to track values on events.                                                            |
+| `<input type="checkbox">` | `CheckBoxBuilder` | Toggle switches.                                                    |
+| `<input type="color">`    | `ColorPickerBuilder` | Color selectors.                                                                                                         |
+| `<input type="reset">`    | `ButtonBuilder` | Specifically creates a `CancelTextButton`.                                                                               |
+| `<progress>`              | `ProgressBarBuilder` | Displays a progress bar.                                                                                                 |
+| `<span class="item-icon">` | `ItemIconBuilder` | Displays an item icon. Use `data-hyui-item-id` for the item icon.                                                        |
+| `<span class="item-slot">` | `ItemSlotBuilder` | Displays a full item slot. Use `data-hyui-item-id` for the item.                                                         |
+| `<div class="item-grid">` | `ItemGridBuilder` | Displays an item grid container.                                                                                         |
+| `<div class="item-grid-slot">` | `ItemGridSlot` | Adds a slot entry inside an item grid.                                                                                   |
+| `<img>`                   | `ImageBuilder` | Displays an image. Use `src` for the path.                                                                               |
+| `<select>`                | `DropdownBoxBuilder` | Dropdown selection lists. Use `<option>` children for entries.                                                           |
+| `<sprite>`                | `SpriteBuilder` | Displays an animated sprite.                                                                                             |
+| `<nav class="tabs">`      | `TabNavigationBuilder` | Tab navigation bar.                                                                                                      |
 
 #### Attributes
 

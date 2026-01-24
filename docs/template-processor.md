@@ -25,6 +25,55 @@ Defaults and filters are supported:
 <p>Number: {{$playerGold|number}}</p>
 ```
 
+Dot paths are supported for nested data:
+
+```html
+<p>Tier: {{$meta.tier}}</p>
+<p>First item name: {{$items.0.name}}</p>
+```
+
+#### Each Loops
+
+Iterate over lists, arrays, or any `Iterable` with `{{#each}}`.
+Inside the loop, item fields and getters are available as variables, and the full item is available as `item`.
+
+```java
+TemplateProcessor template = new TemplateProcessor()
+    .setVariable("items", items);
+```
+
+```html
+{{#each items}}
+  <p>{{$name}} ({{$meta.tier}})</p>
+{{/each}}
+```
+
+#### If Conditionals
+
+Conditionals support truthy checks, comparisons, logical operators, and `contains`.
+
+```html
+{{#if isAdmin}}
+  <p>Admin mode</p>
+{{else}}
+  <p>Standard mode</p>
+{{/if}}
+
+{{#if power >= minPower && rarity != Common}}
+  <p>Strong item</p>
+{{/if}}
+
+{{#if meta.source contains "Craft" || rarity == Epic}}
+  <p>Highlight</p>
+{{/if}}
+```
+
+Supported operators:
+- Equality: `==`, `!=`
+- Numeric: `>`, `<`, `>=`, `<=`
+- Logical: `&&`, `||`, `!`
+- Contains: `contains` (strings, arrays, iterables, map keys)
+
 #### Components (Reusable Blocks)
 
 Register a component template and inject parameters when you use it.
@@ -47,6 +96,38 @@ TemplateProcessor template = new TemplateProcessor()
 Notes:
 - Component parameters replace `{{$paramName}}` placeholders inside the component template.
 - Component templates can include normal `{{$variable}}` placeholders, which are processed after component inclusion.
+
+#### Combining Components with Loops + Models
+
+Components can be used inside `{{#each}}` blocks, and they can also include their own `{{#if}}` blocks.
+Items in a loop expose fields and getters directly, so models are straightforward to use.
+
+```java
+TemplateProcessor template = new TemplateProcessor()
+    .setVariable("items", items)
+    .setVariable("minPower", 10)
+    .registerComponent("showcaseItem", """
+        <div style="background-color: #2a2a3e; padding: 8; anchor-height: 40; flex-direction: row;">
+            <p style="color: #ffffff; flex-weight: 2;">{{$name}} (Tier: {{$meta.tier}})</p>
+            {{#if power >= minPower && rarity != Common}}
+            <p style="color: #4CAF50; flex-weight: 1;">Power {{$power}}</p>
+            {{else}}
+            <p style="color: #888888; flex-weight: 1;">Power {{$power}}</p>
+            {{/if}}
+        </div>
+        """);
+```
+
+```html
+{{#each items}}
+  {{@showcaseItem:name={{$name}},meta.tier={{$meta.tier}},power={{$power}},rarity={{$rarity}}}}
+{{/each}}
+```
+
+Model support:
+- Public fields and getters (`getX()` / `isX()`).
+- Nested models via dot paths (`{{$meta.tier}}`).
+- Lists/arrays via index (`{{$items.0.name}}`).
 
 #### How the Showcase Uses It
 

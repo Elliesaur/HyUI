@@ -18,6 +18,7 @@ import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -73,6 +74,12 @@ public class HyUIShowcaseCommand extends AbstractAsyncCommand {
     }
 
     private TemplateProcessor createTemplateProcessor(PlayerRef playerRef) {
+        List<ShowcaseItem> items = List.of(
+                new ShowcaseItem("Crude Pickaxe", 6, "Common", new ShowcaseMeta("Starter", "Crafted")),
+                new ShowcaseItem("Stone Hammer", 12, "Rare", new ShowcaseMeta("Journeyman", "Loot")),
+                new ShowcaseItem("Voidblade", 22, "Epic", new ShowcaseMeta("Legend", "Boss Drop"))
+        );
+
         return new TemplateProcessor()
                 // Player variables
                 .setVariable("playerName", playerRef.getUsername())
@@ -81,6 +88,12 @@ public class HyUIShowcaseCommand extends AbstractAsyncCommand {
                 .setVariable("playerGold", 12500)
                 .setVariable("playerHealth", 85)
                 .setVariable("playerMaxHealth", 100)
+
+                // Showcase list data
+                .setVariable("items", items)
+                .setVariable("minPower", 10)
+                .setVariable("isAdmin", false)
+                .setVariable("showcaseTags", List.of("Legend", "Crafted", "Starter"))
 
                 // Stats for demo (Hytale-themed)
                 .setVariable("blocksPlaced", 12847)
@@ -104,6 +117,19 @@ public class HyUIShowcaseCommand extends AbstractAsyncCommand {
                 <div style="flex-direction: row; padding: 5; anchor-height: 30;">
                     <p style="color: #4CAF50; anchor-width: 20;">*</p>
                     <p style="color: #cccccc; flex-weight: 1;">{{$text}}</p>
+                </div>
+                """)
+                .registerComponent("showcaseItem", """
+                <div style="background-color: #2a2a3e; padding: 8; anchor-height: 40; flex-direction: row;">
+                    <p style="color: #ffffff; flex-weight: 2;">{{$name}} (Tier: {{$meta.tier}})</p>
+                    {{#if power >= minPower && rarity != Common}}
+                    <p style="color: #4CAF50; flex-weight: 1;">Power {{$power}}</p>
+                    {{else}}
+                    <p style="color: #888888; flex-weight: 1;">Power {{$power}}</p>
+                    {{/if}}
+                    {{#if meta.source contains "Craft" || rarity == Epic}}
+                    <p style="color: #FFD54F; flex-weight: 1;">Highlight</p>
+                    {{/if}}
                 </div>
                 """);
     }
@@ -137,6 +163,24 @@ public class HyUIShowcaseCommand extends AbstractAsyncCommand {
                                 <p style="color: #ffffff; font-size: 16;">Upper: {{$playerName|upper}}</p>
                                 <p style="color: #ffffff; font-size: 16;">Lower: {{$playerName|lower}}</p>
                                 <p style="color: #ffffff; font-size: 16;">Default: {{$missing|Not Set}}</p>
+                            </div>
+                        </div>
+
+                        <!-- Section 2: Loops + Conditionals -->
+                        <p style="color: #4CAF50; font-size: 20; font-weight: bold; anchor-height: 30;">2. Loops + Conditionals</p>
+                        <div style="flex-direction: column; anchor-height: 200;">
+                            {{#each items}}
+                            {{@showcaseItem:name={{$name}},meta.tier={{$meta.tier}},power={{$power}},rarity={{$rarity}},meta.source={{$meta.source}}}}
+                            {{/each}}
+                            <div style="background-color: #2a2a3e; padding: 8; anchor-height: 40; flex-direction: row;">
+                                {{#if !isAdmin}}
+                                <p style="color: #888888; flex-weight: 1;">Admin mode disabled</p>
+                                {{else}}
+                                <p style="color: #4CAF50; flex-weight: 1;">Admin mode enabled</p>
+                                {{/if}}
+                                {{#if showcaseTags contains "Legend"}}
+                                <p style="color: #FFD54F; flex-weight: 1;">Legend tag active</p>
+                                {{/if}}
                             </div>
                         </div>
                     </div>
@@ -237,5 +281,53 @@ public class HyUIShowcaseCommand extends AbstractAsyncCommand {
                 </div>
             </div>
             """;
+    }
+
+    private static final class ShowcaseItem {
+        private final String name;
+        private final int power;
+        private final String rarity;
+        private final ShowcaseMeta meta;
+
+        private ShowcaseItem(String name, int power, String rarity, ShowcaseMeta meta) {
+            this.name = name;
+            this.power = power;
+            this.rarity = rarity;
+            this.meta = meta;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public int getPower() {
+            return power;
+        }
+
+        public String getRarity() {
+            return rarity;
+        }
+
+        public ShowcaseMeta getMeta() {
+            return meta;
+        }
+    }
+
+    private static final class ShowcaseMeta {
+        private final String tier;
+        private final String source;
+
+        private ShowcaseMeta(String tier, String source) {
+            this.tier = tier;
+            this.source = source;
+        }
+
+        public String getTier() {
+            return tier;
+        }
+
+        public String getSource() {
+            return source;
+        }
     }
 }

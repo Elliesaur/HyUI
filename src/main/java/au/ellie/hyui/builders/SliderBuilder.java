@@ -141,7 +141,10 @@ public class SliderBuilder extends UIElementBuilder<SliderBuilder> {
             HyUIPlugin.getLog().logInfo("Setting Style for Slider to DefaultSliderStyle " + selector);
             commands.set(selector + ".Style", Value.ref("Common.ui", "DefaultSliderStyle"));
         }
-        
+        if (listeners.isEmpty()) {
+            // To handle data back to the .getValue, we need to add at least one listener.
+            addEventListener(CustomUIEventBindingType.ValueChanged, (_, _) -> {});
+        }
         listeners.forEach(listener -> {
             if (listener.type() == CustomUIEventBindingType.ValueChanged) {
                 String eventId = getEffectiveId();

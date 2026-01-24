@@ -31,6 +31,7 @@ public class ColorPickerBuilder extends UIElementBuilder<ColorPickerBuilder> {
         super(UIElements.COLOR_PICKER, "#HyUIColorPicker");
         withWrappingGroup(true);
         withUiFile("Pages/Elements/ColorPicker.ui");
+        this.initialValue = "";
     }
 
     /**
@@ -103,7 +104,10 @@ public class ColorPickerBuilder extends UIElementBuilder<ColorPickerBuilder> {
             HyUIPlugin.getLog().logInfo("Setting Style: " + style + " for " + selector);
             commands.set(selector + ".Style", style);
         }
-
+        if (listeners.isEmpty()) {
+            // To handle data back to the .getValue, we need to add at least one listener.
+            addEventListener(CustomUIEventBindingType.ValueChanged, (_, _) -> {});
+        }
         listeners.forEach(listener -> {
             if (listener.type() == CustomUIEventBindingType.ValueChanged) {
                 String eventId = getEffectiveId();

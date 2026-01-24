@@ -28,6 +28,7 @@ public class CheckBoxBuilder extends UIElementBuilder<CheckBoxBuilder> {
         super(UIElements.CHECK_BOX_WITH_LABEL, "#HyUICheckBox");
         withWrappingGroup(true);
         withUiFile("Pages/Elements/CheckBox.ui");
+        this.initialValue = false;
     }
 
     /**
@@ -127,7 +128,10 @@ public class CheckBoxBuilder extends UIElementBuilder<CheckBoxBuilder> {
             HyUIPlugin.getLog().logInfo("Setting Style: " + style + " for " + selector);
             commands.set(selector + ".Style", style);
         }
-
+        if (listeners.isEmpty()) {
+            // To handle data back to the .getValue, we need to add at least one listener.
+            addEventListener(CustomUIEventBindingType.ValueChanged, (_, _) -> {});
+        }
         listeners.forEach(listener -> {
             if (listener.type() == CustomUIEventBindingType.ValueChanged) {
                 String eventId = getEffectiveId();

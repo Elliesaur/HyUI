@@ -30,6 +30,7 @@ public class ProgressBarBuilder extends UIElementBuilder<ProgressBarBuilder> imp
         super(UIElements.PROGRESS_BAR, "#HyUIProgressBar");
         withUiFile("Pages/Elements/ProgressBar.ui");
         withWrappingGroup(true);
+        this.initialValue = 0.0f;
     }
 
     public ProgressBarBuilder(Theme theme) {

@@ -42,6 +42,12 @@ public abstract class HyUInterface implements UIContext {
 
     @Override
     public Optional<Object> getValue(String id) {
+        if (HyUIPluginLogger.LOGGING_ENABLED) {
+            HyUIPlugin.getLog().logInfo("Retrieving value for element: " + id);
+            for (var s : elementValues.entrySet()) {
+                HyUIPlugin.getLog().logInfo("Element: " + s.getKey() + ", Value: " + s.getValue());
+            }
+        }
         return Optional.ofNullable(elementValues.get(id));
     }
 
