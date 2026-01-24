@@ -25,8 +25,9 @@ public class ButtonHandler implements TagHandler {
         String tag = element.tagName().toLowerCase();
         ButtonBuilder builder;
 
-        boolean hasItemIcon = element.select("> span.item-icon").size() > 0;
-        boolean isRaw = hasItemIcon;
+        boolean hasItemIcon = !element.select("> span.item-icon").isEmpty();
+        boolean hasItemSlot = !element.select("> span.item-slot").isEmpty();
+        boolean isRaw = hasItemIcon || hasItemSlot;
 
         if (tag.equals("input") && element.attr("type").equalsIgnoreCase("reset")) {
             builder = ButtonBuilder.cancelTextButton();
@@ -36,7 +37,7 @@ public class ButtonHandler implements TagHandler {
             builder = ButtonBuilder.secondaryTextButton();
         } else if (tag.equals("button") && element.hasClass("tertiary-button")) {
             builder = ButtonBuilder.tertiaryTextButton();
-        } else if (hasItemIcon) {
+        } else if (isRaw) {
             builder = ButtonBuilder.rawButton();
         } else {
             builder = ButtonBuilder.textButton();
