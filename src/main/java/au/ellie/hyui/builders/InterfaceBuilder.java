@@ -5,9 +5,9 @@ import au.ellie.hyui.assets.DynamicImageAsset;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.html.HtmlParser;
 import au.ellie.hyui.html.TemplateProcessor;
+import au.ellie.hyui.utils.HyvatarUtils;
 import au.ellie.hyui.utils.PngDownloadUtils;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
-import com.hypixel.hytale.server.core.asset.common.CommonAssetRegistry;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 
@@ -219,12 +219,13 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
         if (pRef == null || !pRef.isValid()) {
             return;
         }
-        List<DynamicImageBuilder> dynamicImages = collectDynamicImages();
-        for (DynamicImageBuilder dynamicImage : dynamicImages) {
-            if (dynamicImage.isImagePathAssigned()) {
-                continue;
+        for (UIElementBuilder<?> element : elementRegistry.values()) {
+            if (element instanceof DynamicImageBuilder dImg) {
+                if (dImg.isImagePathAssigned()) {
+                    continue;
+                }
+                sendDynamicImage(pRef, dImg);
             }
-            sendDynamicImage(pRef, dynamicImage);
         }
     }
 
@@ -238,7 +239,18 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
         }
         try {
             HyUIPlugin.getLog().logInfo("Preparing dynamic image from URL: " + url);
-            byte[] imageBytes = PngDownloadUtils.downloadPng(url);
+            byte[] imageBytes;
+            if (dynamicImage instanceof HyvatarImageBuilder hyvatar && !hyvatar.hasCustomImageUrl()) {
+                imageBytes = HyvatarUtils.downloadRenderPng(
+                        hyvatar.getUsername(),
+                        hyvatar.getRenderType(),
+                        hyvatar.getSize(),
+                        hyvatar.getRotate(),
+                        hyvatar.getCape()
+                );
+            } else {
+                imageBytes = PngDownloadUtils.downloadPng(url);
+            }
 
             DynamicImageAsset.sendToPlayer(pRef.getPacketHandler(), DynamicImageAsset.empty(DynamicImageAsset.peekNextSlotIndex()));
 
@@ -256,16 +268,6 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
             Thread.currentThread().interrupt();
             HyUIPlugin.getLog().logInfo("Dynamic image download interrupted: " + e.getMessage());
         }
-    }
-
-    private List<DynamicImageBuilder> collectDynamicImages() {
-        List<DynamicImageBuilder> dynamicImages = new ArrayList<>();
-        for (UIElementBuilder<?> element : elementRegistry.values()) {
-            if (element instanceof DynamicImageBuilder dynamicImage) {
-                dynamicImages.add(dynamicImage);
-            }
-        }
-        return dynamicImages;
     }
 
     /**

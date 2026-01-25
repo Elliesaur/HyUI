@@ -34,6 +34,7 @@ public interface BackgroundSupported<T extends BackgroundSupported<T>> {
         HyUIPatchStyle background = getBackground();
         if (background != null && selector != null) {
             HyUIPlugin.getLog().logInfo("Setting Background for " + selector);
+            HyUIPlugin.getLog().logInfo("Setting Background for " + background.getTexturePath());
             
             commands.setObject(selector + ".Background", background.getHytalePatchStyle());
         }

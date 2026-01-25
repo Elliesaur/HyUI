@@ -23,30 +23,33 @@ PageBuilder.pageForPlayer(playerRef)
 
 #### Supported Tags and Mappings
 
-| HTML Tag                  | HyUI Builder | Notes                                                                                                                    |
-|---------------------------| --- |--------------------------------------------------------------------------------------------------------------------------|
-| `<div>`                   | `GroupBuilder` | Use for layout and containers.                                                                                           |
-| `<div class="tab-content">` | `TabContentBuilder` | Tab content container linked to a tab ID.                                                                                |
-| `<p>`                     | `LabelBuilder` | Standard text labels.                                                                                                    |
-| `<label>`                 | `LabelBuilder` | Similar to `<p>`, often used for form field descriptions.                                                                |
-| `<button>`                | `ButtonBuilder` | Standard buttons. Use `class="back-button"`, `class="secondary-button"`, or `class="tertiary-button"` for themed variants. |
-| `<input type="text">`     | `TextFieldBuilder` | Text input fields. Requires a `value` to set to track values on events.                                                  |
-| `<input type="password">` | `TextFieldBuilder` | Masked password input fields. Requires a `value` to set to track values on events.                                       |
-| `<input type="number">`   | `NumberFieldBuilder` | Numeric input fields. Requires a `value` to set to track values on events.                                               |
-| `<input type="range">`    | `SliderBuilder` | Sliders. Requires a `value` to set to track values on events.                                                            |
-| `<input type="checkbox">` | `CheckBoxBuilder` | Toggle switches.                                                    |
-| `<input type="color">`    | `ColorPickerBuilder` | Color selectors.                                                                                                         |
-| `<input type="reset">`    | `ButtonBuilder` | Specifically creates a `CancelTextButton`.                                                                               |
-| `<progress>`              | `ProgressBarBuilder` | Displays a progress bar. Add `class="circular-progress"` to render a CircularProgressBar.                                |
-| `<span class="item-icon">` | `ItemIconBuilder` | Displays an item icon. Use `data-hyui-item-id` for the item icon.                                                        |
-| `<span class="item-slot">` | `ItemSlotBuilder` | Displays a full item slot. Use `data-hyui-item-id` for the item.                                                         |
-| `<div class="item-grid">` | `ItemGridBuilder` | Displays an item grid container.                                                                                         |
-| `<div class="item-grid-slot">` | `ItemGridSlot` | Adds a slot entry inside an item grid.                                                                                   |
-| `<img>`                   | `ImageBuilder` | Displays an image. Use `src` for the path.                                                                               |
-| `<img class="dynamic-image">` | `DynamicImageBuilder` | Downloads and streams a PNG at runtime (see Dynamic Images).                                                      |
-| `<select>`                | `DropdownBoxBuilder` | Dropdown selection lists. Use `<option>` children for entries.                                                           |
-| `<sprite>`                | `SpriteBuilder` | Displays an animated sprite.                                                                                             |
-| `<nav class="tabs">`      | `TabNavigationBuilder` | Tab navigation bar.                                                                                                      |
+| HTML Tag                  | HyUI Builder | Notes                                                                                                                                                                                         |
+|---------------------------| --- |-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `<div>`                   | `GroupBuilder` | Use for layout and containers.                                                                                                                                                                |
+| `<div class="tab-content">` | `TabContentBuilder` | Tab content container linked to a tab ID.                                                                                                                                                     |
+| `<div class="decorated-container">` | `ContainerBuilder` | Uses the decorated container UI file for a styled frame.                                                                                                                                      |
+| `<div class="container">` | `ContainerBuilder` | Uses the container UI file for a frame with minimal style.                                                                                                                                    |
+| `<p>`                     | `LabelBuilder` | Standard text labels.                                                                                                                                                                         |
+| `<label>`                 | `LabelBuilder` | Similar to `<p>`, often used for form field descriptions.                                                                                                                                     |
+| `<button>`                | `ButtonBuilder` | Standard buttons. Use `class="back-button"`, `class="secondary-button"`, `class="small-secondary-button"`, `class="small-tertiary-button"`, or `class="tertiary-button"` for themed variants. |
+| `<input type="text">`     | `TextFieldBuilder` | Text input fields. Requires a `value` to set to track values on events.                                                                                                                       |
+| `<input type="password">` | `TextFieldBuilder` | Masked password input fields. Requires a `value` to set to track values on events.                                                                                                            |
+| `<input type="number">`   | `NumberFieldBuilder` | Numeric input fields. Requires a `value` to set to track values on events.                                                                                                                    |
+| `<input type="range">`    | `SliderBuilder` | Sliders. Requires a `value` to set to track values on events.                                                                                                                                 |
+| `<input type="checkbox">` | `CheckBoxBuilder` | Toggle switches.                                                                                                                                                                              |
+| `<input type="color">`    | `ColorPickerBuilder` | Color selectors.                                                                                                                                                                              |
+| `<input type="reset">`    | `ButtonBuilder` | Specifically creates a `CancelTextButton`.                                                                                                                                                    |
+| `<progress>`              | `ProgressBarBuilder` | Displays a progress bar. Add `class="circular-progress"` to render a CircularProgressBar.                                                                                                     |
+| `<span class="item-icon">` | `ItemIconBuilder` | Displays an item icon. Use `data-hyui-item-id` for the item icon.                                                                                                                             |
+| `<span class="item-slot">` | `ItemSlotBuilder` | Displays a full item slot. Use `data-hyui-item-id` for the item.                                                                                                                              |
+| `<div class="item-grid">` | `ItemGridBuilder` | Displays an item grid container.                                                                                                                                                              |
+| `<div class="item-grid-slot">` | `ItemGridSlot` | Adds a slot entry inside an item grid.                                                                                                                                                        |
+| `<img>`                   | `ImageBuilder` | Displays an image. Use `src` for the path.                                                                                                                                                    |
+| `<img class="dynamic-image">` | `DynamicImageBuilder` | Downloads and streams a PNG at runtime (see Dynamic Images).                                                                                                                                  |
+| `<hyvatar>`               | `HyvatarImageBuilder` | Renders a Hyvatar avatar (head/full/cape) as a dynamic image.                                                                                                                                 |
+| `<select>`                | `DropdownBoxBuilder` | Dropdown selection lists. Use `<option>` children for entries.                                                                                                                                |
+| `<sprite>`                | `SpriteBuilder` | Displays an animated sprite.                                                                                                                                                                  |
+| `<nav class="tabs">`      | `TabNavigationBuilder` | Tab navigation bar.                                                                                                                                                                           |
 
 #### Attributes
 
@@ -179,12 +182,32 @@ Notes:
 *   Dynamic images are limited to 10 per page.
 *   Downloaded PNGs are cached for 15 seconds.
 
+#### Hyvatar Images
+
+Use `<hyvatar>` to render Hyvatar avatars as dynamic images:
+
+```html
+<hyvatar username="Elyra" render="full" size="256" rotate="45"></hyvatar>
+```
+
+Supported attributes:
+*   `username`: The Hyvatar username to render.
+*   `render`: `head`, `full`, or `cape`.
+*   `size`: Image size (64-2048).
+*   `rotate`: Rotation angle in degrees (0-360).
+*   `cape`: Optional cape override for `render="cape"`.
+
+Notes:
+*   Hyvatar images follow the same dynamic image slot limits and caching rules.
+*   Thanks to Hyvatar.io for their fantastic work on the rendering service.
+
 #### Special Layout Classes
 
 HYUIML provides several special classes for `<div>` elements that map to Hytale's common layout macros:
 
 *   **`.page-overlay`**: Wraps its children in a Hytale `PageOverlay`. This is typically used as the root element of your UI to ensure it fills the screen and handles background dimming.
 *   **`.container`**: Maps to a Hytale `Container`.
+*   **`.decorated-container`**: Uses the decorated container UI file for a framed container style.
     *   Use the `data-hyui-title` attribute on this `div` to set the container's header title.
     *   **`.container-title`**: A special child `div` of `.container`. Any elements inside this will be placed in the container's **#Title** area (alongside the main title).
     *   **`.container-contents`**: A special child `div` of `.container`. Any elements inside this will be placed in the container's main **#Content** area.

@@ -89,7 +89,7 @@ public interface TagHandler {
             }
         }
 
-        if (element.tagName().equalsIgnoreCase("img")) {
+        if (element.tagName().equalsIgnoreCase("img") || element.tagName().equalsIgnoreCase("hyvatar")) {
             HyUIAnchor anchor = builder.getAnchor();
             if (anchor == null) {
                 anchor = new HyUIAnchor();

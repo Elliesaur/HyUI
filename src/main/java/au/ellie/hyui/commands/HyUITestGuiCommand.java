@@ -159,15 +159,17 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                                     data-hyui-show-quantity="true" style="anchor-width: 64; anchor-height: 64;">
                                     </span>
                                 </button>
-                                
                                <div style="background-color: #2a2a3e; padding: 10; anchor-width: 140; align-items: center; justify-content: center;">
-                                        <img class="dynamic-image" src="https://hyvatar.io/render/Elyra" style="anchor-width: 120; anchor-height: 120;" />
+                                   <hyvatar username="Elyra" render="full" size="256" rotate="45"></hyvatar>
                                </div>
                                 <input type="number" value="42" min="-5" max="50" step="1.5" style="padding: 10; anchor-width: 50;"/>
                                 <p>Please enter your desired Buy It Now price:</p>
                                 <p style="color: #ff0000; visibility: hidden;" id="invalid-price">Price must be a positive number.</p>
                                 <input id="price-input" type="number"/>
-                                <button id="confirm-button">Confirm</button>
+                                <button id="confirm-button" class="secondary-button" >Confirm</button>
+                                <button id="confirm-button" class="small-secondary-button" >Confirm</button>
+                                <button id="confirm-button" class="small-tertiary-button" >Confirm</button>
+                                <button id="confirm-button" class="tertiary-button" >Confirm</button>
                             </div>
                         </div>
                         <div style="layout-mode: right;">

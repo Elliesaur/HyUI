@@ -24,11 +24,12 @@ When using HYUIML for a page, it is recommended to use the standard structural c
 - `.page-overlay`: Ensures the UI fills the screen and handles background dimming.
 - `.container`: Provides the standard Hytale window frame.
 - `.container-contents`: The main area for your content.
+- `.decorated-container`: Uses the decorated container UI file for a framed variant of the standard container.
 
 ```java
 String html = """
     <div class="page-overlay">
-        <div class="container" data-hyui-title="My Custom Page">
+        <div class="decorated-container" data-hyui-title="My Custom Page">
             <div class="container-contents">
                 <p>Welcome to my custom page built with HYUIML!</p>
                 <button id="hi-btn">Say Hi</button>

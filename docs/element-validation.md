@@ -107,7 +107,7 @@ We do not validate possible client-side elements, properties, or styles.
 
 - `Text` (String, not `@Text`)
 - `Disabled` (Boolean)
-- Style: `PaddingLeft` (Integer), `PaddingRight` (Integer), `PaddingTop` (Integer), `PaddingBottom` (Integer), `FontSize` (Integer), `RenderBold` (Boolean), `RenderItalics` (Boolean), `RenderUppercase` (Boolean), `FontName` (String: Default or Secondary), `Wrap` (Boolean), `LetterSpacing` (Integer), `OutlineColor` (Color)
+- Style: `PaddingLeft` (Integer), `PaddingRight` (Integer), `PaddingTop` (Integer), `PaddingBottom` (Integer)
   - A raw `Button` may use `TextColor`.
   - Or a style reference.
 - `LayoutMode` (see Layout Modes)

@@ -234,6 +234,31 @@ Notes:
 *   Dynamic images are limited to 10 per page.
 *   Downloaded PNGs are cached for 15 seconds.
 
+### Hyvatar Image Example
+
+Hyvatar images use the Hyvatar.io rendering service to stream player renders as dynamic images.
+
+#### HYUIML Example
+
+```html
+<hyvatar id="player-head" username="PlayerName" render="head" size="256" rotate="45"></hyvatar>
+```
+
+#### Java Builder Example
+
+```java
+HyvatarImageBuilder.hyvatar()
+    .withId("player-head")
+    .withUsername("PlayerName")
+    .withRenderType(HyvatarUtils.RenderType.HEAD)
+    .withSize(256)
+    .withRotate(45);
+```
+
+Notes:
+*   Hyvatar images are dynamic images and follow the same slot limits and caching rules.
+*   Thanks to Hyvatar.io for their fantastic work on the rendering service.
+
 ### Circular Progress Bar Example
 
 A `CircularProgressBar` uses a mask texture and color to render a radial fill.

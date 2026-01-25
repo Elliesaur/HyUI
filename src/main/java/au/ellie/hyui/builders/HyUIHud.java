@@ -324,4 +324,6 @@ public class HyUIHud extends CustomUIHud implements UIContext {
             updatePage(true);
         });
     }
+    
+    // TODO: HUD release images.
 }

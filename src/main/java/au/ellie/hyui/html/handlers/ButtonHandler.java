@@ -35,8 +35,12 @@ public class ButtonHandler implements TagHandler {
             builder = ButtonBuilder.backButton();
         } else if (tag.equals("button") && element.hasClass("secondary-button")) {
             builder = ButtonBuilder.secondaryTextButton();
+        } else if (tag.equals("button") && element.hasClass("small-secondary-button")) {
+            builder = ButtonBuilder.smallSecondaryTextButton();
         } else if (tag.equals("button") && element.hasClass("tertiary-button")) {
             builder = ButtonBuilder.tertiaryTextButton();
+        } else if (tag.equals("button") && element.hasClass("small-tertiary-button")) {
+            builder = ButtonBuilder.smallTertiaryTextButton();
         } else if (isRaw) {
             builder = ButtonBuilder.rawButton();
         } else {

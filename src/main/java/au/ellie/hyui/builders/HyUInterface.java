@@ -243,4 +243,17 @@ public abstract class HyUInterface implements UIContext {
         this.elementValues = elementValues;
     }
 
+    public void releaseDynamicImages() {
+        getElements().forEach(this::releaseDynamicImagesRecursive);
+    }
+
+    private void releaseDynamicImagesRecursive(UIElementBuilder<?> element) {
+        if (element instanceof DynamicImageBuilder) {
+            HyUIPlugin.getLog().logInfo("Releasing image: " + element.getEffectiveId());
+            ((DynamicImageBuilder) element).invalidateImage();
+        }
+        for (UIElementBuilder<?> child : element.children) {
+            releaseDynamicImagesRecursive(child);
+        }
+    }
 }

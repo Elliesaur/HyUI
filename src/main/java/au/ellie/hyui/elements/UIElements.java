@@ -22,7 +22,9 @@ public class UIElements {
     public static final String CONTAINER = "Container";
     public static final String TEXT_BUTTON = "TextButton";
     public static final String SECONDARY_TEXT_BUTTON = "SecondaryTextButton";
+    public static final String SMALL_SECONDARY_TEXT_BUTTON = "SmallSecondaryTextButton";
     public static final String TERTIARY_TEXT_BUTTON = "TertiaryTextButton";
+    public static final String SMALL_TERTIARY_TEXT_BUTTON = "SmallTertiaryTextButton";
     public static final String CANCEL_TEXT_BUTTON = "CancelTextButton";
     public static final String CHECK_BOX_WITH_LABEL = "CheckBoxWithLabel";
     public static final String MACRO_TEXT_FIELD = "TextField";
