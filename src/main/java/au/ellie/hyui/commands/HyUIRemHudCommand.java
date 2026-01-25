@@ -1,6 +1,7 @@
 package au.ellie.hyui.commands;
 
 import au.ellie.hyui.builders.HyUIHud;
+import au.ellie.hyui.HyUIPluginLogger;
 import com.hypixel.hytale.protocol.GameMode;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
@@ -14,20 +15,26 @@ public class HyUIRemHudCommand extends AbstractAsyncCommand {
 
     public HyUIRemHudCommand() {
         super("rem", "Removes the last added HTML HUD");
+        if (!HyUIPluginLogger.LOGGING_ENABLED) {
+            return;
+        }
         this.setPermissionGroup(GameMode.Adventure);
     }
 
     @NonNullDecl
     @Override
     protected CompletableFuture<Void> executeAsync(CommandContext commandContext) {
+        if (!HyUIPluginLogger.LOGGING_ENABLED) {
+            return CompletableFuture.completedFuture(null);
+        }
         if (commandContext.sender() instanceof Player) {
             HyUIAddHudCommand.TEST.remove();
-            
+
             if (HyUIAddHudCommand.HUD_INSTANCES.isEmpty()) {
                 commandContext.sendMessage(Message.raw("No HUDs to remove!"));
                 return CompletableFuture.completedFuture(null);
             }
-            
+
             HyUIHud lastHud = HyUIAddHudCommand.HUD_INSTANCES.remove(HyUIAddHudCommand.HUD_INSTANCES.size() - 1);
             lastHud.remove();
             commandContext.sendMessage(Message.raw("Removed last HUD."));

@@ -1,5 +1,13 @@
 ### HyUI Changelog
 
+#### 0.5.3 - 25 Jan 2026
+- Add decorated container.
+- Add a per-player image limit of 10.
+- Add Hyvatar.io component.
+- Add small secondary and tertiary buttons.
+- Fix text alignment issues.
+- Remove support for font size on buttons (client crash).
+
 #### 0.5.2 - 24 Jan 2026
 - Add access to custom styles from HYUIML.
 - Add dynamic images from remote sources.

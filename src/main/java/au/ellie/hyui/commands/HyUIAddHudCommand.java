@@ -3,6 +3,7 @@ package au.ellie.hyui.commands;
 import au.ellie.hyui.builders.HudBuilder;
 import au.ellie.hyui.builders.HyUIHud;
 import au.ellie.hyui.builders.LabelBuilder;
+import au.ellie.hyui.HyUIPluginLogger;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -26,15 +27,21 @@ public class HyUIAddHudCommand extends AbstractAsyncCommand {
     public static final List<HyUIHud> HUD_INSTANCES = new ArrayList<>();
 
     public static HyUIHud TEST;
-    
+
     public HyUIAddHudCommand() {
         super("add", "Adds a new HTML HUD");
+        if (!HyUIPluginLogger.LOGGING_ENABLED) {
+            return;
+        }
         this.setPermissionGroup(GameMode.Adventure);
     }
 
     @NonNullDecl
     @Override
     protected CompletableFuture<Void> executeAsync(CommandContext commandContext) {
+        if (!HyUIPluginLogger.LOGGING_ENABLED) {
+            return CompletableFuture.completedFuture(null);
+        }
         var sender = commandContext.sender();
         if (sender instanceof Player player) {
             Ref<EntityStore> ref = player.getReference();
@@ -57,6 +64,9 @@ public class HyUIAddHudCommand extends AbstractAsyncCommand {
     }
 
     private void addHud(PlayerRef playerRef, Store<EntityStore> store) {
+        if (!HyUIPluginLogger.LOGGING_ENABLED) {
+            return;
+        }
         String html = """
             <div id="Test" style=" background-color: #000000; anchor-width: 280; anchor-height: 240; anchor-right: 1; anchor-top: 150">
                 <div style="layout-mode: top">
@@ -67,7 +77,7 @@ public class HyUIAddHudCommand extends AbstractAsyncCommand {
                 </div>
             </div>
             """;
-        
+
         if (TEST == null) {
 
             /*HyUIHud hud = HudBuilder.detachedHud()
