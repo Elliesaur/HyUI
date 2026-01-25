@@ -35,15 +35,6 @@ public interface BackgroundSupported<T extends BackgroundSupported<T>> {
         if (background != null && selector != null) {
             HyUIPlugin.getLog().logInfo("Setting Background for " + selector);
             
-            // If the background only has color and that color has opacity (X.X) at end, 
-            // we already applied it inline in UIElementBuilder.
-            boolean hasOpacity = background.getColor() != null && background.getColor().contains("(");
-            boolean hasTexture = background.getTexturePath() != null;
-            
-            if (hasOpacity && !hasTexture) {
-                // Already handled inline
-                return;
-            }
             commands.setObject(selector + ".Background", background.getHytalePatchStyle());
         }
     }

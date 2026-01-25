@@ -1,0 +1,16 @@
+$C = "../../Common.ui";
+$C.@DecoratedContainer #HyUIContainer {
+    Anchor: (Width: 600, Height: 260);
+
+    #Title {
+      Group {
+        $C.@Title #HyUIContainerTitle {
+          @Text = "HyUI Container";
+        }
+      }
+    }
+
+    #Content {
+      LayoutMode: Top;
+    }
+}

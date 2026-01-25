@@ -59,8 +59,6 @@ We do not validate possible client-side elements, properties, or styles.
 * Height
 * MinWidth
 * MaxWidth
-* MinHeight
-* MaxHeight
 * Full
 * Horizontal
 * Vertical

@@ -151,7 +151,7 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                     """;
             html = """
                     <div class="page-overlay">
-                        <div class="container" style="anchor-width: 800; anchor-height: 900;" id="myContainer" data-hyui-title="HyUIML Parser Test">
+                        <div class="decorated-container" style="anchor-width: 800; anchor-height: 900;" id="myContainer" data-hyui-title="HyUIML Parser Test">
                         <div style="anchor-left: 1; layout-mode: left;">
                             <div style="layout-mode: top">
                                 <button id="test">

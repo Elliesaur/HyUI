@@ -1,7 +1,6 @@
 package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
-import au.ellie.hyui.elements.BackgroundSupported;
 import au.ellie.hyui.theme.Theme;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventListener;
@@ -356,14 +355,6 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
             StringBuilder inlineMarkup = new StringBuilder();
             inlineMarkup.append("Group #").append(wrappingGroupId).append(" { ");
             
-            // Handle background with opacity for the wrapping group
-            if (this instanceof BackgroundSupported<?> bgSupported) {
-                HyUIPatchStyle bg = bgSupported.getBackground();
-                if (bg != null && bg.getTexturePath() == null && bg.getColor() != null && bg.getColor().contains("(")) {
-                    inlineMarkup.append("Background: ").append(bg.getColor()).append("; ");
-                }
-            }
-            
             if (padding != null) {
                 StringBuilder paddingMarkup = new StringBuilder();
                 if (padding.getLeft() != null) paddingMarkup.append("Left: ").append(padding.getLeft());
@@ -542,13 +533,6 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
         }
         
         sb.append(" {");
-        // Handle background with opacity for the element itself if not wrapped
-        if (!wrapInGroup && this instanceof au.ellie.hyui.elements.BackgroundSupported<?> bgSupported) {
-            au.ellie.hyui.builders.HyUIPatchStyle bg = bgSupported.getBackground();
-            if (bg != null && bg.getTexturePath() == null && bg.getColor() != null && bg.getColor().contains("(")) {
-                sb.append(" Background: ").append(bg.getColor()).append("; ");
-            }
-        }
         sb.append("}");
         
         return sb.toString();

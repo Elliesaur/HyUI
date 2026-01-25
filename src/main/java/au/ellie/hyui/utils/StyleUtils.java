@@ -98,15 +98,20 @@ public final class StyleUtils {
                 String opacityText = value.substring(opacityIndex + 1, value.length() - 1);
                 try {
                     double opacity = Double.parseDouble(opacityText);
-                    if (opacity < 1.0) {
-                        return hex + "(" + opacity + ")";
+                    String normalizedHex = normalizeHexColor(hex);
+                    if (normalizedHex == null) {
+                        return value;
                     }
-                    return hex;
+                    if (opacity < 1.0) {
+                        return applyHexOpacity(normalizedHex, opacity);
+                    }
+                    return normalizedHex;
                 } catch (NumberFormatException ignored) {
                     return value;
                 }
             }
-            return value;
+            String normalizedHex = normalizeHexColor(value);
+            return normalizedHex != null ? normalizedHex : value;
         }
         if (value.startsWith("rgb")) {
             String channelText = value.replace("rgba(", "")
@@ -122,7 +127,7 @@ public final class StyleUtils {
                     if (parts.length >= 4) {
                         Double opacity = parseOpacity(parts[3]);
                         if (opacity != null && opacity < 1.0) {
-                            return hex + "(" + opacity + ")";
+                            return applyHexOpacity(hex, opacity);
                         }
                     }
                     return hex;
@@ -130,6 +135,40 @@ public final class StyleUtils {
             }
         }
         return value;
+    }
+
+    private static String normalizeHexColor(String value) {
+        if (value == null || !value.startsWith("#")) {
+            return null;
+        }
+        String hex = value.substring(1).trim();
+        if (hex.length() == 3) {
+            String expanded = "" + hex.charAt(0) + hex.charAt(0)
+                    + hex.charAt(1) + hex.charAt(1)
+                    + hex.charAt(2) + hex.charAt(2);
+            return "#" + expanded.toLowerCase();
+        }
+        if (hex.length() == 4) {
+            String expanded = "" + hex.charAt(0) + hex.charAt(0)
+                    + hex.charAt(1) + hex.charAt(1)
+                    + hex.charAt(2) + hex.charAt(2)
+                    + hex.charAt(3) + hex.charAt(3);
+            return "#" + expanded.toLowerCase();
+        }
+        if (hex.length() == 6 || hex.length() == 8) {
+            return "#" + hex.toLowerCase();
+        }
+        return null;
+    }
+
+    private static String applyHexOpacity(String hex, double opacity) {
+        String normalized = normalizeHexColor(hex);
+        if (normalized == null) {
+            return hex;
+        }
+        String rgb = normalized.length() == 9 ? normalized.substring(0, 7) : normalized;
+        int alpha = (int) Math.round(Math.max(0.0, Math.min(1.0, opacity)) * 255.0);
+        return rgb + String.format("%02x", alpha);
     }
 
     private static Integer parseColorChannel(String value) {

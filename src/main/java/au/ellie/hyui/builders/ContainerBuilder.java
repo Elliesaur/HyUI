@@ -34,6 +34,9 @@ public class ContainerBuilder extends UIElementBuilder<ContainerBuilder> impleme
         return new ContainerBuilder();
     }
 
+    public static ContainerBuilder decoratedContainer() { 
+        return new ContainerBuilder().withUiFile("Pages/Elements/DecoratedContainer.ui"); 
+    }
     /**
      * Sets the text for the container's title.
      *

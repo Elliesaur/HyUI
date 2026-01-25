@@ -23,7 +23,7 @@ public class HyUIPatchStyle {
     /**
      * Sets the color for this PatchStyle.
      * 
-     * @param color The color (e.g., #FFFFFF(0.7)).
+     * @param color The color (e.g., #FFFFFF01). The last two characters are opacity.
      * @return This PatchStyle instance for method chaining.
      */
     public HyUIPatchStyle setColor(String color) {

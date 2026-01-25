@@ -1,6 +1,7 @@
 package au.ellie.hyui.html;
 
 import au.ellie.hyui.HyUIPlugin;
+import au.ellie.hyui.HyUIPluginLogger;
 import au.ellie.hyui.builders.*;
 import au.ellie.hyui.elements.BackgroundSupported;
 import au.ellie.hyui.elements.LayoutModeSupported;
@@ -210,7 +211,6 @@ public interface TagHandler {
                     parsed.style.setOutlineColor(value);
                     parsed.hasStyle = true;
                     break;
-                case "text-align":
                 case "layout-mode":
                 case "layout":
                     if (builder instanceof LayoutModeSupported) {
@@ -259,6 +259,7 @@ public interface TagHandler {
                     parsed.style.setVerticalAlignment(capitalize(value));
                     parsed.hasStyle = true;
                     break;
+                case "text-align":
                 case "horizontal-align":
                     parsed.style.setHorizontalAlignment(capitalize(value));
                     parsed.hasStyle = true;

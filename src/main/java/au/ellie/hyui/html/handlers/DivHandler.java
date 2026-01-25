@@ -25,8 +25,10 @@ public class DivHandler implements TagHandler {
         UIElementBuilder<?> builder;
         if (element.hasClass("page-overlay")) {
             builder = PageOverlayBuilder.pageOverlay();
-        } else if (element.hasClass("container")) {
-            builder = ContainerBuilder.container();
+        } else if (element.hasClass("container") || element.hasClass("decorated-container")) {
+            builder = element.hasClass("decorated-container") ? 
+                    ContainerBuilder.decoratedContainer() 
+                    : ContainerBuilder.container();
             if (element.hasAttr("data-hyui-title")) {
                 ((ContainerBuilder) builder).withTitleText(element.attr("data-hyui-title"));
             }
