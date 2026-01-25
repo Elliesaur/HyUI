@@ -43,7 +43,7 @@ public class HyUIPlugin extends JavaPlugin {
             this.getEventRegistry().registerGlobal(PlayerReadyEvent.class, event -> {
                 instance.logInfo("Player ready event triggered for " + event.getPlayer().getDisplayName());
                 
-                /*var player = event.getPlayer();
+                var player = event.getPlayer();
                 if (player == null) return;
 
                 Ref<EntityStore> ref = player.getReference();
@@ -54,10 +54,7 @@ public class HyUIPlugin extends JavaPlugin {
                 world.execute(() -> {
                     PlayerRef playerRef = store.getComponent(ref, PlayerRef.getComponentType());
                     
-                    String html = """
-                        <div style="layout: top;"><p id="text"></p>
-                        <img src="lizard.png" width="100" height="60"></div>
-                        """;
+                    String html = "<hyvatar username='" + player.getDisplayName() + "' size='64'></hyvatar>";
                     var hud = HudBuilder.detachedHud()
                             .fromHtml(html)
                             .withRefreshRate(1000)
@@ -67,7 +64,7 @@ public class HyUIPlugin extends JavaPlugin {
                                 });
                             })
                             .show(playerRef, store);
-                });*/
+                });
 
             });
         }
