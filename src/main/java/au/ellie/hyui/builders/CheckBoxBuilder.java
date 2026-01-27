@@ -94,6 +94,14 @@ public class CheckBoxBuilder extends UIElementBuilder<CheckBoxBuilder> {
     }
 
     @Override
+    protected void applyRuntimeValue(Object value) {
+        if (value instanceof Boolean bool) {
+            this.value = bool;
+            this.initialValue = bool;
+        }
+    }
+
+    @Override
     protected Object parseValue(String rawValue) {
         return Boolean.parseBoolean(rawValue);
     }

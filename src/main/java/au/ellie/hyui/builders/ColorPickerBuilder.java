@@ -76,6 +76,15 @@ public class ColorPickerBuilder extends UIElementBuilder<ColorPickerBuilder> {
     }
 
     @Override
+    protected void applyRuntimeValue(Object value) {
+        if (value != null) {
+            String next = String.valueOf(value);
+            this.value = next;
+            this.initialValue = next;
+        }
+    }
+
+    @Override
     protected boolean usesRefValue() {
         return true;
     }

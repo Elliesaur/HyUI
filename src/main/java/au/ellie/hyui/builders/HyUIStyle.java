@@ -27,12 +27,21 @@ public class HyUIStyle {
     private final Map<String, HyUIStyle> states = new HashMap<>();
     private final Map<String, Object> rawProperties = new HashMap<>();
 
+    /**
+     * Cleans the input string by removing units like rem, em, pt, px, and %.
+     * @param input The input string to clean
+     * @return The cleaned string
+     */
+    public static String cleanUnits(String input) {
+        return input.replaceAll("(rem|em|pt|px|%)", "").trim();
+    }
     public HyUIStyle setFontSize(float fontSize) {
         this.fontSize = fontSize;
         return this;
     }
 
     public HyUIStyle setFontSize(String fontSize) {
+        fontSize = cleanUnits(fontSize);
         ParseUtils.parseFloat(fontSize)
                 .ifPresent(v -> this.fontSize = v);
         return this;
@@ -44,6 +53,7 @@ public class HyUIStyle {
     }
 
     public HyUIStyle setRenderBold(String renderBold) {
+        renderBold = cleanUnits(renderBold);
         this.renderBold = Boolean.parseBoolean(renderBold);
         return this;
     }
@@ -54,6 +64,7 @@ public class HyUIStyle {
     }
 
     public HyUIStyle setRenderUppercase(String renderUppercase) {
+        renderUppercase = cleanUnits(renderUppercase);
         this.renderUppercase = Boolean.parseBoolean(renderUppercase);
         return this;
     }
@@ -64,11 +75,13 @@ public class HyUIStyle {
     }
 
     public HyUIStyle setRenderItalics(String renderItalics) {
+        renderItalics = cleanUnits(renderItalics);
         this.renderItalics = Boolean.parseBoolean(renderItalics);
         return this;
     }
 
     public HyUIStyle setTextColor(String textColor) {
+        textColor = cleanUnits(textColor);
         this.textColor = textColor;
         return this;
     }
@@ -80,6 +93,7 @@ public class HyUIStyle {
 
     public HyUIStyle setLetterSpacing(String letterSpacing) {
         try {
+            letterSpacing = cleanUnits(letterSpacing);
             this.letterSpacing = Integer.parseInt(letterSpacing);
         } catch (NumberFormatException ignored) {}
         return this;
@@ -91,6 +105,7 @@ public class HyUIStyle {
     }
 
     public HyUIStyle setWrap(String wrap) {
+        wrap = cleanUnits(wrap);
         this.wrap = Boolean.parseBoolean(wrap);
         return this;
     }
@@ -104,6 +119,7 @@ public class HyUIStyle {
     }
 
     public HyUIStyle setOutlineColor(String outlineColor) {
+        outlineColor = cleanUnits(outlineColor);
         this.outlineColor = outlineColor;
         return this;
     }
@@ -136,6 +152,7 @@ public class HyUIStyle {
     }
 
     public HyUIStyle setAlignment(String alignment) {
+        alignment = cleanUnits(alignment);
         ParseUtils.parseEnum(alignment, Alignment.class)
                 .ifPresent(v -> this.alignment = v);
         return this;
@@ -248,6 +265,73 @@ public class HyUIStyle {
                 ", states=" + states +
                 ", rawProperties=" + rawProperties +
                 '}';
+    }
+    
+    public String toLabelStyle() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("(");
+        boolean isFirst = true;
+        if (fontSize != null) {
+            sb.append("FontSize: ").append(fontSize.intValue());
+            isFirst = false;
+        }
+        if (fontName != null) {
+            if (!isFirst) sb.append(", ");
+            sb.append("FontName: ").append(fontName);
+            isFirst = false;
+        }
+        if (letterSpacing != null) {
+            if (!isFirst) sb.append(", ");
+            sb.append("LetterSpacing: ").append(letterSpacing);
+            isFirst = false;
+        }
+        if (textColor != null) {
+            if (!isFirst) sb.append(", ");
+            sb.append("TextColor: ").append(textColor);
+            isFirst = false;
+        }
+        if (renderBold != null) {
+            if (!isFirst) sb.append(", ");
+            sb.append("RenderBold: ").append(renderBold);
+            isFirst = false;
+        }
+        if (renderUppercase != null) {
+            if (!isFirst) sb.append(", ");
+            sb.append("RenderUppercase: ").append(renderUppercase);
+            isFirst = false;
+        }
+        if (renderItalics != null) {
+            if (!isFirst) sb.append(", ");
+            sb.append("RenderItalics: ").append(renderItalics);
+            isFirst = false;
+        }
+        if (alignment != null) {
+            if (!isFirst) sb.append(", ");
+            sb.append("Alignment: ").append(alignment.name());
+            isFirst = false;
+        }
+        if (horizontalAlignment != null) {
+            if (!isFirst) sb.append(", ");
+            sb.append("HorizontalAlignment: ").append(horizontalAlignment.name());
+            isFirst = false;
+        }
+        if (verticalAlignment != null) {
+            if (!isFirst) sb.append(", ");
+            sb.append("VerticalAlignment: ").append(verticalAlignment.name());
+            isFirst = false;
+        }
+        if (outlineColor != null) {
+            if (!isFirst) sb.append(", ");
+            sb.append("OutlineColor: ").append(outlineColor);
+            isFirst = false;
+        }
+        if (wrap != null) {
+            if (!isFirst) sb.append(", ");
+            sb.append("Wrap: ").append(wrap);
+            isFirst = false;
+        }
+        sb.append(")");
+        return sb.toString();
     }
 
     public Map<String, HyUIStyle> getStates() {

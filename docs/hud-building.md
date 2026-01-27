@@ -27,6 +27,9 @@ HudBuilder.hudForPlayer(playerRef)
 ##### 3. Manual Building
 You can manually add elements using builders.
 
+Note: `addElement(...)` only attaches elements to the root. To nest elements, use `.addChild(...)`
+or element-specific child helpers.
+
 ```java
 HudBuilder.hudForPlayer(playerRef)
     .addElement(LabelBuilder.label()

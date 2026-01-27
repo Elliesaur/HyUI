@@ -12,9 +12,10 @@ A `DropdownBox` allows players to select one or more options from a list.
 <select id="myDropdown" data-hyui-showlabel="true" value="Entry1">
     <option value="Entry1">First Entry</option>
     <option value="Entry2">Second Entry</option>
-    <option value="Entry3">Third Entry</option>
+    <option value="Entry3" selected>Third Entry</option>
 </select>
 ```
+In this example, the third entry will be selected in the UI, this is due to the `selected` attribute being specified on an entry. If there is multiple `selected` items the last will be specified as the  value. The `selected` attribute overrides the `value` attribute on the `select` element.
 
 > **Warning**: When setting the `value` attribute on a `<select>` tag, ensure it matches the `value` attribute of one of the `<option>` children.
 
@@ -117,6 +118,46 @@ ButtonBuilder.textButton()
     .open(playerRef, store);
 ```
 
+### Custom Button Example
+
+Custom buttons let you override the background and (for text buttons) label styles on a per-state basis. This is the same pattern used in the HyUI showcase.
+
+#### HYUIML Example
+
+```html
+<style>
+    @ShowcaseHoveredLabel {
+        font-weight: bold;
+        color: #ffffff;
+        font-size: 18;
+    }
+    @ShowcaseHoveredBackground {
+        background-color: #0c0c0c;
+    }
+    @ShowcaseCustomBackground {
+        background-image: url('Common/ShopTest.png');
+        background-color: rgba(255, 0, 0, 0.25);
+    }
+</style>
+
+<button class="custom-textbutton"
+        data-hyui-default-label-style="@ShowcaseHoveredLabel"
+        data-hyui-default-bg="@ShowcaseHoveredBackground"
+        style="anchor-height: 30;">Custom Text</button>
+
+<button class="custom-button"
+        data-hyui-default-bg="@ShowcaseCustomBackground"
+        style="anchor-width: 44; anchor-height: 44;"></button>
+```
+
+#### Notes
+
+- `custom-textbutton` supports per-state label styling via `data-hyui-*-label-style` and background styling via `data-hyui-*-bg`.
+- `custom-button` supports per-state background styling via `data-hyui-*-bg`.
+- Each `data-hyui-*` style can be an inline declaration (`color: #fff; font-size: 18;`) or a `@Name` definition from a `<style>` block.
+- For label styles, HyUI supports `color`, `font-size`, `font-weight`, `font-style`, `text-transform`, `letter-spacing`, `white-space`, `font-family`/`font-name`, outline color, and alignment.
+- Use `data-hyui-disabled` or `data-hyui-overscroll` to control button state/behavior.
+
 ### Sprite Example
 
 A `Sprite` displays an animated sequence of frames from a spritemap texture.
@@ -192,6 +233,9 @@ PageBuilder.pageForPlayer(playerRef)
     .open(store);
 ```
 
+Note: `addElement(...)` only attaches elements to the root. To nest elements, use `.addChild(...)`
+on the parent builder.
+
 If you have multiple tab navs, set `data-hyui-tab-nav` (HYUIML) or `withTabNavigationId(...)` (Java) on the content to target a specific navigation ID.
 
 ### Dynamic Image Example
@@ -231,8 +275,33 @@ builder.addEventListener("reload-button", CustomUIEventBindingType.Activating, (
 ```
 
 Notes:
-*   Dynamic images are limited to 10 per page.
+*   Dynamic images are limited to 10 per page, per player.
 *   Downloaded PNGs are cached for 15 seconds.
+
+### Hyvatar Image Example
+
+Hyvatar images use the Hyvatar.io rendering service to stream player renders as dynamic images.
+
+#### HYUIML Example
+
+```html
+<hyvatar id="player-head" username="PlayerName" render="head" size="256" rotate="45"></hyvatar>
+```
+
+#### Java Builder Example
+
+```java
+HyvatarImageBuilder.hyvatar()
+    .withId("player-head")
+    .withUsername("PlayerName")
+    .withRenderType(HyvatarUtils.RenderType.HEAD)
+    .withSize(256)
+    .withRotate(45);
+```
+
+Notes:
+*   Hyvatar images are dynamic images and follow the same slot limits and caching rules.
+*   Thanks to Hyvatar.io for their fantastic work on the rendering service.
 
 ### Circular Progress Bar Example
 

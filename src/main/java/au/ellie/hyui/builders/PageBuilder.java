@@ -95,7 +95,7 @@ public class PageBuilder extends InterfaceBuilder<PageBuilder> {
         Player playerComponent = store.getComponent(playerRef.getReference(), Player.getComponentType());
         sendDynamicImageIfNeeded(playerRef);
         PageManager pageManager = playerComponent.getPageManager();
-        this.lastPage = new HyUIPage(playerRef, lifetime, uiFile, getTopLevelElements(), editCallbacks);
+        this.lastPage = new HyUIPage(playerRef, lifetime, uiFile, getTopLevelElements(), editCallbacks, templateHtml, templateProcessor, runtimeTemplateUpdatesEnabled);
         pageManager.openCustomPage(playerRef.getReference(), store, this.lastPage);
         return this.lastPage;
     }
@@ -114,7 +114,7 @@ public class PageBuilder extends InterfaceBuilder<PageBuilder> {
         Player playerComponent = store.getComponent(playerRefParam.getReference(), Player.getComponentType());
         sendDynamicImageIfNeeded(playerRefParam);
         PageManager pageManager = playerComponent.getPageManager();
-        this.lastPage = new HyUIPage(playerRefParam, lifetime, uiFile, getTopLevelElements(), editCallbacks);
+        this.lastPage = new HyUIPage(playerRefParam, lifetime, uiFile, getTopLevelElements(), editCallbacks, templateHtml, templateProcessor, runtimeTemplateUpdatesEnabled);
         pageManager.openCustomPage(playerRefParam.getReference(), store, this.lastPage);
         return this.lastPage;
     }
@@ -134,10 +134,11 @@ public class PageBuilder extends InterfaceBuilder<PageBuilder> {
      * Reloads a dynamic image by its element ID on the last opened page.
      *
      * @param id The ID of the dynamic image element.
+     * @param shouldClearPage Whether to clear the page after reloading the image.
      */
-    public void reloadImage(String id) {
+    public void reloadImage(String id, boolean shouldClearPage) {
         if (lastPage != null) {
-            lastPage.reloadImage(id);
+            lastPage.reloadImage(id, shouldClearPage);
         }
     }
 }

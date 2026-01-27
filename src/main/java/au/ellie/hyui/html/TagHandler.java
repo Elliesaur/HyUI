@@ -1,6 +1,7 @@
 package au.ellie.hyui.html;
 
 import au.ellie.hyui.HyUIPlugin;
+import au.ellie.hyui.HyUIPluginLogger;
 import au.ellie.hyui.builders.*;
 import au.ellie.hyui.elements.BackgroundSupported;
 import au.ellie.hyui.elements.LayoutModeSupported;
@@ -88,7 +89,7 @@ public interface TagHandler {
             }
         }
 
-        if (element.tagName().equalsIgnoreCase("img")) {
+        if (element.tagName().equalsIgnoreCase("img") || element.tagName().equalsIgnoreCase("hyvatar")) {
             HyUIAnchor anchor = builder.getAnchor();
             if (anchor == null) {
                 anchor = new HyUIAnchor();
@@ -112,6 +113,26 @@ public interface TagHandler {
                 builder.withAnchor(anchor);
             }
         }
+    }
+
+    default String resolveCssStyleDefinition(Element element, String rawValue) {
+        if (rawValue == null) {
+            return null;
+        }
+        String trimmed = rawValue.trim();
+        if ((trimmed.startsWith("\"") && trimmed.endsWith("\"")) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+            trimmed = trimmed.substring(1, trimmed.length() - 1).trim();
+        }
+        if (trimmed.startsWith("@")) {
+            String name = trimmed.substring(1).trim();
+            if (!name.isEmpty() && element.ownerDocument() != null && element.ownerDocument().body() != null) {
+                String resolved = element.ownerDocument().body().attr("data-hyui-style-def-" + name);
+                if (resolved != null && !resolved.isBlank()) {
+                    return resolved;
+                }
+            }
+        }
+        return trimmed;
     }
 
     private Map<String, Object> parseStyleAttribute(String styleAttr) {
@@ -210,7 +231,6 @@ public interface TagHandler {
                     parsed.style.setOutlineColor(value);
                     parsed.hasStyle = true;
                     break;
-                case "text-align":
                 case "layout-mode":
                 case "layout":
                     if (builder instanceof LayoutModeSupported) {
@@ -259,6 +279,7 @@ public interface TagHandler {
                     parsed.style.setVerticalAlignment(capitalize(value));
                     parsed.hasStyle = true;
                     break;
+                case "text-align":
                 case "horizontal-align":
                     parsed.style.setHorizontalAlignment(capitalize(value));
                     parsed.hasStyle = true;
@@ -352,24 +373,28 @@ public interface TagHandler {
                     });
                     break;
                 case "padding-left":
+                    value = HyUIStyle.cleanUnits(value);
                     ParseUtils.parseInt(value).ifPresent(v -> {
                         parsed.padding.setLeft(v);
                         parsed.hasPadding = true;
                     });
                     break;
                 case "padding-right":
+                    value = HyUIStyle.cleanUnits(value);
                     ParseUtils.parseInt(value).ifPresent(v -> {
                         parsed.padding.setRight(v);
                         parsed.hasPadding = true;
                     });
                     break;
                 case "padding-top":
+                    value = HyUIStyle.cleanUnits(value);
                     ParseUtils.parseInt(value).ifPresent(v -> {
                         parsed.padding.setTop(v);
                         parsed.hasPadding = true;
                     });
                     break;
                 case "padding-bottom":
+                    value = HyUIStyle.cleanUnits(value);
                     ParseUtils.parseInt(value).ifPresent(v -> {
                         parsed.padding.setBottom(v);
                         parsed.hasPadding = true;
@@ -378,13 +403,13 @@ public interface TagHandler {
                 case "padding":
                     String[] paddingValues = value.split("\\s+");
                     if (paddingValues.length == 1) {
-                        ParseUtils.parseInt(paddingValues[0]).ifPresent(v -> {
+                        ParseUtils.parseInt(HyUIStyle.cleanUnits(paddingValues[0])).ifPresent(v -> {
                             parsed.padding.setFull(v);
                             parsed.hasPadding = true;
                         });
                     } else if (paddingValues.length >= 2) {
-                        var vertical = ParseUtils.parseInt(paddingValues[0]);
-                        var horizontal = ParseUtils.parseInt(paddingValues[1]);
+                        var vertical = ParseUtils.parseInt(HyUIStyle.cleanUnits(paddingValues[0]));
+                        var horizontal = ParseUtils.parseInt(HyUIStyle.cleanUnits(paddingValues[1]));
                         if (vertical.isPresent() && horizontal.isPresent()) {
                             parsed.padding.setSymmetric(vertical.get(), horizontal.get());
                             parsed.hasPadding = true;

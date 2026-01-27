@@ -165,19 +165,30 @@ public class ProgressBarBuilder extends UIElementBuilder<ProgressBarBuilder> imp
 
     @Override
     protected boolean hasCustomInlineContent() {
-        return circular;
+        return circular || (!circular && (barTexturePath != null || effectTexturePath != null));
     }
 
     @Override
     protected String generateCustomInlineContent() {
         StringBuilder sb = new StringBuilder();
         sb.append("Group #HyUIOuterProgressBar { ");
-        sb.append("CircularProgressBar #HyUIProgressBar { ");
-        if (maskTexturePath != null) {
-            sb.append("MaskTexturePath: \"").append(maskTexturePath).append("\"; ");
+        if (circular) {
+            sb.append("CircularProgressBar #HyUIProgressBar { ");
+            if (maskTexturePath != null) {
+                sb.append("MaskTexturePath: \"").append(maskTexturePath).append("\"; ");
+            }
+            sb.append("Value: 0.0; ");
+            sb.append("} ");
+        } else {
+            sb.append("Background: \"../../Common/ProgressBar.png\"; ");
+            sb.append("ProgressBar #HyUIProgressBar { ");
+            String inlineBarTexturePath = barTexturePath != null ? barTexturePath : "../../Common/ProgressBarFill.png";
+            String inlineEffectTexturePath = effectTexturePath != null ? effectTexturePath : "../../Common/ProgressBarEffect.png";
+            sb.append("BarTexturePath: \"").append(inlineBarTexturePath).append("\"; ");
+            sb.append("EffectTexturePath: \"").append(inlineEffectTexturePath).append("\"; ");
+            sb.append("Value: 0.0; ");
+            sb.append("} ");
         }
-        sb.append("Value: 0.0; ");
-        sb.append("} ");
         sb.append("}");
         return sb.toString();
     }
@@ -225,14 +236,14 @@ public class ProgressBarBuilder extends UIElementBuilder<ProgressBarBuilder> imp
     }
     
     @Override
-    protected void buildBase(UICommandBuilder commands, UIEventBuilder events) {
+    protected void buildBase(UICommandBuilder commands, UIEventBuilder events, boolean updateOnly) {
         // Temporarily hide the anchor from buildBase so it doesn't apply to the inner element
         HyUIAnchor originalAnchor = this.anchor;
         if (this.outerAnchor == null) {
             this.anchor = null;
         }
 
-        super.buildBase(commands, events);
+        super.buildBase(commands, events, updateOnly);
 
         // Restore it immediately after buildBase completes
         this.anchor = originalAnchor;

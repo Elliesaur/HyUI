@@ -2,6 +2,7 @@ package au.ellie.hyui.commands;
 
 import au.ellie.hyui.builders.HyUIHud;
 import au.ellie.hyui.builders.LabelBuilder;
+import au.ellie.hyui.HyUIPluginLogger;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.GameMode;
@@ -18,12 +19,18 @@ public class HyUIUpdateHudCommand extends AbstractAsyncCommand {
 
     public HyUIUpdateHudCommand() {
         super("update", "Updates the label in the HUD");
+        if (!HyUIPluginLogger.LOGGING_ENABLED) {
+            return;
+        }
         this.setPermissionGroup(GameMode.Adventure);
     }
 
     @NonNullDecl
     @Override
     protected CompletableFuture<Void> executeAsync(CommandContext commandContext) {
+        if (!HyUIPluginLogger.LOGGING_ENABLED) {
+            return CompletableFuture.completedFuture(null);
+        }
         var sender = commandContext.sender();
         if (sender instanceof Player player) {
             Ref<EntityStore> ref = player.getReference();
@@ -39,6 +46,9 @@ public class HyUIUpdateHudCommand extends AbstractAsyncCommand {
     }
 
     private void updateHuds() {
+        if (!HyUIPluginLogger.LOGGING_ENABLED) {
+            return;
+        }
         long millis = System.currentTimeMillis();
         for (HyUIHud hud : HyUIAddHudCommand.HUD_INSTANCES) {
             hud.getById("Hello", LabelBuilder.class).ifPresent(label -> {

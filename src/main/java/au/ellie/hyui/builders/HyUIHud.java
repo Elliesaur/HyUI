@@ -2,6 +2,7 @@ package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.events.UIContext;
+import au.ellie.hyui.html.TemplateProcessor;
 import au.ellie.hyui.utils.MultiHudWrapper;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -39,10 +40,13 @@ public class HyUIHud extends CustomUIHud implements UIContext {
     public HyUIHud(String name, PlayerRef playerRef, 
                    String uiFile,
                    List<UIElementBuilder<?>> elements,
-                   List<Consumer<UICommandBuilder>> editCallbacks) {
+                   List<Consumer<UICommandBuilder>> editCallbacks,
+                   String templateHtml,
+                   TemplateProcessor templateProcessor,
+                   boolean runtimeTemplateUpdatesEnabled) {
         super(playerRef);
         this.name = name;
-        this.delegate = new HyUInterface(uiFile, elements, editCallbacks) {};
+        this.delegate = new HyUInterface(uiFile, elements, editCallbacks, templateHtml, templateProcessor, runtimeTemplateUpdatesEnabled) {};
     }
 
     private void startRefreshTask() {
@@ -114,6 +118,11 @@ public class HyUIHud extends CustomUIHud implements UIContext {
      */
     public <E extends UIElementBuilder<E>> Optional<E> getById(String id, Class<E> clazz) {
         return delegate.getById(id, clazz);
+    }
+
+    @Override
+    public Optional<UIElementBuilder<?>> getByIdRaw(String id) {
+        return delegate.getById(id);
     }
 
     /**
@@ -247,7 +256,7 @@ public class HyUIHud extends CustomUIHud implements UIContext {
     public void refreshOrRerender(boolean shouldRerender, boolean unsafe) {
         if (!shouldRerender) {
             UICommandBuilder uiCommandBuilder = new UICommandBuilder();
-            this.build(uiCommandBuilder);
+            delegate.buildFromCommandBuilder(uiCommandBuilder, true);
             this.update(false, uiCommandBuilder);
         } else {
             // Re-render completely.
@@ -355,9 +364,11 @@ public class HyUIHud extends CustomUIHud implements UIContext {
             return;
         }
         getById(dynamicImageElementId, DynamicImageBuilder.class).ifPresent(dynamicImage -> {
-            dynamicImage.invalidateImage();
+            dynamicImage.invalidateImage(playerRefInternal.getUuid());
             InterfaceBuilder.sendDynamicImage(playerRefInternal, dynamicImage);
             updatePage(true);
         });
     }
+    
+    // TODO: HUD release images.
 }

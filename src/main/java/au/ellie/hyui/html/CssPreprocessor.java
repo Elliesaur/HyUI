@@ -62,6 +62,14 @@ public class CssPreprocessor {
             String properties = entry.getValue();
 
             try {
+                if (selector.startsWith("@")) {
+                    String name = selector.substring(1).trim();
+                    if (!name.isEmpty()) {
+                        doc.body().attr("data-hyui-style-def-" + name, properties);
+                    }
+                    continue;
+                }
+
                 // Handle :hover pseudo-class
                 if (selector.endsWith(":hover")) {
                     String baseSelector = selector.substring(0, selector.length() - 6);

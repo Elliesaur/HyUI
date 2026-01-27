@@ -13,6 +13,7 @@ import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -64,8 +65,12 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
             withUiFile("Pages/Elements/TextButton.ui");
         } else if (UIElements.SECONDARY_TEXT_BUTTON.equals(elementPath)) {
             withUiFile("Pages/Elements/SecondaryTextButton.ui");
+        } else if (UIElements.SMALL_SECONDARY_TEXT_BUTTON.equals(elementPath)) {
+            withUiFile("Pages/Elements/SmallSecondaryTextButton.ui");
         } else if (UIElements.TERTIARY_TEXT_BUTTON.equals(elementPath)) {
             withUiFile("Pages/Elements/TertiaryTextButton.ui");
+        } else if (UIElements.SMALL_TERTIARY_TEXT_BUTTON.equals(elementPath)) {
+            withUiFile("Pages/Elements/SmallTertiaryTextButton.ui");
         } else if (UIElements.CANCEL_TEXT_BUTTON.equals(elementPath)) {
             withUiFile("Pages/Elements/CancelTextButton.ui");
         } else if (UIElements.BACK_BUTTON.equals(elementPath)) {
@@ -77,7 +82,9 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
 
     private static String getButtonTypeSelector(String elementPath) {
         if (elementPath.contains("CancelTextButton")) return "#HyUICancelTextButton";
+        if (elementPath.contains("SmallSecondaryTextButton")) return "#HyUISmallSecondaryTextButton";
         if (elementPath.contains("SecondaryTextButton")) return "#HyUISecondaryTextButton";
+        if (elementPath.contains("SmallTertiaryTextButton")) return "#HyUISmallTertiaryTextButton";
         if (elementPath.contains("TertiaryTextButton")) return "#HyUITertiaryTextButton";
         if (elementPath.contains("TextButton")) return "#HyUITextButton";
         return "#HyUIButton";
@@ -101,7 +108,17 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
     public static ButtonBuilder secondaryTextButton() {
         return new ButtonBuilder(Theme.GAME_THEME, UIElements.SECONDARY_TEXT_BUTTON);
     }
-
+    
+    /**
+     * Creates a ButtonBuilder instance for a small secondary text button styled with the GAME_THEME and 
+     * the SMALL_SECONDARY_TEXT_BUTTON element.
+     *
+     * @return a ButtonBuilder configured for creating a small secondary text button with predefined theme and style.
+     */
+    public static ButtonBuilder smallSecondaryTextButton() {
+        return new ButtonBuilder(Theme.GAME_THEME, UIElements.SMALL_SECONDARY_TEXT_BUTTON);
+    }
+    
     /**
      * Creates a ButtonBuilder instance for a tertiary text button styled with the GAME_THEME and 
      * the TERTIARY_TEXT_BUTTON element.
@@ -112,6 +129,16 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
         return new ButtonBuilder(Theme.GAME_THEME, UIElements.TERTIARY_TEXT_BUTTON);
     }
 
+    /**
+     * Creates a ButtonBuilder instance for a small tertiary text button styled with the GAME_THEME and 
+     * the SMALL_TERTIARY_TEXT_BUTTON element.
+     *
+     * @return a ButtonBuilder configured for creating a small tertiary text button with predefined theme and style.
+     */
+    public static ButtonBuilder smallTertiaryTextButton() {
+        return new ButtonBuilder(Theme.GAME_THEME, UIElements.SMALL_TERTIARY_TEXT_BUTTON);
+    }
+    
     /**
      * Creates a ButtonBuilder instance for a cancel text button styled with the GAME_THEME and 
      * the CANCEL_TEXT_BUTTON element.
@@ -223,19 +250,43 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
 
     @Override
     protected boolean supportsStyling() {
+        return !isBackButton();
+    }
+
+    @Override
+    protected boolean isStyleWhitelist() {
         return true;
     }
 
     @Override
-    protected Set<String> getUnsupportedStyleProperties() {
-        if (this.theme == Theme.GAME_THEME) {
-            boolean allowTextColor = UIElements.BUTTON.equals(elementPath);
-            if (allowTextColor) {
-                return Set.of("Alignment", "HorizontalAlignment", "VerticalAlignment");
-            }
-            return Set.of("TextColor", "Alignment", "HorizontalAlignment", "VerticalAlignment");
+    protected Set<String> getSupportedStyleProperties() {
+        if (isBackButton()) {
+            return Set.of();
         }
-        return Collections.emptySet();
+        Set<String> supported = new HashSet<>(Set.of(
+                "FontSize",
+                "RenderBold",
+                "RenderUppercase",
+                "TextColor",
+                "HorizontalAlignment",
+                "VerticalAlignment",
+                "Alignment",
+                "RenderItalics",
+                "FontName",
+                "Wrap",
+                "LetterSpacing",
+                "OutlineColor"
+        ));
+        if (this.theme == Theme.GAME_THEME) {
+            supported.remove("FontSize");
+            supported.remove("Alignment");
+            supported.remove("HorizontalAlignment");
+            supported.remove("VerticalAlignment");
+            if (!UIElements.BUTTON.equals(elementPath)) {
+                supported.remove("TextColor");
+            }
+        }
+        return Collections.unmodifiableSet(supported);
     }
 
     @Override
@@ -246,22 +297,22 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
         applyLayoutMode(commands, selector);
         applyBackground(commands, selector);
 
-        if (text != null) {
+        if (text != null && isTextButtonElement()) {
             HyUIPlugin.getLog().logInfo("Setting Text: " + text + " for " + selector);
             commands.set(selector + ".Text", text);
         }
 
-        if (disabled != null) {
+        if (disabled != null && !isBackButton()) {
             HyUIPlugin.getLog().logInfo("Setting Disabled: " + disabled + " for " + selector);
             commands.set(selector + ".Disabled", disabled);
         }
 
-        if (overscroll != null) {
+        if (overscroll != null && isTextButtonElement()) {
             HyUIPlugin.getLog().logInfo("Setting Overscroll: " + overscroll + " for " + selector);
             commands.set(selector + ".Overscroll", overscroll);
         }
 
-        if (hyUIStyle == null && style != null) {
+        if (hyUIStyle == null && style != null && !isBackButton()) {
             HyUIPlugin.getLog().logInfo("Setting Style: " + style + " for " + selector);
             commands.set(selector + ".Style", style);
         }
@@ -276,5 +327,18 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
                         false);
             }
         });
+    }
+
+    private boolean isTextButtonElement() {
+        return UIElements.TEXT_BUTTON.equals(elementPath)
+                || UIElements.SECONDARY_TEXT_BUTTON.equals(elementPath)
+                || UIElements.SMALL_SECONDARY_TEXT_BUTTON.equals(elementPath)
+                || UIElements.TERTIARY_TEXT_BUTTON.equals(elementPath)
+                || UIElements.SMALL_TERTIARY_TEXT_BUTTON.equals(elementPath)
+                || UIElements.CANCEL_TEXT_BUTTON.equals(elementPath);
+    }
+
+    private boolean isBackButton() {
+        return UIElements.BACK_BUTTON.equals(elementPath);
     }
 }

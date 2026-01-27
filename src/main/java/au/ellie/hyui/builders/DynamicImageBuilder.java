@@ -8,6 +8,9 @@ import au.ellie.hyui.elements.ScrollbarStyleSupported;
 import au.ellie.hyui.elements.UIElements;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public class DynamicImageBuilder extends UIElementBuilder<DynamicImageBuilder> 
         implements BackgroundSupported<DynamicImageBuilder>, 
@@ -21,7 +24,8 @@ public class DynamicImageBuilder extends UIElementBuilder<DynamicImageBuilder>
     private String scrollbarStyleDocument;
     private String imageUrl;
     private boolean imagePathAssigned;
-    private Integer slotIndex;
+    private final Map<UUID, Integer> slotIndexes = new HashMap<>();
+    private static final UUID DEFAULT_PLAYER_UUID = new UUID(0L, 0L);
 
     public DynamicImageBuilder() {
         super(UIElements.GROUP, "Group");
@@ -41,10 +45,6 @@ public class DynamicImageBuilder extends UIElementBuilder<DynamicImageBuilder>
         return imageUrl;
     }
 
-    public void setImagePathAssigned(boolean imagePathAssigned) {
-        this.imagePathAssigned = imagePathAssigned;
-    }
-
     public DynamicImageBuilder withImagePath(String texturePath) {
         if (this.background == null) {
             this.background = new HyUIPatchStyle();
@@ -55,24 +55,53 @@ public class DynamicImageBuilder extends UIElementBuilder<DynamicImageBuilder>
         return this;
     }
 
-    public boolean isImagePathAssigned() {
-        return imagePathAssigned;
+    public boolean isImagePathAssigned(UUID playerUuid) {
+        if (!imagePathAssigned) {
+            return false;
+        }
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return true;
+        }
+        return slotIndexes.containsKey(normalizePlayerUuid(playerUuid));
     }
-
-    public void setSlotIndex(int slotIndex) {
-        this.slotIndex = slotIndex;
-    }
-
-    public Integer getSlotIndex() {
-        return slotIndex;
+    
+    public void setSlotIndex(UUID playerUuid, int slotIndex) {
+        slotIndexes.put(normalizePlayerUuid(playerUuid), slotIndex);
     }
 
     public void invalidateImage() {
-        if (slotIndex != null) {
-            DynamicImageAsset.releaseSlotIndex(slotIndex);
+        for (Map.Entry<UUID, Integer> entry : slotIndexes.entrySet()) {
+            DynamicImageAsset.releaseSlotIndex(entry.getKey(), entry.getValue());
         }
-        this.slotIndex = null;
+        slotIndexes.clear();
         this.imagePathAssigned = false;
+    }
+
+    public void invalidateImage(UUID playerUuid) {
+        releaseSlotForPlayer(playerUuid);
+    }
+
+    public void releaseSlotForPlayer(UUID playerUuid) {
+        Integer slotIndex = slotIndexes.remove(normalizePlayerUuid(playerUuid));
+        if (slotIndex != null) {
+            DynamicImageAsset.releaseSlotIndex(playerUuid, slotIndex);
+        }
+    }
+
+    @Override
+    protected void applyTemplate(UIElementBuilder<?> template) {
+        HyUIPatchStyle currentBackground = this.background;
+        boolean currentImagePathAssigned = this.imagePathAssigned;
+        Map<UUID, Integer> currentSlotIndexes = new HashMap<>(this.slotIndexes);
+
+        super.applyTemplate(template);
+
+        if (currentImagePathAssigned) {
+            this.background = currentBackground;
+            this.imagePathAssigned = true;
+            this.slotIndexes.clear();
+            this.slotIndexes.putAll(currentSlotIndexes);
+        }
     }
 
     @Override
@@ -120,7 +149,9 @@ public class DynamicImageBuilder extends UIElementBuilder<DynamicImageBuilder>
         if (selector == null) return;
 
         if (imageUrl != null && !imageUrl.isBlank()) {
-            au.ellie.hyui.HyUIPlugin.getLog().logInfo("Building dynamic image with URL: " + imageUrl);
+            HyUIPlugin.getLog().logInfo("Building dynamic image with URL: " + imageUrl);
+        } else if (this.background != null) {
+            HyUIPlugin.getLog().logInfo("Building dynamic image from path: " + this.background.getTexturePath());
         }
         applyLayoutMode(commands, selector);
         applyBackground(commands, selector);
@@ -130,5 +161,9 @@ public class DynamicImageBuilder extends UIElementBuilder<DynamicImageBuilder>
     @Override
     protected boolean supportsStyling() {
         return false;
+    }
+
+    private static UUID normalizePlayerUuid(UUID playerUuid) {
+        return playerUuid != null ? playerUuid : DEFAULT_PLAYER_UUID;
     }
 }

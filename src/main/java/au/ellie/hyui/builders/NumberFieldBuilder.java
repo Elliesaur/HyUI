@@ -154,6 +154,15 @@ public class NumberFieldBuilder extends UIElementBuilder<NumberFieldBuilder> {
     }
 
     @Override
+    protected void applyRuntimeValue(Object value) {
+        if (value instanceof Number number) {
+            Double next = number.doubleValue();
+            this.value = next;
+            this.initialValue = next;
+        }
+    }
+
+    @Override
     protected Object parseValue(String rawValue) {
         try {
             return Double.parseDouble(rawValue);

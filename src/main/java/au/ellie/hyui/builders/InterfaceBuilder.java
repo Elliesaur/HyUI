@@ -5,18 +5,21 @@ import au.ellie.hyui.assets.DynamicImageAsset;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.html.HtmlParser;
 import au.ellie.hyui.html.TemplateProcessor;
+import au.ellie.hyui.utils.HyvatarUtils;
 import au.ellie.hyui.utils.PngDownloadUtils;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
-import com.hypixel.hytale.server.core.asset.common.CommonAssetRegistry;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -24,6 +27,9 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
     protected final Map<String, UIElementBuilder<?>> elementRegistry = new LinkedHashMap<>();
     protected final List<Consumer<UICommandBuilder>> editCallbacks = new ArrayList<>();
     protected String uiFile;
+    protected String templateHtml;
+    protected TemplateProcessor templateProcessor;
+    protected boolean runtimeTemplateUpdatesEnabled;
 
     @SuppressWarnings("unchecked")
     protected T self() {
@@ -32,10 +38,16 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
 
     public T fromFile(String uiFile) {
         this.uiFile = uiFile;
+        this.templateHtml = null;
+        this.templateProcessor = null;
+        this.runtimeTemplateUpdatesEnabled = false;
         return self();
     }
 
     public T fromHtml(String html) {
+        this.templateHtml = null;
+        this.templateProcessor = null;
+        this.runtimeTemplateUpdatesEnabled = false;
         new HtmlParser().parseToInterface(this, html);
         return self();
     }
@@ -58,9 +70,62 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
      * @return This builder instance for method chaining
      */
     public T fromTemplate(String html, TemplateProcessor template) {
+        this.templateHtml = html;
+        this.templateProcessor = template;
         HtmlParser parser = new HtmlParser();
         parser.setTemplateProcessor(template);
         parser.parseToInterface(this, html);
+        return self();
+    }
+    
+    private String loadHtmlFromResources(String resourceFileName) {
+        try (InputStream inputStream = InterfaceBuilder.class.getResourceAsStream(resourceFileName)) {
+            if (inputStream == null) {
+                throw new IllegalArgumentException("Resource not found: " + resourceFileName);
+            }
+            return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load HTML from resource: " + resourceFileName, e);
+        }
+    }
+
+    /**
+     * Loads an HTML file from resources under Common/UI/Custom and parses it into this interface.
+     *
+     * @param resourcePath Path relative to Common/UI/Custom (e.g. "Pages/Something.html")
+     * @return This builder instance for method chaining
+     */
+    public T loadHtml(String resourcePath) {
+        String html = loadHtmlFromResources(resolveCustomResourcePath(resourcePath));
+        return fromHtml(html);
+    }
+
+    /**
+     * Loads an HTML template from resources under Common/UI/Custom with a template processor.
+     *
+     * @param resourcePath Path relative to Common/UI/Custom (e.g. "Pages/Something.html")
+     * @param template     The template processor with variables set
+     * @return This builder instance for method chaining
+     */
+    public T loadHtml(String resourcePath, TemplateProcessor template) {
+        String html = loadHtmlFromResources(resolveCustomResourcePath(resourcePath));
+        return fromTemplate(html, template);
+    }
+
+    /**
+     * Loads an HTML template from resources under Common/UI/Custom with variables.
+     *
+     * @param resourcePath Path relative to Common/UI/Custom (e.g. "Pages/Something.html")
+     * @param variables    Map of variable names to values
+     * @return This builder instance for method chaining
+     */
+    public T loadHtml(String resourcePath, Map<String, ?> variables) {
+        String html = loadHtmlFromResources(resolveCustomResourcePath(resourcePath));
+        return fromTemplate(html, variables);
+    }
+
+    public T enableRuntimeTemplateUpdates(boolean enabled) {
+        this.runtimeTemplateUpdatesEnabled = enabled;
         return self();
     }
 
@@ -75,6 +140,19 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
         return fromTemplate(html, new TemplateProcessor().setVariables(variables));
     }
 
+    private String resolveCustomResourcePath(String resourcePath) {
+        if (resourcePath == null || resourcePath.isBlank()) {
+            throw new IllegalArgumentException("Resource path cannot be null or blank.");
+        }
+        String trimmed = resourcePath.startsWith("/") ? resourcePath.substring(1) : resourcePath;
+        return "/Common/UI/Custom/" + trimmed;
+    }
+
+    /**
+     * Add an element inside the root node (#HyUIRoot) of the interface.
+     * @param element The element to add to the root node.
+     * @return Self, for chaining.
+     */
     public T addElement(UIElementBuilder<?> element) {
         element.inside("#HyUIRoot");
         registerElement(element);
@@ -219,32 +297,49 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
         if (pRef == null || !pRef.isValid()) {
             return;
         }
-        List<DynamicImageBuilder> dynamicImages = collectDynamicImages();
-        for (DynamicImageBuilder dynamicImage : dynamicImages) {
-            if (dynamicImage.isImagePathAssigned()) {
-                continue;
+        UUID playerUuid = pRef.getUuid();
+        for (UIElementBuilder<?> element : elementRegistry.values()) {
+            if (element instanceof DynamicImageBuilder dImg) {
+                if (dImg.isImagePathAssigned(playerUuid)) {
+                    continue;
+                }
+                sendDynamicImage(pRef, dImg);
             }
-            sendDynamicImage(pRef, dynamicImage);
         }
     }
 
     static void sendDynamicImage(PlayerRef pRef, DynamicImageBuilder dynamicImage) {
         if (pRef == null || dynamicImage == null) {
+            HyUIPlugin.getLog().logInfo("REFERENCE WAS INVALID");
+            
             return;
         }
+        UUID playerUuid = pRef.getUuid();
         String url = dynamicImage.getImageUrl();
         if (url == null || url.isBlank()) {
+            HyUIPlugin.getLog().logInfo("URL WAS BLANK OR NULL");
+            
             return;
         }
         try {
             HyUIPlugin.getLog().logInfo("Preparing dynamic image from URL: " + url);
-            byte[] imageBytes = PngDownloadUtils.downloadPng(url);
+            byte[] imageBytes;
+            if (dynamicImage instanceof HyvatarImageBuilder hyvatar && !hyvatar.hasCustomImageUrl()) {
+                imageBytes = HyvatarUtils.downloadRenderPng(
+                        hyvatar.getUsername(),
+                        hyvatar.getRenderType(),
+                        hyvatar.getSize(),
+                        hyvatar.getRotate(),
+                        hyvatar.getCape()
+                );
+            } else {
+                imageBytes = PngDownloadUtils.downloadPng(url);
+            }
 
-            DynamicImageAsset.sendToPlayer(pRef.getPacketHandler(), DynamicImageAsset.empty(DynamicImageAsset.peekNextSlotIndex()));
-
-            DynamicImageAsset asset = new DynamicImageAsset(imageBytes);
+            DynamicImageAsset asset = new DynamicImageAsset(imageBytes, playerUuid);
+            DynamicImageAsset.sendToPlayer(pRef.getPacketHandler(), DynamicImageAsset.empty(asset.getSlotIndex()));
             dynamicImage.withImagePath(asset.getPath());
-            dynamicImage.setSlotIndex(asset.getSlotIndex());
+            dynamicImage.setSlotIndex(playerUuid, asset.getSlotIndex());
 
             DynamicImageAsset.sendToPlayer(pRef.getPacketHandler(), asset);
             HyUIPlugin.getLog().logInfo("Dynamic image sent using path: " + asset.getPath());
@@ -256,16 +351,6 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
             Thread.currentThread().interrupt();
             HyUIPlugin.getLog().logInfo("Dynamic image download interrupted: " + e.getMessage());
         }
-    }
-
-    private List<DynamicImageBuilder> collectDynamicImages() {
-        List<DynamicImageBuilder> dynamicImages = new ArrayList<>();
-        for (UIElementBuilder<?> element : elementRegistry.values()) {
-            if (element instanceof DynamicImageBuilder dynamicImage) {
-                dynamicImages.add(dynamicImage);
-            }
-        }
-        return dynamicImages;
     }
 
     /**
@@ -289,5 +374,17 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
      */
     public List<UIElementBuilder<?>> getElements() {
         return elementRegistry.values().stream().toList();        
+    }
+
+    public String getTemplateHtml() {
+        return templateHtml;
+    }
+
+    public TemplateProcessor getTemplateProcessor() {
+        return templateProcessor;
+    }
+
+    public boolean isRuntimeTemplateUpdatesEnabled() {
+        return runtimeTemplateUpdatesEnabled;
     }
 }

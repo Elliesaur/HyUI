@@ -98,6 +98,15 @@ public class SliderBuilder extends UIElementBuilder<SliderBuilder> {
     }
 
     @Override
+    protected void applyRuntimeValue(Object value) {
+        if (value instanceof Number number) {
+            Integer next = number.intValue();
+            this.value = next;
+            this.initialValue = next;
+        }
+    }
+
+    @Override
     protected boolean supportsStyling() {
         return true;
     }

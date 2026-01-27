@@ -1,7 +1,6 @@
 package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
-import au.ellie.hyui.elements.BackgroundSupported;
 import au.ellie.hyui.theme.Theme;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventListener;
@@ -18,6 +17,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 
 /**
  * A builder class for constructing UI elements with a hierarchical structure and configurable 
@@ -48,6 +49,16 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
     protected final List<BiConsumer<UICommandBuilder, String>> editAfterCallbacks = new ArrayList<>();
     protected final List<BiConsumer<UICommandBuilder, String>> editBeforeCallbacks = new ArrayList<>();
     protected final Map<String, HyUIStyle> secondaryStyles = new HashMap<>();
+    private static final Set<String> TEMPLATE_FIELD_EXCLUSIONS = Set.of(
+            "listeners",
+            "children",
+            "id",
+            "userId",
+            "theme",
+            "parentSelector",
+            "editAfterCallbacks",
+            "editBeforeCallbacks"
+    );
 
     private static int idCounter = 0;
 
@@ -89,6 +100,40 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
 
     public String getId() {
         return userId;
+    }
+
+    protected void applyRuntimeValue(Object value) {
+        // Default no-op for elements without a value.
+    }
+
+    protected void applyTemplate(UIElementBuilder<?> template) {
+        if (template == null || !getClass().equals(template.getClass())) {
+            return;
+        }
+
+        Class<?> type = getClass();
+        while (type != null && UIElementBuilder.class.isAssignableFrom(type)) {
+            for (Field field : type.getDeclaredFields()) {
+                if (Modifier.isStatic(field.getModifiers()) || Modifier.isFinal(field.getModifiers())) {
+                    continue;
+                }
+                if (TEMPLATE_FIELD_EXCLUSIONS.contains(field.getName())) {
+                    continue;
+                }
+                try {
+                    if (!field.canAccess(this)) {
+                        field.setAccessible(true);
+                    }
+                    field.set(this, field.get(template));
+                } catch (IllegalAccessException ignored) {
+                    // Skip fields we can't safely update.
+                }
+            }
+            if (type == UIElementBuilder.class) {
+                break;
+            }
+            type = type.getSuperclass();
+        }
     }
 
     public HyUIStyle getHyUIStyle() {
@@ -348,52 +393,53 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
      * @param events   an instance of {@code UIEventBuilder} used to register and handle UI events
      */
     protected void build(UICommandBuilder commands, UIEventBuilder events) {
-        
+        build(commands, events, false);
+    }
+
+    protected void buildUpdates(UICommandBuilder commands, UIEventBuilder events) {
+        build(commands, events, true);
+    }
+
+    protected void build(UICommandBuilder commands, UIEventBuilder events, boolean updateOnly) {
         if (wrapInGroup && parentSelector != null) {
             String wrappingGroupId = getWrappingGroupId();
-            HyUIPlugin.getLog().logInfo("Creating wrapping group: #" + wrappingGroupId + " for element: " + (typeSelector != null ? typeSelector : elementPath));
-            
-            StringBuilder inlineMarkup = new StringBuilder();
-            inlineMarkup.append("Group #").append(wrappingGroupId).append(" { ");
-            
-            // Handle background with opacity for the wrapping group
-            if (this instanceof BackgroundSupported<?> bgSupported) {
-                HyUIPatchStyle bg = bgSupported.getBackground();
-                if (bg != null && bg.getTexturePath() == null && bg.getColor() != null && bg.getColor().contains("(")) {
-                    inlineMarkup.append("Background: ").append(bg.getColor()).append("; ");
+            if (!updateOnly) {
+                HyUIPlugin.getLog().logInfo("Creating wrapping group: #" + wrappingGroupId + " for element: " + (typeSelector != null ? typeSelector : elementPath));
+
+                StringBuilder inlineMarkup = new StringBuilder();
+                inlineMarkup.append("Group #").append(wrappingGroupId).append(" { ");
+
+                if (padding != null) {
+                    StringBuilder paddingMarkup = new StringBuilder();
+                    if (padding.getLeft() != null) paddingMarkup.append("Left: ").append(padding.getLeft());
+                    if (padding.getTop() != null) {
+                        if (paddingMarkup.length() > 0) paddingMarkup.append(", ");
+                        paddingMarkup.append("Top: ").append(padding.getTop());
+                    }
+                    if (padding.getRight() != null) {
+                        if (paddingMarkup.length() > 0) paddingMarkup.append(", ");
+                        paddingMarkup.append("Right: ").append(padding.getRight());
+                    }
+                    if (padding.getBottom() != null) {
+                        if (paddingMarkup.length() > 0) paddingMarkup.append(", ");
+                        paddingMarkup.append("Bottom: ").append(padding.getBottom());
+                    }
+                    if (paddingMarkup.length() > 0) {
+                        inlineMarkup.append("Padding: (").append(paddingMarkup).append("); ");
+                    }
                 }
-            }
-            
-            if (padding != null) {
-                StringBuilder paddingMarkup = new StringBuilder();
-                if (padding.getLeft() != null) paddingMarkup.append("Left: ").append(padding.getLeft());
-                if (padding.getTop() != null) {
-                    if (paddingMarkup.length() > 0) paddingMarkup.append(", ");
-                    paddingMarkup.append("Top: ").append(padding.getTop());
-                }
-                if (padding.getRight() != null) {
-                    if (paddingMarkup.length() > 0) paddingMarkup.append(", ");
-                    paddingMarkup.append("Right: ").append(padding.getRight());
-                }
-                if (padding.getBottom() != null) {
-                    if (paddingMarkup.length() > 0) paddingMarkup.append(", ");
-                    paddingMarkup.append("Bottom: ").append(padding.getBottom());
-                }
-                if (paddingMarkup.length() > 0) {
-                    inlineMarkup.append("Padding: (").append(paddingMarkup).append("); ");
-                }
+
+                inlineMarkup.append("}");
+                commands.appendInline(parentSelector, inlineMarkup.toString());
             }
 
-            inlineMarkup.append("}");
-            commands.appendInline(parentSelector, inlineMarkup.toString());
-            
             // The inner element should be inside the wrapping group
             String originalParent = parentSelector;
             parentSelector = "#" + wrappingGroupId;
-            executeBuild(commands, events);
+            executeBuild(commands, events, updateOnly);
             parentSelector = originalParent;
         } else {
-            executeBuild(commands, events);
+            executeBuild(commands, events, updateOnly);
         }
     }
 
@@ -405,30 +451,32 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
         return null;
     }
 
-    protected void buildBase(UICommandBuilder commands, UIEventBuilder events) {
+    protected void buildBase(UICommandBuilder commands, UIEventBuilder events, boolean updateOnly) {
         String selector = getSelector();
         HyUIPlugin.getLog().logInfo("Building element: " + (typeSelector != null ? typeSelector : elementPath) + " with ID: " + id + " at selector: " + selector);
 
         if (parentSelector != null) {
-            String path = getAppendPath();
-            if (path != null && path.endsWith(".ui")) {
-                HyUIPlugin.getLog().logInfo("Appending UI file: " + path + " to " + parentSelector);
-                commands.append(parentSelector, path);
-                
-                // If it's a file but NOT wrapped, we need to set the ID of the root element in that file
-                // if it's not already correct.
-                if (!wrapInGroup && !id.equals(typeSelector != null ? typeSelector.replace("#", "") : "")) {
-                     // We might need to rename the element we just appended.
-                     // Let's assume for now that if it's not wrapped, it's a singleton or handled by user.
+            if (!updateOnly) {
+                String path = getAppendPath();
+                if (path != null && path.endsWith(".ui")) {
+                    HyUIPlugin.getLog().logInfo("Appending UI file: " + path + " to " + parentSelector);
+                    commands.append(parentSelector, path);
+
+                    // If it's a file but NOT wrapped, we need to set the ID of the root element in that file
+                    // if it's not already correct.
+                    if (!wrapInGroup && !id.equals(typeSelector != null ? typeSelector.replace("#", "") : "")) {
+                         // We might need to rename the element we just appended.
+                         // Let's assume for now that if it's not wrapped, it's a singleton or handled by user.
+                    }
+                } else if (hasCustomInlineContent()) {
+                    String inline = generateCustomInlineContent();
+                    HyUIPlugin.getLog().logInfo("Appending custom inline: " + inline + " to " + parentSelector);
+                    commands.appendInline(parentSelector, inline);
+                } else {
+                    String inline = generateBasicInlineMarkup();
+                    HyUIPlugin.getLog().logInfo("Appending inline: " + inline + " to " + parentSelector);
+                    commands.appendInline(parentSelector, inline);
                 }
-            } else if (hasCustomInlineContent()) {
-                String inline = generateCustomInlineContent();
-                HyUIPlugin.getLog().logInfo("Appending custom inline: " + inline + " to " + parentSelector);
-                commands.appendInline(parentSelector, inline);
-            } else {
-                String inline = generateBasicInlineMarkup();
-                HyUIPlugin.getLog().logInfo("Appending inline: " + inline + " to " + parentSelector);
-                commands.appendInline(parentSelector, inline);
             }
             
             if (anchor != null) {
@@ -436,12 +484,21 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
                 commands.setObject(selector + ".Anchor", anchor.toHytaleAnchor());
             }
 
-            if (padding != null && !wrapInGroup) {
-                HyUIPlugin.getLog().logInfo("Setting Padding for " + selector);
-                if (padding.getLeft() != null) commands.set(selector + ".Padding.Left", padding.getLeft());
-                if (padding.getTop() != null) commands.set(selector + ".Padding.Top", padding.getTop());
-                if (padding.getRight() != null) commands.set(selector + ".Padding.Right", padding.getRight());
-                if (padding.getBottom() != null) commands.set(selector + ".Padding.Bottom", padding.getBottom());
+            if (padding != null) {
+                if (!wrapInGroup) {
+                    HyUIPlugin.getLog().logInfo("Setting Padding for " + selector);
+                    if (padding.getLeft() != null) commands.set(selector + ".Padding.Left", padding.getLeft());
+                    if (padding.getTop() != null) commands.set(selector + ".Padding.Top", padding.getTop());
+                    if (padding.getRight() != null) commands.set(selector + ".Padding.Right", padding.getRight());
+                    if (padding.getBottom() != null) commands.set(selector + ".Padding.Bottom", padding.getBottom());
+                } else if (updateOnly) {
+                    String groupSelector = "#" + getWrappingGroupId();
+                    HyUIPlugin.getLog().logInfo("Setting Padding for " + groupSelector);
+                    if (padding.getLeft() != null) commands.set(groupSelector + ".Padding.Left", padding.getLeft());
+                    if (padding.getTop() != null) commands.set(groupSelector + ".Padding.Top", padding.getTop());
+                    if (padding.getRight() != null) commands.set(groupSelector + ".Padding.Right", padding.getRight());
+                    if (padding.getBottom() != null) commands.set(groupSelector + ".Padding.Bottom", padding.getBottom());
+                }
             }
 
             if (visible != null) {
@@ -542,13 +599,6 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
         }
         
         sb.append(" {");
-        // Handle background with opacity for the element itself if not wrapped
-        if (!wrapInGroup && this instanceof au.ellie.hyui.elements.BackgroundSupported<?> bgSupported) {
-            au.ellie.hyui.builders.HyUIPatchStyle bg = bgSupported.getBackground();
-            if (bg != null && bg.getTexturePath() == null && bg.getColor() != null && bg.getColor().contains("(")) {
-                sb.append(" Background: ").append(bg.getColor()).append("; ");
-            }
-        }
         sb.append("}");
         
         return sb.toString();
@@ -675,19 +725,19 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
      * @param events   an instance of {@code UIEventBuilder} used for setting up event 
      *                 handling for the child elements
      */
-    protected void buildChildren(UICommandBuilder commands, UIEventBuilder events) {
+    protected void buildChildren(UICommandBuilder commands, UIEventBuilder events, boolean updateOnly) {
         String selector = getSelector();
         if (selector != null) {
             for (UIElementBuilder<?> child : children) {
                 String originalParent = child.parentSelector;
-                child.inside(selector).build(commands, events);
+                child.inside(selector).build(commands, events, updateOnly);
                 child.inside(originalParent);
             }
         }
     }
 
-    private void executeBuild(UICommandBuilder commands, UIEventBuilder events) {
-        buildBase(commands, events);
+    private void executeBuild(UICommandBuilder commands, UIEventBuilder events, boolean updateOnly) {
+        buildBase(commands, events, updateOnly);
 
         String selector = getSelector();
         for (BiConsumer<UICommandBuilder, String> callback : editBeforeCallbacks) {
@@ -695,7 +745,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
         }
 
         onBuild(commands, events);
-        buildChildren(commands, events);
+        buildChildren(commands, events, updateOnly);
 
         for (BiConsumer<UICommandBuilder, String> callback : editAfterCallbacks) {
             callback.accept(commands, selector);
@@ -717,5 +767,33 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
             base = "Element";
         }
         return sanitizeId(base);
+    }
+
+    @Override
+    public String toString() {
+        return "UIElementBuilder{" +
+                "theme=" + theme +
+                ", elementPath='" + elementPath + '\'' +
+                ", uiFilePath='" + uiFilePath + '\'' +
+                ", id='" + id + '\'' +
+                ", userId='" + userId + '\'' +
+                ", style='" + style + '\'' +
+                ", hyUIStyle=" + hyUIStyle +
+                ", listeners=" + listeners +
+                ", children=" + children +
+                ", initialValue=" + initialValue +
+                ", parentSelector='" + parentSelector + '\'' +
+                ", typeSelector='" + typeSelector + '\'' +
+                ", wrapInGroup=" + wrapInGroup +
+                ", anchor=" + anchor +
+                ", padding=" + padding +
+                ", visible=" + visible +
+                ", tooltipTextSpan=" + tooltipTextSpan +
+                ", hitTestVisible=" + hitTestVisible +
+                ", flexWeight=" + flexWeight +
+                ", editAfterCallbacks=" + editAfterCallbacks +
+                ", editBeforeCallbacks=" + editBeforeCallbacks +
+                ", secondaryStyles=" + secondaryStyles +
+                '}';
     }
 }

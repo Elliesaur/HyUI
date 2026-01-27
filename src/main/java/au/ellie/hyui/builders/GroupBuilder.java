@@ -1,6 +1,5 @@
 package au.ellie.hyui.builders;
 
-import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.elements.BackgroundSupported;
 import au.ellie.hyui.elements.LayoutModeSupported;
 import au.ellie.hyui.elements.ScrollbarStyleSupported;
@@ -113,9 +112,5 @@ public class GroupBuilder extends UIElementBuilder<GroupBuilder> implements Layo
             commands.set(selector + ".ClipChildren", clipChildren);
         }
 
-        if (hyUIStyle == null && style != null) {
-            HyUIPlugin.getLog().logInfo("Setting Style: " + style + " for " + selector);
-            commands.set(selector + ".Style", style);
-        }
     }
 }

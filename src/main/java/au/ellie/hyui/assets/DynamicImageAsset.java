@@ -13,7 +13,10 @@ import com.hypixel.hytale.server.core.asset.common.CommonAssetRegistry;
 import com.hypixel.hytale.server.core.io.PacketHandler;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 // Originally sourced and modified from the SimpleClaims mod: https://github.com/Buuz135/SimpleClaims
@@ -67,19 +70,26 @@ public class DynamicImageAsset extends CommonAsset {
             "UI/Custom/Pages/Elements/DynamicImage9.png",
             "UI/Custom/Pages/Elements/DynamicImage10.png"
     };
-    private static final boolean[] USED_SLOTS = new boolean[PATHS.length];
+    private static final UUID DEFAULT_PLAYER_UUID = new UUID(0L, 0L);
+    private static final Map<UUID, boolean[]> USED_SLOTS = new HashMap<>();
     
     private final byte[] data;
     private final int slotIndex;
+    private final UUID playerUuid;
     
     public DynamicImageAsset(byte[] data) {
-        this(data, claimSlot());
+        this(data, DEFAULT_PLAYER_UUID);
     }
 
-    private DynamicImageAsset(byte[] data, int slotIndex) {
+    public DynamicImageAsset(byte[] data, UUID playerUuid) {
+        this(data, claimSlot(playerUuid), playerUuid);
+    }
+
+    private DynamicImageAsset(byte[] data, int slotIndex, UUID playerUuid) {
         super(PATHS[slotIndex], HASHES[slotIndex], data);
         this.data = data;
         this.slotIndex = slotIndex;
+        this.playerUuid = normalizePlayerUuid(playerUuid);
         HyUIPlugin.getLog().logInfo("Dynamic image slot allocated: " + slotIndex + " path=" + PATHS[slotIndex]);
     }
     
@@ -106,26 +116,6 @@ public class DynamicImageAsset extends CommonAsset {
         return slotIndex;
     }
 
-    public void release() {
-        releaseSlot(slotIndex);
-    }
-
-    public static int peekNextSlotIndex() {
-        synchronized (USED_SLOTS) {
-            for (int i = USED_SLOTS.length - 1; i >= 0; i--) {
-                if (!USED_SLOTS[i]) {
-                    return i;
-                }
-            }
-            for (int i = USED_SLOTS.length - 1; i >= 0; i--) {
-                if (USED_SLOTS[i]) {
-                    return i;
-                }
-            }
-        }
-        return USED_SLOTS.length - 1;
-    }
-    
     @Override
     protected CompletableFuture<byte[]> getBlob0() {
         return CompletableFuture.completedFuture(data);
@@ -147,30 +137,41 @@ public class DynamicImageAsset extends CommonAsset {
         handler.writeNoCache(new RequestCommonAssetsRebuild());
     }
 
-    private static int claimSlot() {
+    private static int claimSlot(UUID playerUuid) {
         synchronized (USED_SLOTS) {
-            for (int i = USED_SLOTS.length - 1; i >= 0; i--) {
-                if (!USED_SLOTS[i]) {
-                    USED_SLOTS[i] = true;
+            boolean[] usedSlots = getSlots(playerUuid);
+            for (int i = usedSlots.length - 1; i >= 0; i--) {
+                if (!usedSlots[i]) {
+                    usedSlots[i] = true;
                     HyUIPlugin.getLog().logInfo("Claimed dynamic image slot: " + i);
                     return i;
                 }
             }
         }
-        throw new IllegalStateException("No dynamic image slots available (max 4).");
+        throw new IllegalStateException("No dynamic image slots available (max 10).");
     }
 
-    private static void releaseSlot(int slotIndex) {
+    private static void releaseSlot(UUID playerUuid, int slotIndex) {
         synchronized (USED_SLOTS) {
-            if (slotIndex < 0 || slotIndex >= USED_SLOTS.length) {
+            boolean[] usedSlots = getSlots(playerUuid);
+            if (slotIndex < 0 || slotIndex >= usedSlots.length) {
                 return;
             }
-            USED_SLOTS[slotIndex] = false;
+            usedSlots[slotIndex] = false;
             HyUIPlugin.getLog().logInfo("Released dynamic image slot: " + slotIndex);
         }
     }
 
-    public static void releaseSlotIndex(int slotIndex) {
-        releaseSlot(slotIndex);
+    public static void releaseSlotIndex(UUID playerUuid, int slotIndex) {
+        releaseSlot(playerUuid, slotIndex);
+    }
+
+    private static boolean[] getSlots(UUID playerUuid) {
+        UUID normalized = normalizePlayerUuid(playerUuid);
+        return USED_SLOTS.computeIfAbsent(normalized, key -> new boolean[PATHS.length]);
+    }
+
+    private static UUID normalizePlayerUuid(UUID playerUuid) {
+        return playerUuid != null ? playerUuid : DEFAULT_PLAYER_UUID;
     }
 }

@@ -12,6 +12,8 @@ import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -24,7 +26,7 @@ public class DropdownBoxBuilder extends UIElementBuilder<DropdownBoxBuilder> {
     private Integer maxSelection;
     private Integer entryHeight;
     private Boolean showLabel;
-    private java.util.List<DropdownEntryInfo> entries = new java.util.ArrayList<>();
+    private List<DropdownEntryInfo> entries = new ArrayList<>();
 
     public DropdownBoxBuilder() {
         super(UIElements.DROPDOWN_BOX, "#HyUIDropdownBox");
@@ -77,33 +79,6 @@ public class DropdownBoxBuilder extends UIElementBuilder<DropdownBoxBuilder> {
         return this;
     }
 
-    /**
-     * Sets the style for the entry labels in the dropdown.
-     * @param style The style reference for entry labels.
-     * @return This builder instance for method chaining.
-     */
-    public DropdownBoxBuilder withEntryLabelStyle(HyUIStyle style) {
-        return withSecondaryStyle("EntryLabelStyle", style);
-    }
-
-    /**
-     * Sets the style for the selected entry label in the dropdown.
-     * @param style The style reference for the selected entry label.
-     * @return This builder instance for method chaining.
-     */
-    public DropdownBoxBuilder withSelectedEntryLabelStyle(HyUIStyle style) {
-        return withSecondaryStyle("SelectedEntryLabelStyle", style);
-    }
-
-    /**
-     * Sets the style for the popup menu of the dropdown.
-     * @param style The style reference for the popup menu.
-     * @return This builder instance for method chaining.
-     */
-    public DropdownBoxBuilder withPopupStyle(HyUIStyle style) {
-        return withSecondaryStyle("PopupStyle", style);
-    }
-
     public DropdownBoxBuilder withEntries(java.util.List<DropdownEntryInfo> entries) {
         this.entries = new java.util.ArrayList<>(entries);
         return this;
@@ -125,6 +100,15 @@ public class DropdownBoxBuilder extends UIElementBuilder<DropdownBoxBuilder> {
 
     public DropdownBoxBuilder addEventListener(CustomUIEventBindingType type, BiConsumer<String, UIContext> callback) {
         return addEventListenerWithContext(type, String.class, callback);
+    }
+
+    @Override
+    protected void applyRuntimeValue(Object value) {
+        if (value != null) {
+            String next = String.valueOf(value);
+            this.value = next;
+            this.initialValue = next;
+        }
     }
 
     @Override

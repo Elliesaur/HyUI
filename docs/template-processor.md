@@ -74,6 +74,37 @@ Supported operators:
 - Logical: `&&`, `||`, `!`
 - Contains: `contains` (strings, arrays, iterables, map keys)
 
+#### Runtime ID Values
+
+When templates are processed during page builds, variables can also resolve to element IDs
+via the runtime `UIContext`. This lets `{{#if}}` and `{{$var}}` use live values (for example,
+dropdown selections) without explicitly setting them as variables.
+
+This is a new and experimental feature. It is only enabled when you call
+`enableRuntimeTemplateUpdates(true)` on your page or HUD builder. Please test thoroughly when
+using it in live gameplay.
+
+```html
+<select id="canMove">
+  <option value="0" {{#if other == 0}}selected{{/if}}>True</option>
+  <option value="1" {{#if other == 1}}selected{{/if}}>False</option>
+</select>
+<select id="other">
+  <option value="0">Attached</option>
+  <option value="1">Unattached</option>
+</select>
+```
+
+In this example, `other` resolves to the runtime value of the `other` dropdown (from
+`UIContext.getValue("other")`), allowing the selected option in `canMove` to update
+when the template is reprocessed.
+
+Notes:
+- For text inputs, prefer `FocusLost`/`FocusGained` over `ValueChanged` to avoid rebuilding on
+  every keystroke.
+- See `src/main/java/au/ellie/hyui/commands/HyUITemplateRuntimeCommand.java` for a complete
+  form example that uses runtime updates.
+
 #### Components (Reusable Blocks)
 
 Register a component template and inject parameters when you use it.

@@ -1,6 +1,8 @@
 package au.ellie.hyui.html;
 
 import au.ellie.hyui.HyUIPlugin;
+import au.ellie.hyui.events.UIContext;
+import au.ellie.hyui.builders.UIElementBuilder;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
@@ -8,6 +10,7 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -58,6 +61,14 @@ public class TemplateProcessor {
     private final Map<String, Object> variables = new HashMap<>();
     private final Map<String, String> components = new HashMap<>();
     private final Map<String, Function<String, String>> filters = new HashMap<>();
+    private ValueResolver valueResolver;
+    private static final Object NULL_SENTINEL = new Object();
+    private boolean preferDynamicValues;
+
+    @FunctionalInterface
+    public interface ValueResolver {
+        Optional<Object> resolve(String name);
+    }
 
     public TemplateProcessor() {
         // Register default filters
@@ -138,6 +149,35 @@ public class TemplateProcessor {
      */
     public String process(String template) {
         return processTemplate(template, new HashMap<>(variables));
+    }
+
+    /**
+     * Processes the template using the provided UI context to resolve element IDs.
+     *
+     * @param template The template string
+     * @param context The UI context for runtime values
+     * @return Processed HTML string
+     */
+    public String process(String template, UIContext context) {
+        ValueResolver previousResolver = this.valueResolver;
+        boolean previousPreferDynamic = this.preferDynamicValues;
+        this.valueResolver = name -> {
+            if (context == null) {
+                return Optional.empty();
+            }
+            Optional<Object> value = context.getValue(name);
+            if (value.isPresent()) {
+                return value;
+            }
+            return hasElement(context, name) ? Optional.of(NULL_SENTINEL) : Optional.empty();
+        };
+        this.preferDynamicValues = true;
+        try {
+            return processTemplate(template, new HashMap<>(variables));
+        } finally {
+            this.valueResolver = previousResolver;
+            this.preferDynamicValues = previousPreferDynamic;
+        }
     }
 
     private String processTemplate(String template, Map<String, Object> scope) {
@@ -594,6 +634,11 @@ public class TemplateProcessor {
             return true;
         }
 
+        Optional<Object> resolved = resolveDynamicValue(name);
+        if (resolved.isPresent()) {
+            return true;
+        }
+
         int dotIndex = name.indexOf('.');
         if (dotIndex > 0) {
             String root = name.substring(0, dotIndex);
@@ -608,8 +653,21 @@ public class TemplateProcessor {
             return null;
         }
 
+        if (preferDynamicValues) {
+            Optional<Object> resolved = resolveDynamicValue(name);
+            if (resolved.isPresent() && resolved.get() != NULL_SENTINEL) {
+                return resolved.get();
+            }
+        }
+
         if (scope.containsKey(name)) {
             return scope.get(name);
+        }
+
+        Optional<Object> resolved = resolveDynamicValue(name);
+        if (resolved.isPresent()) {
+            Object value = resolved.get();
+            return value == NULL_SENTINEL ? null : value;
         }
 
         String[] path = name.split("\\.");
@@ -631,6 +689,18 @@ public class TemplateProcessor {
         }
 
         return current;
+    }
+
+    private Optional<Object> resolveDynamicValue(String name) {
+        if (valueResolver == null) {
+            return Optional.empty();
+        }
+        return valueResolver.resolve(name);
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private boolean hasElement(UIContext context, String name) {
+        return context.getById(name, (Class) UIElementBuilder.class).isPresent();
     }
 
     private Iterable<?> toIterable(Object value) {

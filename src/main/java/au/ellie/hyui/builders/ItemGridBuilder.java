@@ -142,7 +142,25 @@ public class ItemGridBuilder extends UIElementBuilder<ItemGridBuilder> implement
     protected boolean isStyleWhitelist() { return true; }
 
     protected Set<String> getSupportedStyleProperties() {
-        return Set.of("SlotSpacing", "SlotSize", "SlotIconSize", "SlotBackground");
+        return Set.of(
+                "SlotSpacing",
+                "SlotSize",
+                "SlotIconSize",
+                "SlotBackground",
+                "QuantityPopupSlotOverlay",
+                "BrokenSlotBackgroundOverlay",
+                "BrokenSlotIconOverlay",
+                "DefaultItemIcon",
+                "DurabilityBar",
+                "DurabilityBarBackground",
+                "DurabilityBarAnchor",
+                "DurabilityBarColorStart",
+                "DurabilityBarColorEnd",
+                "CursedIconPatch",
+                "CursedIconAnchor",
+                "ItemStackHoveredSound",
+                "ItemStackActivateSound"
+        );
     }
 
     @Override

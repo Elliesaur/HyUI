@@ -150,7 +150,7 @@ public final class ParseUtils {
             return Optional.empty();
         }
         try {
-            return Optional.of(Enum.valueOf(enumClass, value.trim().toUpperCase()));
+            return Optional.of(Enum.valueOf(enumClass, value.trim()));
         } catch (IllegalArgumentException e) {
             return Optional.empty();
         }

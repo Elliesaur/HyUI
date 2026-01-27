@@ -5,6 +5,7 @@ import au.ellie.hyui.events.DynamicPageData;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventActions;
 import au.ellie.hyui.events.UIEventListener;
+import au.ellie.hyui.html.TemplateProcessor;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPage;
@@ -23,9 +24,16 @@ import java.util.function.Consumer;
 public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implements UIContext {
     private final HyUInterface delegate;
 
-    public HyUIPage(PlayerRef playerRef, CustomPageLifetime lifetime, String uiFile, List<UIElementBuilder<?>> elements, List<Consumer<UICommandBuilder>> editCallbacks) {
+    public HyUIPage(PlayerRef playerRef,
+                    CustomPageLifetime lifetime,
+                    String uiFile,
+                    List<UIElementBuilder<?>> elements,
+                    List<Consumer<UICommandBuilder>> editCallbacks,
+                    String templateHtml,
+                    TemplateProcessor templateProcessor,
+                    boolean runtimeTemplateUpdatesEnabled) {
         super(playerRef, lifetime, DynamicPageData.CODEC);
-        this.delegate = new HyUInterface(uiFile, elements, editCallbacks) {};
+        this.delegate = new HyUInterface(uiFile, elements, editCallbacks, templateHtml, templateProcessor, runtimeTemplateUpdatesEnabled) {};
     }
 
     @Override
@@ -45,6 +53,8 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
     
     public void close() {
         super.close();
+        HyUIPlugin.getLog().logInfo("Page closed!");
+        delegate.releaseDynamicImages(playerRef.getUuid());
     }
     
     @Override
@@ -55,7 +65,7 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
             Player playerComponent = (Player)store.getComponent(ref, Player.getComponentType());
             UICommandBuilder commandBuilder = new UICommandBuilder();
             UIEventBuilder eventBuilder = new UIEventBuilder();
-            this.build(ref, commandBuilder, eventBuilder, ref.getStore());
+            delegate.build(ref, commandBuilder, eventBuilder, ref.getStore(), !shouldClear);
             playerComponent.getPageManager().updateCustomPage(new CustomPage(this.getClass().getName(), false, shouldClear, this.lifetime, commandBuilder.getCommands(), eventBuilder.getEvents()));
         }
     }
@@ -65,24 +75,36 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
         return delegate.getById(id, clazz);
     }
 
+    @Override
+    public Optional<UIElementBuilder<?>> getByIdRaw(String id) {
+        return delegate.getById(id);
+    }
+
     /**
      * Reloads a dynamic image by its element ID. This will forcibly invalidate the image 
      * and re-download (cache still applies to all downloads for 15 seconds!).
      * 
      * @param dynamicImageElementId The ID of the dynamic image element.
+     * @param shouldClearPage Whether to clear the page after reloading the image.
      */
-    public void reloadImage(String dynamicImageElementId) {
+    public void reloadImage(String dynamicImageElementId, boolean shouldClearPage) {
         Ref<EntityStore> ref = this.playerRef.getReference();
         if (ref == null || !ref.isValid()) {
             return;
         }
         getById(dynamicImageElementId, DynamicImageBuilder.class).ifPresent(dynamicImage -> {
-            dynamicImage.invalidateImage();
+            dynamicImage.invalidateImage(playerRef.getUuid());
             InterfaceBuilder.sendDynamicImage(playerRef, dynamicImage);
-            updatePage(true);
+            updatePage(shouldClearPage);
         });
     }
 
+    @Override
+    public void onDismiss(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store) {
+        HyUIPlugin.getLog().logInfo("Page dismissed!");
+        delegate.releaseDynamicImages(playerRef.getUuid());
+    }
+    
     @Override
     public void build(@Nonnull Ref<EntityStore> ref, @Nonnull UICommandBuilder uiCommandBuilder, @Nonnull UIEventBuilder uiEventBuilder, @Nonnull Store<EntityStore> store) {
         delegate.build(ref, uiCommandBuilder, uiEventBuilder, store);

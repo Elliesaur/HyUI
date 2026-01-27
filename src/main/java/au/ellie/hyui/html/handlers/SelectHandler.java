@@ -41,8 +41,14 @@ public class SelectHandler implements TagHandler {
 
         for (Element option : element.select("option")) {
             String val = option.hasAttr("value") ? option.attr("value") : option.text();
+
             String label = option.text();
             builder.addEntry(val, label);
+
+            // We override if any options have selected.
+            if (option.hasAttr("selected")) {
+                builder.withValue(val);
+            }
         }
 
         applyCommonAttributes(builder, element);

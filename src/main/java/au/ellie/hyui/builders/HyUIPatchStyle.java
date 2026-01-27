@@ -23,7 +23,7 @@ public class HyUIPatchStyle {
     /**
      * Sets the color for this PatchStyle.
      * 
-     * @param color The color (e.g., #FFFFFF(0.7)).
+     * @param color The color (e.g., #FFFFFF01). The last two characters are opacity.
      * @return This PatchStyle instance for method chaining.
      */
     public HyUIPatchStyle setColor(String color) {
@@ -142,5 +142,36 @@ public class HyUIPatchStyle {
         }
         
         return hytalePatchStyle;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("(");
+        boolean first = true;
+        if (texturePath != null) {
+            sb.append("TexturePath: \"").append(texturePath).append("\"");
+            first = false;
+        }
+        if (color != null) {
+            if (!first) sb.append(", ");
+            sb.append("Color: ").append(color);
+            first = false;
+        }
+        if (border != null) {
+            if (!first) sb.append(", ");
+            sb.append("Border: ").append(border);
+            first = false;
+        }
+        if (horizontalBorder != null) {
+            if (!first) sb.append(", ");
+            sb.append("HorizontalBorder: ").append(horizontalBorder);
+            first = false;
+        }
+        if (verticalBorder != null) {
+            if (!first) sb.append(", ");
+            sb.append("VerticalBorder: ").append(verticalBorder);
+        }
+        sb.append(')');
+        return sb.toString();
     }
 }

@@ -189,6 +189,15 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder> {
     }
 
     @Override
+    protected void applyRuntimeValue(Object value) {
+        if (value != null) {
+            String next = String.valueOf(value);
+            this.value = next;
+            this.initialValue = next;
+        }
+    }
+
+    @Override
     protected boolean usesRefValue() {
         return true;
     }
@@ -248,15 +257,24 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder> {
         if (listeners.isEmpty()) {
             // To handle data back to the .getValue, we need to add at least one listener.
             addEventListener(CustomUIEventBindingType.ValueChanged, (_, _) -> {});
+            addEventListener(CustomUIEventBindingType.FocusLost, (_, _) -> {});
+            addEventListener(CustomUIEventBindingType.FocusGained, (_, _) -> {});
         }
         listeners.forEach(listener -> {
-            if (listener.type() == CustomUIEventBindingType.ValueChanged) {
+            if (listener.type() == CustomUIEventBindingType.ValueChanged || 
+                    listener.type() == CustomUIEventBindingType.FocusLost ||
+                    listener.type() == CustomUIEventBindingType.FocusGained) {
                 String eventId = getEffectiveId();
-                HyUIPlugin.getLog().logInfo("Adding ValueChanged event binding for " + selector + " with eventId: " + eventId);
-                events.addEventBinding(CustomUIEventBindingType.ValueChanged, selector,
+                HyUIPlugin.getLog().logInfo("Adding " + listener.type() + " event binding for " + selector + " with eventId: " + eventId);
+                events.addEventBinding(listener.type(), selector,
                         EventData.of("@Value", selector + ".Value")
                                 .append("Target", eventId)
-                                .append("Action", UIEventActions.VALUE_CHANGED),
+                                .append("Action", switch (listener.type()) {
+                                    case CustomUIEventBindingType.ValueChanged -> UIEventActions.VALUE_CHANGED;
+                                    case CustomUIEventBindingType.FocusLost -> UIEventActions.FOCUS_LOST;
+                                    case CustomUIEventBindingType.FocusGained -> UIEventActions.FOCUS_GAINED;
+                                    default -> throw new IllegalStateException("Unexpected UI Event Action: " + listener.type());
+                                }),
                         false);
             }
         });
