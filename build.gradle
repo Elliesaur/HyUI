@@ -1,3 +1,5 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
 plugins {
     id 'java'
     id 'org.jetbrains.gradle.plugin.idea-ext' version '1.3'
@@ -94,11 +96,11 @@ shadowJar {
     archiveClassifier.set('all')
     
     configurations = [project.configurations.shadow]
-/*
-    doFirst {
-        ant.replace(file: "src/main/java/au/ellie/hyui/HyUIPlugin.java", token: "public static final boolean LOGGING_ENABLED = true;", value: "public static final boolean LOGGING_ENABLED = false;")
-    }
-    doLast {
-        ant.replace(file: "src/main/java/au/ellie/hyui/HyUIPlugin.java", token: "public static final boolean LOGGING_ENABLED = false;", value: "public static final boolean LOGGING_ENABLED = true;")
-    }*/
+}
+
+tasks.named('shadowJar', ShadowJar) {
+    // Exclude some stuff we really don't need.
+    exclude 'Common/UI/Custom/Pages/*.html'
+    exclude 'Common/UI/Custom/*.png'
+    exclude 'au/ellie/hyui/commands/**'
 }
