@@ -77,25 +77,30 @@ public class HudBuilder extends InterfaceBuilder<HudBuilder> {
      * @param store The entity store containing player data.
      * @return The created HyUIHud instance.
      */
-    public HyUIHud show(Store<EntityStore> store) {
+    public HyUIHud show() {
         assert playerRef != null : "Player reference cannot be null.";
-        return show(playerRef, store);
+        return show(playerRef);
+    }
+
+    /**
+     * Deprecated in favor of {@link HudBuilder#show()}
+     */
+    @Deprecated
+    public HyUIHud show(Store<EntityStore> store) {
+        return this.show();
     }
 
     /**
      * Shows the HUD for the specified player using the provided entity store.
      * This also adds and manages multiple HUDs, there is no need to check the active HUD.
      * 
-     * @param playerRefParam The player reference for whom the HUD should be shown.
-     * @param store The entity store containing player data.
+     * @param playerRef The player reference for whom the HUD should be shown.
      * @return The created HyUIHud instance.
      */
-    public HyUIHud show(@Nonnull PlayerRef playerRefParam, Store<EntityStore> store) {
-        Player playerComponent = store.getComponent(playerRefParam.getReference(), Player.getComponentType());
-        sendDynamicImageIfNeeded(playerRefParam);
+    public HyUIHud show(@Nonnull PlayerRef playerRef) {
         String name = "HYUIHUD" + System.currentTimeMillis();
         
-        this.lastHud = new HyUIHud(name, playerRefParam, store, uiFile, getTopLevelElements(), editCallbacks, templateHtml, templateProcessor, runtimeTemplateUpdatesEnabled);
+        this.lastHud = new HyUIHud(name, playerRef, uiFile, getTopLevelElements(), editCallbacks, templateHtml, templateProcessor, runtimeTemplateUpdatesEnabled);
         this.lastHud.setRefreshRateMs(refreshRateMs);
         this.lastHud.setRefreshListener(refreshListener);
         HyUIPlugin.getLog().logInfo("Adding to a MultiHud: " + name);
@@ -105,7 +110,15 @@ public class HudBuilder extends InterfaceBuilder<HudBuilder> {
         
         return this.lastHud;
     }
-    
+
+    /**
+     * Deprecated in favor of {@link HudBuilder#show(PlayerRef)}
+     */
+    @Deprecated
+    public HyUIHud show(@Nonnull PlayerRef playerRef, Store<EntityStore> store) {
+        return this.show(playerRef);
+    }
+
     /**
      * You can update an existing HUD with this builder.
      * @param hudRef The HyUIHud instance to update.

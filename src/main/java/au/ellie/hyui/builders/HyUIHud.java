@@ -33,13 +33,11 @@ public class HyUIHud extends CustomUIHud implements UIContext {
     private long refreshRateMs;
     private long lastRefreshTime;
     private Consumer<HyUIHud> refreshListener;
-    private final Store<EntityStore> store;
 
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private ScheduledFuture<?> refreshTask;
     
     public HyUIHud(String name, PlayerRef playerRef, 
-                   Store<EntityStore> store, 
                    String uiFile,
                    List<UIElementBuilder<?>> elements,
                    List<Consumer<UICommandBuilder>> editCallbacks,
@@ -48,7 +46,6 @@ public class HyUIHud extends CustomUIHud implements UIContext {
                    boolean runtimeTemplateUpdatesEnabled) {
         super(playerRef);
         this.name = name;
-        this.store = store;
         this.delegate = new HyUInterface(uiFile, elements, editCallbacks, templateHtml, templateProcessor, runtimeTemplateUpdatesEnabled) {};
     }
 
@@ -69,7 +66,7 @@ public class HyUIHud extends CustomUIHud implements UIContext {
         }
         
         PlayerRef playerRef = getPlayerRef();
-        if (playerRef.getReference() == null) {
+        if (!playerRef.isValid()) {
             HyUIPlugin.getLog().logInfo("Player is invalid, cancelling refresh task for HUD.");
             
             // Player is no longer valid, cancel task and cleanup.
@@ -78,6 +75,10 @@ public class HyUIHud extends CustomUIHud implements UIContext {
                 refreshTask.cancel(false);
             }
             return;
+        }
+
+        if (playerRef.getReference() == null) {
+            return; // This might happen during world changes.
         }
 
         long now = System.currentTimeMillis();
@@ -143,8 +144,14 @@ public class HyUIHud extends CustomUIHud implements UIContext {
      * You can later associate it with another, or the same multi-HUD and show it.
      */
     public void remove() {
+        var store = getStore();
+        if (store == null) return;
+
         store.getExternalData().getWorld().execute(() -> {
-            MultiHudWrapper.hideCustomHud(getPlayer(), getPlayerRef(), this.name);
+            var player = getPlayer();
+            if (player == null) return;
+
+            MultiHudWrapper.hideCustomHud(player, getPlayerRef(), this.name);
         });
         HyUIPlugin.getLog().logInfo("HUD removed: " + this.name);
         refreshTask.cancel(false);
@@ -158,7 +165,10 @@ public class HyUIHud extends CustomUIHud implements UIContext {
      * You can later associate it with another, or the same multi-HUD and show it.
      */
     public void removeUnsafe() {
-        MultiHudWrapper.hideCustomHud(getPlayer(), getPlayerRef(), this.name);
+        var player = getPlayer();
+        if (player == null) return;
+
+        MultiHudWrapper.hideCustomHud(player, getPlayerRef(), this.name);
         HyUIPlugin.getLog().logInfo("HUD removed: " + this.name);
         refreshTask.cancel(false);
     }
@@ -169,9 +179,7 @@ public class HyUIHud extends CustomUIHud implements UIContext {
      * 
      */
     public void add() {
-        store.getExternalData().getWorld().execute(() -> {
-            MultiHudWrapper.setCustomHud(getPlayer(), getPlayerRef(), this.name, this);
-        });
+        this.safeAdd();
         if (refreshTask != null && !refreshTask.isCancelled()) {
             refreshTask.cancel(false);
         }
@@ -185,7 +193,10 @@ public class HyUIHud extends CustomUIHud implements UIContext {
      *
      */
     public void addUnsafe() {
-        MultiHudWrapper.setCustomHud(getPlayer(), getPlayerRef(), this.name, this);
+        var player = getPlayer();
+        if (player == null) return;
+
+        MultiHudWrapper.setCustomHud(player, getPlayerRef(), this.name, this);
         if (refreshTask != null && !refreshTask.isCancelled()) {
             refreshTask.cancel(false);
         }
@@ -250,11 +261,12 @@ public class HyUIHud extends CustomUIHud implements UIContext {
         } else {
             // Re-render completely.
             if (!unsafe) {
-                store.getExternalData().getWorld().execute(() -> {
-                    MultiHudWrapper.setCustomHud(getPlayer(), getPlayerRef(), this.name, this);
-                });
+                this.safeAdd();
             } else {
-                MultiHudWrapper.setCustomHud(getPlayer(), getPlayerRef(), this.name, this);
+                var player = getPlayer();
+                if (player == null) return;
+
+                MultiHudWrapper.setCustomHud(player, getPlayerRef(), this.name, this);
             }
 
         }
@@ -301,17 +313,41 @@ public class HyUIHud extends CustomUIHud implements UIContext {
         delegate.setUiFile(updatedHudBuilder.uiFile);
         return builder;
     }
-    
-    @Nullable
+
+    private void safeAdd() {
+        var store = getStore();
+        if (store == null) return;
+
+        store.getExternalData().getWorld().execute(() -> {
+            var player = getPlayer();
+            if (player == null) return;
+
+            MultiHudWrapper.setCustomHud(player, getPlayerRef(), this.name, this);
+        });
+    }
+
+    private Store<EntityStore> getStore() {
+        var playerRef = getPlayerRef();
+        if (!playerRef.isValid()) {
+            return null;
+        }
+        var playerReference = playerRef.getReference();
+        if (playerReference == null || !playerReference.isValid()) {
+            return null;
+        }
+        return playerReference.getStore();
+    }
+
     private Player getPlayer() {
         var playerRef = getPlayerRef();
-        if (playerRef == null || !playerRef.isValid()) {
+        if (!playerRef.isValid()) {
             return null;
         }
         var playerRefRef = playerRef.getReference();
         if (playerRefRef == null || !playerRefRef.isValid()) {
             return null;
         }
+        var store = playerRefRef.getStore();
         return store.getComponent(playerRefRef, Player.getComponentType());
     }
 

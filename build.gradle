@@ -87,14 +87,14 @@ idea.project.settings.runConfigurations {
     }
 }
 
-repositories { 
+repositories {
     mavenCentral()
 }
 
 shadowJar {
     archiveBaseName.set(project.name)
     archiveClassifier.set('all')
-    
+
     configurations = [project.configurations.shadow]
 }
 

@@ -47,9 +47,9 @@ public class HyUIPlugin extends JavaPlugin {
                 var player = event.getPlayer();
                 if (player == null) return;
 
-                Ref<EntityStore> ref = player.getReference();
-                if (ref == null || !ref.isValid()) return;
-                
+                Ref<EntityStore> ref = event.getPlayerRef();
+                if (!ref.isValid()) return;
+
                 Store<EntityStore> store = ref.getStore();
                 World world = store.getExternalData().getWorld();
                 world.execute(() -> {
@@ -63,7 +63,7 @@ public class HyUIPlugin extends JavaPlugin {
                                     builder.withText("Hello, World! " + System.currentTimeMillis());
                                 });
                             })
-                            .show(playerRef, store);
+                            .show(playerRef);
                 });
 
             });
