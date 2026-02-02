@@ -11,6 +11,10 @@ public class HyUIPluginLogger {
     public HyUIPluginLogger() {
         
     }
+
+    public void logWarn(String message) {
+        internalLogger.atWarning().log(message);
+    }
     
     public void logFinest(String message) {
         internalLogger.atFinest().log(message);
