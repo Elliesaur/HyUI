@@ -167,22 +167,6 @@ public class TemplateProcessor {
      * @return This processor for chaining
      */
     public TemplateProcessor registerComponentFromFile(String name, String resourcePath) {
-        if (resourcePath == null || resourcePath.isBlank()) {
-            throw new IllegalArgumentException("Resource path cannot be null or blank.");
-        }
-        String trimmed = resourcePath.startsWith("/") ? resourcePath.substring(1) : resourcePath;
-        String template = loadHtmlFromResources("/Common/UI/Custom/" + trimmed);
-        return registerComponent(name, template);
-    }
-
-    /**
-     * Registers a reusable component template loaded from resources.
-     *
-     * @param name         Component name (e.g., "button", "card")
-     * @param resourcePath Resource path to the component HTML - located in Common/UI/Custom/.
-     * @return This processor for chaining
-     */
-    public TemplateProcessor registerComponentFromFile(String name, String resourcePath) {
         if (resourcePath == null || resourcePath.isBlank())
             throw new IllegalArgumentException("Resource path cannot be null or blank.");
 
