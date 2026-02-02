@@ -1,24 +1,42 @@
+/*
+ *     Copyright (C) 2026 EllieAU
+ *
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU Lesser General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ *
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU Lesser General Public License for more details.
+ *
+ *     You should have received a copy of the GNU Lesser General Public License
+ *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
 package au.ellie.hyui.builders;
 
 import com.hypixel.hytale.server.core.ui.Anchor;
 import com.hypixel.hytale.server.core.ui.Value;
 
 public class HyUIAnchor {
-    private int left = -1;
-    private int right = -1;
-    private int top = -1;
-    private int bottom = -1;
-    private int height = -1;
-    private int full = -1;
-    private int horizontal = -1;
-    private int vertical = -1;
-    private int width = -1;
-    private int minWidth = -1;
-    private int maxWidth = -1;
+    private Integer left = null;
+    private Integer right = null;
+    private Integer top = null;
+    private Integer bottom = null;
+    private Integer height = null;
+    private Integer full = null;
+    private Integer horizontal = null;
+    private Integer vertical = null;
+    private Integer width = null;
+    private Integer minWidth = null;
+    private Integer maxWidth = null;
     public HyUIAnchor() {
     }
 
-    public HyUIAnchor(int left, int right, int top, int bottom, int height, int full, int horizontal, int vertical, int width, int minWidth, int maxWidth) {
+    public HyUIAnchor(Integer left, Integer right, Integer top, Integer bottom, Integer height, Integer full, Integer horizontal, Integer vertical, Integer width, Integer minWidth, Integer maxWidth) {
         this.left = left;
         this.right = right;
         this.top = top;
@@ -32,78 +50,78 @@ public class HyUIAnchor {
         this.maxWidth = maxWidth;
     }
 
-    public HyUIAnchor setLeft(int left) {
+    public HyUIAnchor setLeft(Integer left) {
         this.left = left;
         return this;
     }
 
-    public HyUIAnchor setRight(int right) {
+    public HyUIAnchor setRight(Integer right) {
         this.right = right;
         return this;
     }
 
-    public HyUIAnchor setTop(int top) {
+    public HyUIAnchor setTop(Integer top) {
         this.top = top;
         return this;
     }
 
-    public HyUIAnchor setBottom(int bottom) {
+    public HyUIAnchor setBottom(Integer bottom) {
         this.bottom = bottom;
         return this;
     }
 
-    public HyUIAnchor setHeight(int height) {
+    public HyUIAnchor setHeight(Integer height) {
         this.height = height;
         return this;
     }
 
-    public int getHeight() {
+    public Integer getHeight() {
         return height;
     }
 
-    public HyUIAnchor setFull(int full) {
+    public HyUIAnchor setFull(Integer full) {
         this.full = full;
         return this;
     }
 
-    public HyUIAnchor setHorizontal(int horizontal) {
+    public HyUIAnchor setHorizontal(Integer horizontal) {
         this.horizontal = horizontal;
         return this;
     }
 
-    public HyUIAnchor setVertical(int vertical) {
+    public HyUIAnchor setVertical(Integer vertical) {
         this.vertical = vertical;
         return this;
     }
 
-    public HyUIAnchor setWidth(int width) {
+    public HyUIAnchor setWidth(Integer width) {
         this.width = width;
         return this;
     }
 
-    public HyUIAnchor setMinWidth(int minWidth) {
+    public HyUIAnchor setMinWidth(Integer minWidth) {
         this.minWidth = minWidth;
         return this;
     }
 
-    public HyUIAnchor setMaxWidth(int maxWidth) {
+    public HyUIAnchor setMaxWidth(Integer maxWidth) {
         this.maxWidth = maxWidth;
         return this;
     }
 
     public Anchor toHytaleAnchor() {
         Anchor anchor = new Anchor();
-        if (left >= 0) anchor.setLeft(Value.of(left));
-        if (right >= 0) anchor.setRight(Value.of(right));
-        if (top >= 0) anchor.setTop(Value.of(top));
-        if (bottom >= 0) anchor.setBottom(Value.of(bottom));
-        if (height >= 0) anchor.setHeight(Value.of(height));
-        if (full >= 0) anchor.setFull(Value.of(full));
-        if (horizontal >= 0) anchor.setHorizontal(Value.of(horizontal));
-        if (vertical >= 0) anchor.setVertical(Value.of(vertical));
-        if (width >= 0) anchor.setWidth(Value.of(width));
-        if (minWidth >= 0) anchor.setMinWidth(Value.of(minWidth));
-        if (maxWidth >= 0) anchor.setMaxWidth(Value.of(maxWidth));
+        if (left != null) anchor.setLeft(Value.of(left));
+        if (right != null) anchor.setRight(Value.of(right));
+        if (top != null) anchor.setTop(Value.of(top));
+        if (bottom != null) anchor.setBottom(Value.of(bottom));
+        if (height != null) anchor.setHeight(Value.of(height));
+        if (full != null) anchor.setFull(Value.of(full));
+        if (horizontal != null) anchor.setHorizontal(Value.of(horizontal));
+        if (vertical != null) anchor.setVertical(Value.of(vertical));
+        if (width != null) anchor.setWidth(Value.of(width));
+        if (minWidth != null) anchor.setMinWidth(Value.of(minWidth));
+        if (maxWidth != null) anchor.setMaxWidth(Value.of(maxWidth));
         return anchor;
     }
 }

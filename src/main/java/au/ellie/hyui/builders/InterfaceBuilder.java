@@ -1,3 +1,21 @@
+/*
+ *     Copyright (C) 2026 EllieAU
+ *
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU Lesser General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ *
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU Lesser General Public License for more details.
+ *
+ *     You should have received a copy of the GNU Lesser General Public License
+ *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
 package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
@@ -23,6 +41,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -33,6 +54,8 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
     protected String templateHtml;
     protected TemplateProcessor templateProcessor;
     protected boolean runtimeTemplateUpdatesEnabled;
+    protected boolean asyncImageLoadingEnabled;
+    private static final ExecutorService DYNAMIC_IMAGE_EXECUTOR = Executors.newCachedThreadPool();
 
     @SuppressWarnings("unchecked")
     protected T self() {
@@ -146,6 +169,11 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
 
     public T enableRuntimeTemplateUpdates(boolean enabled) {
         this.runtimeTemplateUpdatesEnabled = enabled;
+        return self();
+    }
+
+    public T enableAsyncImageLoading(boolean enabled) {
+        this.asyncImageLoadingEnabled = enabled;
         return self();
     }
 
@@ -328,6 +356,30 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
         }
     }
 
+    protected void sendDynamicImageIfNeededAsync(PlayerRef pRef, Consumer<DynamicImageBuilder> onComplete) {
+        if (pRef == null || !pRef.isValid()) {
+            return;
+        }
+        UUID playerUuid = pRef.getUuid();
+        for (UIElementBuilder<?> element : elementRegistry.values()) {
+            if (element instanceof DynamicImageBuilder dImg) {
+                if (dImg.isImagePathAssigned(playerUuid)) {
+                    continue;
+                }
+                String url = dImg.getImageUrl();
+                if (url == null || url.isBlank()) {
+                    continue;
+                }
+                CompletableFuture.runAsync(() -> sendDynamicImage(pRef, dImg), DYNAMIC_IMAGE_EXECUTOR)
+                        .thenRun(() -> {
+                            if (onComplete != null) {
+                                onComplete.accept(dImg);
+                            }
+                        });
+            }
+        }
+    }
+
     static void sendDynamicImage(PlayerRef pRef, DynamicImageBuilder dynamicImage) {
         if (pRef == null || dynamicImage == null) {
             HyUIPlugin.getLog().logFinest("REFERENCE WAS INVALID");
@@ -350,10 +402,11 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
                         hyvatar.getRenderType(),
                         hyvatar.getSize(),
                         hyvatar.getRotate(),
-                        hyvatar.getCape()
+                        hyvatar.getCape(),
+                        playerUuid
                 );
             } else {
-                imageBytes = PngDownloadUtils.downloadPng(url);
+                imageBytes = PngDownloadUtils.downloadPng(url, playerUuid);
             }
 
             DynamicImageAsset asset = new DynamicImageAsset(imageBytes, playerUuid);

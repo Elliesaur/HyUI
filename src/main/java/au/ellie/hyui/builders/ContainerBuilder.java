@@ -1,3 +1,21 @@
+/*
+ *     Copyright (C) 2026 EllieAU
+ *
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU Lesser General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ *
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU Lesser General Public License for more details.
+ *
+ *     You should have received a copy of the GNU Lesser General Public License
+ *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
 package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
@@ -17,7 +35,6 @@ public class ContainerBuilder extends UIElementBuilder<ContainerBuilder> impleme
     private HyUIPatchStyle background;
     private String scrollbarStyleReference;
     private String scrollbarStyleDocument;
-    private Boolean clipChildren;
 
     public ContainerBuilder() {
         super(UIElements.CONTAINER, "#HyUIContainer");
@@ -77,17 +94,6 @@ public class ContainerBuilder extends UIElementBuilder<ContainerBuilder> impleme
         return this;
     }
 
-    /**
-     * Sets whether the container should clip its children.
-     *
-     * @param clipChildren Whether to clip children.
-     * @return the {@code ContainerBuilder} instance for method chaining
-     */
-    public ContainerBuilder withClipChildren(boolean clipChildren) {
-        this.clipChildren = clipChildren;
-        return this;
-    }
-
     @Override
     public String getScrollbarStyleReference() {
         return this.scrollbarStyleReference;
@@ -133,11 +139,7 @@ public class ContainerBuilder extends UIElementBuilder<ContainerBuilder> impleme
         applyLayoutMode(commands, selector);
         applyBackground(commands, selector);
         applyScrollbarStyle(commands, selector);
-
-        if (clipChildren != null) {
-            commands.set(selector + ".ClipChildren", clipChildren);
-        }
-
+        
         if (titleText != null) {
             String titleSelector = selector + " #Title #HyUIContainerTitle";
             HyUIPlugin.getLog().logFinest("Setting Title Text: " + titleText + " for " + titleSelector);

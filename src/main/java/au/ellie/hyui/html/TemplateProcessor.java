@@ -1,3 +1,21 @@
+/*
+ *     Copyright (C) 2026 EllieAU
+ *
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU Lesser General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ *
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU Lesser General Public License for more details.
+ *
+ *     You should have received a copy of the GNU Lesser General Public License
+ *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
 package au.ellie.hyui.html;
 
 import au.ellie.hyui.builders.UIElementBuilder;
@@ -139,6 +157,22 @@ public class TemplateProcessor {
     public TemplateProcessor registerComponent(String name, String template) {
         components.put(name, template);
         return this;
+    }
+
+    /**
+     * Registers a reusable component template loaded from resources.
+     *
+     * @param name         Component name (e.g., "button", "card")
+     * @param resourcePath Resource path to the component HTML - located in Common/UI/Custom/.
+     * @return This processor for chaining
+     */
+    public TemplateProcessor registerComponentFromFile(String name, String resourcePath) {
+        if (resourcePath == null || resourcePath.isBlank()) {
+            throw new IllegalArgumentException("Resource path cannot be null or blank.");
+        }
+        String trimmed = resourcePath.startsWith("/") ? resourcePath.substring(1) : resourcePath;
+        String template = loadHtmlFromResources("/Common/UI/Custom/" + trimmed);
+        return registerComponent(name, template);
     }
 
     /**

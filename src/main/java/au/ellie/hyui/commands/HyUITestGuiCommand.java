@@ -1,8 +1,27 @@
+/*
+ *     Copyright (C) 2026 EllieAU
+ *
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU Lesser General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ *
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU Lesser General Public License for more details.
+ *
+ *     You should have received a copy of the GNU Lesser General Public License
+ *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
 package au.ellie.hyui.commands;
 
 import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.HyUIPluginLogger;
 import au.ellie.hyui.builders.*;
+import au.ellie.hyui.events.PageRefreshResult;
 import au.ellie.hyui.events.SlotMouseDragCompletedEventData;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -52,7 +71,7 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                     return CompletableFuture.runAsync(() -> {
                         PlayerRef playerRef = store.getComponent(ref, PlayerRef.getComponentType());
                         if (playerRef != null) {
-                            openReplicate(playerRef, store);
+                            openHtmlTestGui(playerRef, store);
                         }
                     }, world);
                 } else {
@@ -223,6 +242,15 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                     a.ifPresent(aDouble -> HyUIPlugin.getLog().logInfo("Price input is: " + aDouble));
                 })*/
                 .withLifetime(CustomPageLifetime.CanDismiss)
+                .withRefreshRate(1000)
+                .onRefresh((page) -> {
+                    playerRef.sendMessage(Message.raw("HEY"));
+                    int count = clicks.get();
+                    if (count == 0) {
+                        return PageRefreshResult.NONE;
+                    }
+                    return (count % 2 == 0) ? PageRefreshResult.UPDATE_CLEAR : PageRefreshResult.UPDATE;
+                })
                 .addEventListener("btn1", CustomUIEventBindingType.Activating, (data, ctx) -> {
                     playerRef.sendMessage(Message.raw("Button clicked via PageBuilder ID lookup!: " +
                     ctx.getValue("myInput", String.class).orElse("N/A")));

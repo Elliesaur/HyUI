@@ -1,4 +1,16 @@
 ### HyUI Changelog
+#### 0.6.0 - 1 Feb 2026
+- Add per-player image caching - see the docs for more info.
+- Add async image loading (not the best).
+- Add page refreshing at a set rate with full page and UI context access, similar to HUD refreshes.
+- Add the ability to register template components from resources - `registerComponentFromFile(name, resourcePath)`
+
+#### 0.5.10 - 31 Jan 2026
+* Fixed layout mode being applied to buttons and not group surrounding button.
+* Refactor: use supplier instead of direct value - thank you @Farrael!
+* Feature: Allow negative anchors - thank you @WolverinDEV
+* Changed from ARR to LGPLv3 license.
+
 #### 0.5.10 - 30 Jan 2026
 * Fix field access checks.
 

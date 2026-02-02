@@ -1,6 +1,25 @@
+/*
+ *     Copyright (C) 2026 EllieAU
+ *
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU Lesser General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ *
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU Lesser General Public License for more details.
+ *
+ *     You should have received a copy of the GNU Lesser General Public License
+ *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
 package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
+import au.ellie.hyui.events.PageRefreshResult;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.html.HtmlParser;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
@@ -21,6 +40,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * A convenient builder to help you construct a custom Page for Hytale and open it.
@@ -28,6 +48,8 @@ import java.util.function.Consumer;
 public class PageBuilder extends InterfaceBuilder<PageBuilder> {
     private final PlayerRef playerRef;
     private CustomPageLifetime lifetime = CustomPageLifetime.CanDismiss;
+    private long refreshRateMs = 0;
+    private Function<HyUIPage, PageRefreshResult> refreshListener;
     private HyUIPage lastPage;
 
     /**
@@ -82,6 +104,29 @@ public class PageBuilder extends InterfaceBuilder<PageBuilder> {
     }
 
     /**
+     * Sets the refresh rate for the page in milliseconds.
+     * If set to 0 (default), the page will not refresh periodically.
+     *
+     * @param ms The refresh rate in milliseconds.
+     * @return The PageBuilder instance.
+     */
+    public PageBuilder withRefreshRate(long ms) {
+        this.refreshRateMs = ms;
+        return this;
+    }
+
+    /**
+     * Registers a callback to be triggered when the page is refreshed.
+     *
+     * @param listener The listener callback. Return update choice to apply.
+     * @return The PageBuilder instance.
+     */
+    public PageBuilder onRefresh(Function<HyUIPage, PageRefreshResult> listener) {
+        this.refreshListener = listener;
+        return this;
+    }
+
+    /**
      * Opens a custom UI page for the associated player using the provided store.
      * This method retrieves the player's page manager and creates a new instance
      * of the HyUIPage based on the specified parameters and fields defined in the
@@ -92,12 +137,7 @@ public class PageBuilder extends InterfaceBuilder<PageBuilder> {
      */
     public HyUIPage open(Store<EntityStore> store) {
         assert playerRef != null : "Player reference cannot be null. Use override for open(Store<ECS>) if reusing this builder.";
-        Player playerComponent = store.getComponent(playerRef.getReference(), Player.getComponentType());
-        sendDynamicImageIfNeeded(playerRef);
-        PageManager pageManager = playerComponent.getPageManager();
-        this.lastPage = new HyUIPage(playerRef, lifetime, uiFile, getTopLevelElements(), editCallbacks, templateHtml, templateProcessor, runtimeTemplateUpdatesEnabled);
-        pageManager.openCustomPage(playerRef.getReference(), store, this.lastPage);
-        return this.lastPage;
+        return open(playerRef, store);
     }
 
     /**
@@ -112,10 +152,24 @@ public class PageBuilder extends InterfaceBuilder<PageBuilder> {
      */
     public HyUIPage open(@Nonnull PlayerRef playerRefParam, Store<EntityStore> store) {
         Player playerComponent = store.getComponent(playerRefParam.getReference(), Player.getComponentType());
-        sendDynamicImageIfNeeded(playerRefParam);
         PageManager pageManager = playerComponent.getPageManager();
         this.lastPage = new HyUIPage(playerRefParam, lifetime, uiFile, getTopLevelElements(), editCallbacks, templateHtml, templateProcessor, runtimeTemplateUpdatesEnabled);
+        this.lastPage.setRefreshRateMs(refreshRateMs);
+        this.lastPage.setRefreshListener(refreshListener);
         pageManager.openCustomPage(playerRefParam.getReference(), store, this.lastPage);
+        if (asyncImageLoadingEnabled) {
+            HyUIPage openedPage = this.lastPage;
+            var world = store.getExternalData().getWorld();
+            sendDynamicImageIfNeededAsync(playerRefParam, dynamicImage -> {
+                String id = dynamicImage.getId();
+                if (id == null || id.isBlank() || openedPage == null) {
+                    return;
+                }
+                world.execute(() -> openedPage.reloadImage(id, false, false));
+            });
+        } else {
+            sendDynamicImageIfNeeded(playerRefParam);
+        }
         return this.lastPage;
     }
 
