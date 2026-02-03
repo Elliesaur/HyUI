@@ -213,7 +213,7 @@ class TemplateProcessorTest {
 
             processor
                     .setVariable("enabled", condition)
-                    .setVariable("secret", (stack) -> {
+                    .setVariable("secret", (_) -> {
                         evaluations.incrementAndGet();
                         return "value_" + evaluations;
                     });

@@ -72,7 +72,7 @@ public class Parser {
                 yield new TextNode(token.value());
             }
             case EXPR_OPEN -> parseExpression();
-            case BLOCK_OPEN -> parseBlock();
+            case BLOCK_START -> parseBlock();
             default -> throw new RuntimeException("Unexpected token: " + token);
         };
     }
@@ -228,7 +228,7 @@ public class Parser {
      * @return AST node representing the block
      */
     private Node parseBlock() {
-        expect(BLOCK_OPEN);
+        expect(BLOCK_START);
 
         if (match(BLOCK_IF))
             return parseIfBlock();
@@ -248,11 +248,11 @@ public class Parser {
         expect(EXPR_CLOSE);
 
         List<Node> thenBody = new ArrayList<>();
-        while (!check(BLOCK_CLOSE) && !(check(BLOCK_OPEN, BLOCK_ELSE)))
+        while (!check(BLOCK_END) && !(check(BLOCK_START, BLOCK_ELSE)))
             thenBody.add(parseNode());
 
         List<Node> elseBody = new ArrayList<>();
-        if (check(BLOCK_OPEN)) {
+        if (check(BLOCK_START)) {
             int savedPos = pos;
             advance(); // Skip BLOCK_OPEN
 
@@ -260,13 +260,13 @@ public class Parser {
                 advance(); // Skip EXPR_ELSE
                 expect(EXPR_CLOSE);
 
-                while (!check(BLOCK_CLOSE))
+                while (!check(BLOCK_END))
                     elseBody.add(parseNode());
             } else
                 pos = savedPos;
         }
 
-        expect(BLOCK_CLOSE, BLOCK_IF, EXPR_CLOSE);
+        expect(BLOCK_END, BLOCK_IF, EXPR_CLOSE);
 
         return new IfBlockNode(condition, thenBody, elseBody);
     }
@@ -289,10 +289,10 @@ public class Parser {
         expect(EXPR_CLOSE);
 
         List<Node> body = new ArrayList<>();
-        while (!check(BLOCK_CLOSE))
+        while (!check(BLOCK_END))
             body.add(parseNode());
 
-        expect(BLOCK_CLOSE, BLOCK_EACH, EXPR_CLOSE);
+        expect(BLOCK_END, BLOCK_EACH, EXPR_CLOSE);
 
         return new EachBlockNode(itemName, collection, body);
     }

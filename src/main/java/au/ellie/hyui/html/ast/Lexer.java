@@ -23,13 +23,12 @@ import au.ellie.hyui.html.ast.item.Token;
 import java.util.ArrayList;
 import java.util.List;
 
+import static au.ellie.hyui.html.ast.item.Token.Type.*;
+
 public class Lexer {
     private final String input;
-    private int pos = 0;
-
-    // May be used for debug
     private int line = 1;
-    private int column = 1;
+    private int pos = 0;
 
     public Lexer(String input) {
         this.input = input;
@@ -42,33 +41,47 @@ public class Lexer {
         List<Token> tokens = new ArrayList<>();
 
         while (pos < input.length()) {
-            if (peek("{{#")) {
-                trimWhitespaceForBlock(tokens);
-
-                tokens.add(new Token(Token.Type.BLOCK_OPEN, "{{#", pos));
-                advance(3);
-                tokenizeExpression(tokens);
-
-                skipBlockLineEnd();
-            } else if (peek("{{/")) {
-                trimWhitespaceForBlock(tokens);
-
-                tokens.add(new Token(Token.Type.BLOCK_CLOSE, "{{/", pos));
-                advance(3);
-                tokenizeExpression(tokens);
-
-                skipBlockLineEnd();
-            } else if (peek("{{")) {
-                tokens.add(new Token(Token.Type.EXPR_OPEN, "{{", pos));
-                advance(2);
-                tokenizeExpression(tokens);
-            } else
+            if (peek(EXPR_OPEN))
+                tokenizeMustache(tokens);
+            else
                 tokenizeText(tokens);
         }
 
-        tokens.add(new Token(Token.Type.GLOBAL_EOF, "", pos));
+        tokens.add(new Token(GLOBAL_EOF, pos));
 
         return tokens;
+    }
+
+    /**
+     * Tokenize mustache-style expressions: `{{ ... }}`, `{{# ... }}` or `{{/ ... }}`
+     *
+     * @param tokens The list to add tokens to
+     */
+    private void tokenizeMustache(List<Token> tokens) {
+        boolean clean = false;
+
+        if (peek(BLOCK_START)) {
+            clean = true;
+
+            trimWhitespaceForBlock(tokens);
+            tokens.add(new Token(BLOCK_START, pos));
+            advance(BLOCK_START);
+        } else if (peek(BLOCK_END)) {
+            clean = true;
+
+            trimWhitespaceForBlock(tokens);
+            tokens.add(new Token(BLOCK_END, pos));
+            advance(BLOCK_END);
+        } else {
+            tokens.add(new Token(EXPR_OPEN, pos));
+            advance(EXPR_OPEN);
+        }
+
+        skipWhitespace();
+        tokenizeExpression(tokens);
+
+        if (clean)
+            skipBlockLineEnd();
     }
 
     /**
@@ -80,18 +93,18 @@ public class Lexer {
         skipWhitespace();
 
         while (pos < input.length()) {
-            if (peek("}}"))
+            if (peek(EXPR_CLOSE))
                 break;
 
             var current = current();
 
             // String
-            if (current == '"') {
+            if (EXPR_STRING.match(current)) {
                 tokens.add(tokenizeString());
             }
 
             // Variable
-            else if (current == '$') {
+            else if (EXPR_VARIABLE.match(current)) {
                 tokens.add(tokenizeVariable());
             }
 
@@ -106,39 +119,39 @@ public class Lexer {
             }
 
             // Keyword / Operator
-            else if (peek("==")) {
-                tokens.add(new Token(Token.Type.COMP_EQUALS, "==", pos));
-                advance(2);
-            } else if (peek("!=")) {
-                tokens.add(new Token(Token.Type.COMP_NOT_EQUALS, "!=", pos));
-                advance(2);
-            } else if (peek("<=")) {
-                tokens.add(new Token(Token.Type.COMP_LESS_EQUALS, "<=", pos));
-                advance(2);
-            } else if (peek(">=")) {
-                tokens.add(new Token(Token.Type.COMP_GREATER_EQUALS, ">=", pos));
-                advance(2);
-            } else if (peek("<")) {
-                tokens.add(new Token(Token.Type.COMP_LESS_THAN, "<", pos));
-                advance(1);
-            } else if (peek(">")) {
-                tokens.add(new Token(Token.Type.COMP_GREATER_THAN, ">", pos));
-                advance(1);
-            } else if (peek("&&")) {
-                tokens.add(new Token(Token.Type.COMP_AND, "&&", pos));
-                advance(2);
-            } else if (peek("??")) {
-                tokens.add(new Token(Token.Type.EXPR_NULL_COALESCING, "??", pos));
-                advance(2);
-            } else if (peek("||")) {
-                tokens.add(new Token(Token.Type.COMP_OR, "||", pos));
-                advance(2);
-            } else if (peek("|")) {
-                tokens.add(new Token(Token.Type.EXPR_PIPE, "|", pos));
-                advance(1);
-            } else if (peek(".")) {
-                tokens.add(new Token(Token.Type.EXPR_VARIABLE_DOT, ".", pos));
-                advance(1);
+            else if (peek(COMP_EQUALS)) {
+                tokens.add(new Token(COMP_EQUALS, pos));
+                advance(COMP_EQUALS);
+            } else if (peek(COMP_NOT_EQUALS)) {
+                tokens.add(new Token(COMP_NOT_EQUALS, pos));
+                advance(COMP_NOT_EQUALS);
+            } else if (peek(COMP_LESS_EQUALS)) {
+                tokens.add(new Token(COMP_LESS_EQUALS, pos));
+                advance(COMP_LESS_EQUALS);
+            } else if (peek(COMP_GREATER_EQUALS)) {
+                tokens.add(new Token(COMP_GREATER_EQUALS, pos));
+                advance(COMP_GREATER_EQUALS);
+            } else if (peek(COMP_LESS_THAN)) {
+                tokens.add(new Token(COMP_LESS_THAN, pos));
+                advance(COMP_LESS_THAN);
+            } else if (peek(COMP_GREATER_THAN)) {
+                tokens.add(new Token(COMP_GREATER_THAN, pos));
+                advance(COMP_GREATER_THAN);
+            } else if (peek(COMP_AND)) {
+                tokens.add(new Token(COMP_AND, pos));
+                advance(COMP_AND);
+            } else if (peek(EXPR_NULL_COALESCING)) {
+                tokens.add(new Token(EXPR_NULL_COALESCING, pos));
+                advance(EXPR_NULL_COALESCING);
+            } else if (peek(COMP_OR)) {
+                tokens.add(new Token(COMP_OR, pos));
+                advance(COMP_OR);
+            } else if (peek(EXPR_PIPE)) {
+                tokens.add(new Token(EXPR_PIPE, pos));
+                advance(EXPR_PIPE);
+            } else if (peek(EXPR_VARIABLE_DOT)) {
+                tokens.add(new Token(EXPR_VARIABLE_DOT, pos));
+                advance(EXPR_VARIABLE_DOT);
             }
 
             // Identifiers
@@ -151,8 +164,8 @@ public class Lexer {
             skipWhitespace();
         }
 
-        if (peek("}}")) {
-            tokens.add(new Token(Token.Type.EXPR_CLOSE, "}}", pos));
+        if (peek(EXPR_CLOSE)) {
+            tokens.add(new Token(EXPR_CLOSE, pos));
             advance(2);
         }
     }
@@ -162,7 +175,7 @@ public class Lexer {
      */
     private Token tokenizeString() {
         int start = pos;
-        advance(); // Skip opening "
+        advance(EXPR_STRING);
 
         StringBuilder sb = new StringBuilder();
         while (pos < input.length() && current() != '"') {
@@ -186,9 +199,9 @@ public class Lexer {
         if (current() != '"')
             throwError("Unterminated string", start);
 
-        advance(); // Skip closing "
+        advance(EXPR_STRING);
 
-        return new Token(Token.Type.EXPR_STRING, sb.toString(), start);
+        return new Token(EXPR_STRING, sb.toString(), start);
     }
 
     /**
@@ -196,7 +209,7 @@ public class Lexer {
      */
     private Token tokenizeVariable() {
         int start = pos;
-        advance(); // Skip $
+        advance(EXPR_VARIABLE); // Skip $
         StringBuilder sb = new StringBuilder();
 
         while (pos < input.length() && (Character.isLetterOrDigit(current()) || current() == '_' || current() == '-')) {
@@ -204,7 +217,7 @@ public class Lexer {
             advance();
         }
 
-        return new Token(Token.Type.EXPR_VARIABLE, sb.toString(), start);
+        return new Token(EXPR_VARIABLE, sb.toString(), start);
     }
 
     /**
@@ -238,7 +251,7 @@ public class Lexer {
             advance();
         }
 
-        return new Token(Token.Type.EXPR_NUMBER, sb.toString(), start);
+        return new Token(EXPR_NUMBER, sb.toString(), start);
     }
 
     /**
@@ -255,12 +268,12 @@ public class Lexer {
 
         String value = sb.toString();
         Token.Type type = switch (value) {
-            case "if" -> Token.Type.BLOCK_IF;
-            case "else" -> Token.Type.BLOCK_ELSE;
-            case "each" -> Token.Type.BLOCK_EACH;
-            case "true", "false" -> Token.Type.EXPR_BOOLEAN;
-            case "in" -> Token.Type.COMP_IN;
-            default -> Token.Type.EXPR_IDENTIFIER;
+            case "if" -> BLOCK_IF;
+            case "else" -> BLOCK_ELSE;
+            case "each" -> BLOCK_EACH;
+            case "true", "false" -> EXPR_BOOLEAN;
+            case "in" -> COMP_IN;
+            default -> EXPR_IDENTIFIER;
         };
 
         return new Token(type, value, start);
@@ -275,13 +288,13 @@ public class Lexer {
         int start = pos;
 
         StringBuilder sb = new StringBuilder();
-        while (pos < input.length() && !peek("{{")) {
+        while (pos < input.length() && !peek(EXPR_OPEN)) {
             sb.append(current());
             advance();
         }
 
         if (!sb.isEmpty())
-            tokens.add(new Token(Token.Type.GLOBAL_TEXT, sb.toString(), start));
+            tokens.add(new Token(GLOBAL_TEXT, sb.toString(), start));
     }
 
     // ===== Helpers =====
@@ -296,10 +309,29 @@ public class Lexer {
     /**
      * Peeks ahead to see if the next characters match the given string
      *
-     * @param str The string to match
+     * @param str The string(s) to match
      */
-    private boolean peek(String str) {
-        return input.startsWith(str, pos);
+    private boolean peek(String... str) {
+        for (var s : str)
+            if (input.startsWith(s, pos))
+                return true;
+
+        return false;
+    }
+
+    /**
+     * Peeks ahead to see if the next characters match the given string
+     *
+     * @param types The type of token(s) to match
+     */
+    private boolean peek(Token.Type... types) {
+        for (var type : types) {
+            var symbol = type.getSymbol();
+            if (symbol != null && input.startsWith(symbol, pos))
+                return true;
+        }
+
+        return false;
     }
 
     /**
@@ -310,21 +342,38 @@ public class Lexer {
     }
 
     /**
+     * Advance the current position by one character
+     */
+    private void advance(Token.Type type) {
+        var symbol = type.getSymbol();
+
+        advance(symbol != null ? symbol.length() : 0);
+    }
+
+    /**
      * Advance the current position by count characters
      *
      * @param count Number of characters to advance
      */
     private void advance(int count) {
         for (int i = 0; i < count && pos < input.length(); i++) {
-            if (input.charAt(pos) == '\n') {
+            if (input.charAt(pos) == '\n')
                 line++;
-                column = 1;
-            } else
-                column++;
 
             pos++;
         }
     }
+
+    /**
+     * Check if current position starts an HTML tag (not just a less-than operator)
+     */
+    private boolean isTagStart() {
+        if (pos + 1 >= input.length()) return false;
+        char next = input.charAt(pos + 1);
+        return Character.isLetter(next) || next == '/';
+    }
+
+    // === Whitespace ===
 
     /**
      * Skip whitespace characters
@@ -345,7 +394,7 @@ public class Lexer {
             return;
 
         Token last = tokens.getLast();
-        if (last.type() != Token.Type.GLOBAL_TEXT)
+        if (last.type() != GLOBAL_TEXT)
             return;
 
         String text = last.value();
@@ -361,7 +410,7 @@ public class Lexer {
         String afterLastNewline = text.substring(lastNewlineIndex + 1);
         if (afterLastNewline.matches("^[ \\t]*$")) {
             String keepPart = text.substring(0, lastNewlineIndex + 1);
-            tokens.set(tokens.size() - 1, new Token(Token.Type.GLOBAL_TEXT, keepPart, last.position()));
+            tokens.set(tokens.size() - 1, new Token(GLOBAL_TEXT, keepPart, last.position()));
         }
     }
 
@@ -385,6 +434,8 @@ public class Lexer {
         } else
             pos = start;
     }
+
+    // === Errors ===
 
     private String getLine(int lineNumber) {
         String[] lines = input.split("\\R", -1); // handles \n, \r\n, etc.
