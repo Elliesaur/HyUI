@@ -1,0 +1,765 @@
+<!--
+Kindly created by KelpyCode - https://github.com/KelpyCode/HyUI-Hywind
+  -->
+<style>
+    .p-0 { padding: 0; }
+    .p-1 { padding: 2; }
+    .p-2 { padding: 4; }
+    .p-3 { padding: 6; }
+    .p-4 { padding: 8; }
+    .p-5 { padding: 10; }
+    .p-6 { padding: 12; }
+    .p-7 { padding: 14; }
+    .p-8 { padding: 16; }
+    .p-9 { padding: 18; }
+    .p-10 { padding: 20; }
+    .flex > * { flex-weight: 1; }
+    .flex-col { layout-mode: left; }
+    .flex-row { layout-mode: top; }
+    .flex-0 { flex-weight: 0; }
+    .flex-1 { flex-weight: 1; }
+    .flex-2 { flex-weight: 2; }
+    .flex-3 { flex-weight: 3; }
+    .flex-4 { flex-weight: 4; }
+    .text-uppercase { text-transform: uppercase; }
+    .hidden { visibility: hidden; }
+    .none { display: none; }
+    .hidden { visibility: hidden; }
+    .text-left { text-align: left; }
+    .text-center { text-align: center; }
+    .text-right { text-align: right; }
+    .text-top { text-align: top; }
+    .text-middle { text-align: middle; }
+    .text-bottom { text-align: bottom; }
+    .text-topscrolling { text-align: topscrolling; }
+    .text-bottomscrolling { text-align: bottomscrolling; }
+    .text-middlecenter { text-align: middlecenter; }
+    .text-centermiddle { text-align: centermiddle; }
+    .text-leftcenterwrap { text-align: leftcenterwrap; }
+    .text-rightcenterwrap { text-align: rightcenterwrap; }
+    .text-full { text-align: full; }
+    .layout-left { layout: left; }
+    .layout-center { layout: center; }
+    .layout-right { layout: right; }
+    .layout-top { layout: top; }
+    .layout-middle { layout: middle; }
+    .layout-bottom { layout: bottom; }
+    .layout-topscrolling { layout: topscrolling; }
+    .layout-bottomscrolling { layout: bottomscrolling; }
+    .layout-middlecenter { layout: middlecenter; }
+    .layout-centermiddle { layout: centermiddle; }
+    .layout-leftcenterwrap { layout: leftcenterwrap; }
+    .layout-rightcenterwrap { layout: rightcenterwrap; }
+    .layout-full { layout: full; }
+    .font-bold { font-weight: bold; }
+    .font-normal { font-weight: normal; }
+    .vertical-top { vertical-align: top; }
+    .vertical-middle { vertical-align: middle; }
+    .vertical-bottom { vertical-align: bottom; }
+    .horizontal-left { horizontal-align: left; }
+    .horizontal-center { horizontal-align: center; }
+    .horizontal-right { horizontal-align: right; }
+    .top-0 { anchor-top: 0; }
+    .top-1 { anchor-top: 2; }
+    .top-2 { anchor-top: 4; }
+    .top-3 { anchor-top: 6; }
+    .top-4 { anchor-top: 8; }
+    .top-5 { anchor-top: 10; }
+    .top-6 { anchor-top: 12; }
+    .top-7 { anchor-top: 14; }
+    .top-8 { anchor-top: 16; }
+    .top-9 { anchor-top: 18; }
+    .top-10 { anchor-top: 20; }
+    .top-xs { anchor-top: 5; }
+    .top-sm { anchor-top: 10; }
+    .top-md { anchor-top: 20; }
+    .top-lg { anchor-top: 30; }
+    .top-xl { anchor-top: 40; }
+    .top-2xl { anchor-top: 50; }
+    .top-3xl { anchor-top: 60; }
+    .top-4xl { anchor-top: 70; }
+    .top-5xl { anchor-top: 80; }
+    .top-6xl { anchor-top: 90; }
+    .top-7xl { anchor-top: 100; }
+    .top-8xl { anchor-top: 110; }
+    .top-9xl { anchor-top: 120; }
+    .\-top-1 { anchor-top: -2; }
+    .\-top-2 { anchor-top: -4; }
+    .\-top-3 { anchor-top: -6; }
+    .\-top-4 { anchor-top: -8; }
+    .\-top-5 { anchor-top: -10; }
+    .\-top-6 { anchor-top: -12; }
+    .\-top-7 { anchor-top: -14; }
+    .\-top-8 { anchor-top: -16; }
+    .\-top-9 { anchor-top: -18; }
+    .\-top-10 { anchor-top: -20; }
+    .\-top-xs { anchor-top: -5; }
+    .\-top-sm { anchor-top: -10; }
+    .\-top-md { anchor-top: -20; }
+    .\-top-lg { anchor-top: -30; }
+    .\-top-xl { anchor-top: -40; }
+    .\-top-2xl { anchor-top: -50; }
+    .\-top-3xl { anchor-top: -60; }
+    .\-top-4xl { anchor-top: -70; }
+    .\-top-5xl { anchor-top: -80; }
+    .\-top-6xl { anchor-top: -90; }
+    .\-top-7xl { anchor-top: -100; }
+    .\-top-8xl { anchor-top: -110; }
+    .\-top-9xl { anchor-top: -120; }
+    .left-0 { anchor-left: 0; }
+    .left-1 { anchor-left: 2; }
+    .left-2 { anchor-left: 4; }
+    .left-3 { anchor-left: 6; }
+    .left-4 { anchor-left: 8; }
+    .left-5 { anchor-left: 10; }
+    .left-6 { anchor-left: 12; }
+    .left-7 { anchor-left: 14; }
+    .left-8 { anchor-left: 16; }
+    .left-9 { anchor-left: 18; }
+    .left-10 { anchor-left: 20; }
+    .left-xs { anchor-left: 5; }
+    .left-sm { anchor-left: 10; }
+    .left-md { anchor-left: 20; }
+    .left-lg { anchor-left: 30; }
+    .left-xl { anchor-left: 40; }
+    .left-2xl { anchor-left: 50; }
+    .left-3xl { anchor-left: 60; }
+    .left-4xl { anchor-left: 70; }
+    .left-5xl { anchor-left: 80; }
+    .left-6xl { anchor-left: 90; }
+    .left-7xl { anchor-left: 100; }
+    .left-8xl { anchor-left: 110; }
+    .left-9xl { anchor-left: 120; }
+    .\-left-1 { anchor-left: -2; }
+    .\-left-2 { anchor-left: -4; }
+    .\-left-3 { anchor-left: -6; }
+    .\-left-4 { anchor-left: -8; }
+    .\-left-5 { anchor-left: -10; }
+    .\-left-6 { anchor-left: -12; }
+    .\-left-7 { anchor-left: -14; }
+    .\-left-8 { anchor-left: -16; }
+    .\-left-9 { anchor-left: -18; }
+    .\-left-10 { anchor-left: -20; }
+    .\-left-xs { anchor-left: -5; }
+    .\-left-sm { anchor-left: -10; }
+    .\-left-md { anchor-left: -20; }
+    .\-left-lg { anchor-left: -30; }
+    .\-left-xl { anchor-left: -40; }
+    .\-left-2xl { anchor-left: -50; }
+    .\-left-3xl { anchor-left: -60; }
+    .\-left-4xl { anchor-left: -70; }
+    .\-left-5xl { anchor-left: -80; }
+    .\-left-6xl { anchor-left: -90; }
+    .\-left-7xl { anchor-left: -100; }
+    .\-left-8xl { anchor-left: -110; }
+    .\-left-9xl { anchor-left: -120; }
+    .bottom-0 { anchor-bottom: 0; }
+    .bottom-1 { anchor-bottom: 2; }
+    .bottom-2 { anchor-bottom: 4; }
+    .bottom-3 { anchor-bottom: 6; }
+    .bottom-4 { anchor-bottom: 8; }
+    .bottom-5 { anchor-bottom: 10; }
+    .bottom-6 { anchor-bottom: 12; }
+    .bottom-7 { anchor-bottom: 14; }
+    .bottom-8 { anchor-bottom: 16; }
+    .bottom-9 { anchor-bottom: 18; }
+    .bottom-10 { anchor-bottom: 20; }
+    .bottom-xs { anchor-bottom: 5; }
+    .bottom-sm { anchor-bottom: 10; }
+    .bottom-md { anchor-bottom: 20; }
+    .bottom-lg { anchor-bottom: 30; }
+    .bottom-xl { anchor-bottom: 40; }
+    .bottom-2xl { anchor-bottom: 50; }
+    .bottom-3xl { anchor-bottom: 60; }
+    .bottom-4xl { anchor-bottom: 70; }
+    .bottom-5xl { anchor-bottom: 80; }
+    .bottom-6xl { anchor-bottom: 90; }
+    .bottom-7xl { anchor-bottom: 100; }
+    .bottom-8xl { anchor-bottom: 110; }
+    .bottom-9xl { anchor-bottom: 120; }
+    .\-bottom-1 { anchor-bottom: -2; }
+    .\-bottom-2 { anchor-bottom: -4; }
+    .\-bottom-3 { anchor-bottom: -6; }
+    .\-bottom-4 { anchor-bottom: -8; }
+    .\-bottom-5 { anchor-bottom: -10; }
+    .\-bottom-6 { anchor-bottom: -12; }
+    .\-bottom-7 { anchor-bottom: -14; }
+    .\-bottom-8 { anchor-bottom: -16; }
+    .\-bottom-9 { anchor-bottom: -18; }
+    .\-bottom-10 { anchor-bottom: -20; }
+    .\-bottom-xs { anchor-bottom: -5; }
+    .\-bottom-sm { anchor-bottom: -10; }
+    .\-bottom-md { anchor-bottom: -20; }
+    .\-bottom-lg { anchor-bottom: -30; }
+    .\-bottom-xl { anchor-bottom: -40; }
+    .\-bottom-2xl { anchor-bottom: -50; }
+    .\-bottom-3xl { anchor-bottom: -60; }
+    .\-bottom-4xl { anchor-bottom: -70; }
+    .\-bottom-5xl { anchor-bottom: -80; }
+    .\-bottom-6xl { anchor-bottom: -90; }
+    .\-bottom-7xl { anchor-bottom: -100; }
+    .\-bottom-8xl { anchor-bottom: -110; }
+    .\-bottom-9xl { anchor-bottom: -120; }
+    .right-0 { anchor-right: 0; }
+    .right-1 { anchor-right: 2; }
+    .right-2 { anchor-right: 4; }
+    .right-3 { anchor-right: 6; }
+    .right-4 { anchor-right: 8; }
+    .right-5 { anchor-right: 10; }
+    .right-6 { anchor-right: 12; }
+    .right-7 { anchor-right: 14; }
+    .right-8 { anchor-right: 16; }
+    .right-9 { anchor-right: 18; }
+    .right-10 { anchor-right: 20; }
+    .right-xs { anchor-right: 5; }
+    .right-sm { anchor-right: 10; }
+    .right-md { anchor-right: 20; }
+    .right-lg { anchor-right: 30; }
+    .right-xl { anchor-right: 40; }
+    .right-2xl { anchor-right: 50; }
+    .right-3xl { anchor-right: 60; }
+    .right-4xl { anchor-right: 70; }
+    .right-5xl { anchor-right: 80; }
+    .right-6xl { anchor-right: 90; }
+    .right-7xl { anchor-right: 100; }
+    .right-8xl { anchor-right: 110; }
+    .right-9xl { anchor-right: 120; }
+    .\-right-1 { anchor-right: -2; }
+    .\-right-2 { anchor-right: -4; }
+    .\-right-3 { anchor-right: -6; }
+    .\-right-4 { anchor-right: -8; }
+    .\-right-5 { anchor-right: -10; }
+    .\-right-6 { anchor-right: -12; }
+    .\-right-7 { anchor-right: -14; }
+    .\-right-8 { anchor-right: -16; }
+    .\-right-9 { anchor-right: -18; }
+    .\-right-10 { anchor-right: -20; }
+    .\-right-xs { anchor-right: -5; }
+    .\-right-sm { anchor-right: -10; }
+    .\-right-md { anchor-right: -20; }
+    .\-right-lg { anchor-right: -30; }
+    .\-right-xl { anchor-right: -40; }
+    .\-right-2xl { anchor-right: -50; }
+    .\-right-3xl { anchor-right: -60; }
+    .\-right-4xl { anchor-right: -70; }
+    .\-right-5xl { anchor-right: -80; }
+    .\-right-6xl { anchor-right: -90; }
+    .\-right-7xl { anchor-right: -100; }
+    .\-right-8xl { anchor-right: -110; }
+    .\-right-9xl { anchor-right: -120; }
+    .w-xs { anchor-width: 10; }
+    .w-sm { anchor-width: 20; }
+    .w-md { anchor-width: 40; }
+    .w-lg { anchor-width: 80; }
+    .w-xl { anchor-width: 160; }
+    .w-2xl { anchor-width: 200; }
+    .w-3xl { anchor-width: 300; }
+    .w-4xl { anchor-width: 400; }
+    .w-5xl { anchor-width: 500; }
+    .w-6xl { anchor-width: 600; }
+    .w-7xl { anchor-width: 700; }
+    .w-8xl { anchor-width: 800; }
+    .w-9xl { anchor-width: 900; }
+    .h-xs { anchor-height: 10; }
+    .h-sm { anchor-height: 20; }
+    .h-md { anchor-height: 40; }
+    .h-lg { anchor-height: 80; }
+    .h-xl { anchor-height: 160; }
+    .h-2xl { anchor-height: 200; }
+    .h-3xl { anchor-height: 300; }
+    .h-4xl { anchor-height: 400; }
+    .h-5xl { anchor-height: 500; }
+    .h-6xl { anchor-height: 600; }
+    .h-7xl { anchor-height: 700; }
+    .h-8xl { anchor-height: 800; }
+    .h-9xl { anchor-height: 900; }
+    .text-xs { font-size: 10; }
+    .text-sm { font-size: 13; }
+    .text-md { font-size: 16; }
+    .text-lg { font-size: 20; }
+    .text-xl { font-size: 24; }
+    .bg-slate-50 { background-color: rgb(248, 250, 252); }
+    .bg-slate-100 { background-color: rgb(241, 245, 249); }
+    .bg-slate-200 { background-color: rgb(226, 232, 240); }
+    .bg-slate-300 { background-color: rgb(202, 213, 226); }
+    .bg-slate-400 { background-color: rgb(144, 161, 185); }
+    .bg-slate-500 { background-color: rgb(98, 116, 142); }
+    .bg-slate-600 { background-color: rgb(69, 85, 108); }
+    .bg-slate-700 { background-color: rgb(49, 65, 88); }
+    .bg-slate-800 { background-color: rgb(29, 41, 61); }
+    .bg-slate-900 { background-color: rgb(15, 23, 43); }
+    .bg-slate-950 { background-color: rgb(2, 6, 24); }
+    .bg-gray-50 { background-color: rgb(249, 250, 251); }
+    .bg-gray-100 { background-color: rgb(243, 244, 246); }
+    .bg-gray-200 { background-color: rgb(229, 231, 235); }
+    .bg-gray-300 { background-color: rgb(209, 213, 220); }
+    .bg-gray-400 { background-color: rgb(153, 161, 175); }
+    .bg-gray-500 { background-color: rgb(106, 114, 130); }
+    .bg-gray-600 { background-color: rgb(74, 85, 101); }
+    .bg-gray-700 { background-color: rgb(54, 65, 83); }
+    .bg-gray-800 { background-color: rgb(30, 41, 57); }
+    .bg-gray-900 { background-color: rgb(16, 24, 40); }
+    .bg-gray-950 { background-color: rgb(3, 7, 18); }
+    .bg-zinc-50 { background-color: rgb(250, 250, 250); }
+    .bg-zinc-100 { background-color: rgb(244, 244, 245); }
+    .bg-zinc-200 { background-color: rgb(228, 228, 231); }
+    .bg-zinc-300 { background-color: rgb(212, 212, 216); }
+    .bg-zinc-400 { background-color: rgb(159, 159, 169); }
+    .bg-zinc-500 { background-color: rgb(113, 113, 123); }
+    .bg-zinc-600 { background-color: rgb(82, 82, 92); }
+    .bg-zinc-700 { background-color: rgb(63, 63, 70); }
+    .bg-zinc-800 { background-color: rgb(39, 39, 42); }
+    .bg-zinc-900 { background-color: rgb(24, 24, 27); }
+    .bg-zinc-950 { background-color: rgb(9, 9, 11); }
+    .bg-neutral-50 { background-color: rgb(250, 250, 250); }
+    .bg-neutral-100 { background-color: rgb(245, 245, 245); }
+    .bg-neutral-200 { background-color: rgb(229, 229, 229); }
+    .bg-neutral-300 { background-color: rgb(212, 212, 212); }
+    .bg-neutral-400 { background-color: rgb(161, 161, 161); }
+    .bg-neutral-500 { background-color: rgb(115, 115, 115); }
+    .bg-neutral-600 { background-color: rgb(82, 82, 82); }
+    .bg-neutral-700 { background-color: rgb(64, 64, 64); }
+    .bg-neutral-800 { background-color: rgb(38, 38, 38); }
+    .bg-neutral-900 { background-color: rgb(23, 23, 23); }
+    .bg-neutral-950 { background-color: rgb(10, 10, 10); }
+    .bg-stone-50 { background-color: rgb(250, 250, 249); }
+    .bg-stone-100 { background-color: rgb(245, 245, 244); }
+    .bg-stone-200 { background-color: rgb(231, 229, 228); }
+    .bg-stone-300 { background-color: rgb(214, 211, 209); }
+    .bg-stone-400 { background-color: rgb(166, 160, 155); }
+    .bg-stone-500 { background-color: rgb(121, 113, 107); }
+    .bg-stone-600 { background-color: rgb(87, 83, 77); }
+    .bg-stone-700 { background-color: rgb(68, 64, 59); }
+    .bg-stone-800 { background-color: rgb(41, 37, 36); }
+    .bg-stone-900 { background-color: rgb(28, 25, 23); }
+    .bg-stone-950 { background-color: rgb(12, 10, 9); }
+    .bg-red-50 { background-color: rgb(254, 242, 242); }
+    .bg-red-100 { background-color: rgb(255, 226, 226); }
+    .bg-red-200 { background-color: rgb(255, 201, 201); }
+    .bg-red-300 { background-color: rgb(255, 162, 162); }
+    .bg-red-400 { background-color: rgb(255, 100, 103); }
+    .bg-red-500 { background-color: rgb(251, 44, 54); }
+    .bg-red-600 { background-color: rgb(231, 0, 11); }
+    .bg-red-700 { background-color: rgb(193, 0, 7); }
+    .bg-red-800 { background-color: rgb(159, 7, 18); }
+    .bg-red-900 { background-color: rgb(130, 24, 26); }
+    .bg-red-950 { background-color: rgb(70, 8, 9); }
+    .bg-orange-50 { background-color: rgb(255, 247, 237); }
+    .bg-orange-100 { background-color: rgb(255, 237, 212); }
+    .bg-orange-200 { background-color: rgb(255, 214, 167); }
+    .bg-orange-300 { background-color: rgb(255, 184, 106); }
+    .bg-orange-400 { background-color: rgb(255, 137, 4); }
+    .bg-orange-500 { background-color: rgb(255, 105, 0); }
+    .bg-orange-600 { background-color: rgb(245, 73, 0); }
+    .bg-orange-700 { background-color: rgb(202, 53, 0); }
+    .bg-orange-800 { background-color: rgb(159, 45, 0); }
+    .bg-orange-900 { background-color: rgb(126, 42, 12); }
+    .bg-orange-950 { background-color: rgb(68, 19, 6); }
+    .bg-amber-50 { background-color: rgb(255, 251, 235); }
+    .bg-amber-100 { background-color: rgb(254, 243, 198); }
+    .bg-amber-200 { background-color: rgb(254, 230, 133); }
+    .bg-amber-300 { background-color: rgb(255, 210, 48); }
+    .bg-amber-400 { background-color: rgb(255, 185, 0); }
+    .bg-amber-500 { background-color: rgb(254, 154, 0); }
+    .bg-amber-600 { background-color: rgb(225, 113, 0); }
+    .bg-amber-700 { background-color: rgb(187, 77, 0); }
+    .bg-amber-800 { background-color: rgb(151, 60, 0); }
+    .bg-amber-900 { background-color: rgb(123, 51, 6); }
+    .bg-amber-950 { background-color: rgb(70, 25, 1); }
+    .bg-yellow-50 { background-color: rgb(254, 252, 232); }
+    .bg-yellow-100 { background-color: rgb(254, 249, 194); }
+    .bg-yellow-200 { background-color: rgb(255, 240, 133); }
+    .bg-yellow-300 { background-color: rgb(255, 223, 32); }
+    .bg-yellow-400 { background-color: rgb(253, 199, 0); }
+    .bg-yellow-500 { background-color: rgb(240, 177, 0); }
+    .bg-yellow-600 { background-color: rgb(208, 135, 0); }
+    .bg-yellow-700 { background-color: rgb(166, 95, 0); }
+    .bg-yellow-800 { background-color: rgb(137, 75, 0); }
+    .bg-yellow-900 { background-color: rgb(115, 62, 10); }
+    .bg-yellow-950 { background-color: rgb(67, 32, 4); }
+    .bg-lime-50 { background-color: rgb(247, 254, 231); }
+    .bg-lime-100 { background-color: rgb(236, 252, 202); }
+    .bg-lime-200 { background-color: rgb(216, 249, 153); }
+    .bg-lime-300 { background-color: rgb(187, 244, 81); }
+    .bg-lime-400 { background-color: rgb(154, 230, 0); }
+    .bg-lime-500 { background-color: rgb(124, 207, 0); }
+    .bg-lime-600 { background-color: rgb(94, 165, 0); }
+    .bg-lime-700 { background-color: rgb(73, 125, 0); }
+    .bg-lime-800 { background-color: rgb(60, 99, 0); }
+    .bg-lime-900 { background-color: rgb(53, 83, 14); }
+    .bg-lime-950 { background-color: rgb(25, 46, 3); }
+    .bg-green-50 { background-color: rgb(240, 253, 244); }
+    .bg-green-100 { background-color: rgb(220, 252, 231); }
+    .bg-green-200 { background-color: rgb(185, 248, 207); }
+    .bg-green-300 { background-color: rgb(123, 241, 168); }
+    .bg-green-400 { background-color: rgb(5, 223, 114); }
+    .bg-green-500 { background-color: rgb(0, 201, 80); }
+    .bg-green-600 { background-color: rgb(0, 166, 62); }
+    .bg-green-700 { background-color: rgb(0, 130, 54); }
+    .bg-green-800 { background-color: rgb(1, 102, 48); }
+    .bg-green-900 { background-color: rgb(13, 84, 43); }
+    .bg-green-950 { background-color: rgb(3, 46, 21); }
+    .bg-emerald-50 { background-color: rgb(236, 253, 245); }
+    .bg-emerald-100 { background-color: rgb(208, 250, 229); }
+    .bg-emerald-200 { background-color: rgb(164, 244, 207); }
+    .bg-emerald-300 { background-color: rgb(94, 233, 181); }
+    .bg-emerald-400 { background-color: rgb(0, 212, 146); }
+    .bg-emerald-500 { background-color: rgb(0, 188, 125); }
+    .bg-emerald-600 { background-color: rgb(0, 153, 102); }
+    .bg-emerald-700 { background-color: rgb(0, 122, 85); }
+    .bg-emerald-800 { background-color: rgb(0, 96, 69); }
+    .bg-emerald-900 { background-color: rgb(0, 79, 59); }
+    .bg-emerald-950 { background-color: rgb(0, 44, 34); }
+    .bg-teal-50 { background-color: rgb(240, 253, 250); }
+    .bg-teal-100 { background-color: rgb(203, 251, 241); }
+    .bg-teal-200 { background-color: rgb(150, 247, 228); }
+    .bg-teal-300 { background-color: rgb(70, 236, 213); }
+    .bg-teal-400 { background-color: rgb(0, 213, 190); }
+    .bg-teal-500 { background-color: rgb(0, 187, 167); }
+    .bg-teal-600 { background-color: rgb(0, 150, 137); }
+    .bg-teal-700 { background-color: rgb(0, 120, 111); }
+    .bg-teal-800 { background-color: rgb(0, 95, 90); }
+    .bg-teal-900 { background-color: rgb(11, 79, 74); }
+    .bg-teal-950 { background-color: rgb(2, 47, 46); }
+    .bg-cyan-50 { background-color: rgb(236, 254, 255); }
+    .bg-cyan-100 { background-color: rgb(206, 250, 254); }
+    .bg-cyan-200 { background-color: rgb(162, 244, 253); }
+    .bg-cyan-300 { background-color: rgb(83, 234, 253); }
+    .bg-cyan-400 { background-color: rgb(0, 211, 242); }
+    .bg-cyan-500 { background-color: rgb(0, 184, 219); }
+    .bg-cyan-600 { background-color: rgb(0, 146, 184); }
+    .bg-cyan-700 { background-color: rgb(0, 117, 149); }
+    .bg-cyan-800 { background-color: rgb(0, 95, 120); }
+    .bg-cyan-900 { background-color: rgb(16, 78, 100); }
+    .bg-cyan-950 { background-color: rgb(5, 51, 69); }
+    .bg-sky-50 { background-color: rgb(240, 249, 255); }
+    .bg-sky-100 { background-color: rgb(223, 242, 254); }
+    .bg-sky-200 { background-color: rgb(184, 230, 254); }
+    .bg-sky-300 { background-color: rgb(116, 212, 255); }
+    .bg-sky-400 { background-color: rgb(0, 188, 255); }
+    .bg-sky-500 { background-color: rgb(0, 166, 244); }
+    .bg-sky-600 { background-color: rgb(0, 132, 209); }
+    .bg-sky-700 { background-color: rgb(0, 105, 168); }
+    .bg-sky-800 { background-color: rgb(0, 89, 138); }
+    .bg-sky-900 { background-color: rgb(2, 74, 112); }
+    .bg-sky-950 { background-color: rgb(5, 47, 74); }
+    .bg-blue-50 { background-color: rgb(239, 246, 255); }
+    .bg-blue-100 { background-color: rgb(219, 234, 254); }
+    .bg-blue-200 { background-color: rgb(190, 219, 255); }
+    .bg-blue-300 { background-color: rgb(142, 197, 255); }
+    .bg-blue-400 { background-color: rgb(81, 162, 255); }
+    .bg-blue-500 { background-color: rgb(43, 127, 255); }
+    .bg-blue-600 { background-color: rgb(21, 93, 252); }
+    .bg-blue-700 { background-color: rgb(20, 71, 230); }
+    .bg-blue-800 { background-color: rgb(25, 60, 184); }
+    .bg-blue-900 { background-color: rgb(28, 57, 142); }
+    .bg-blue-950 { background-color: rgb(22, 36, 86); }
+    .bg-indigo-50 { background-color: rgb(238, 242, 255); }
+    .bg-indigo-100 { background-color: rgb(224, 231, 255); }
+    .bg-indigo-200 { background-color: rgb(198, 210, 255); }
+    .bg-indigo-300 { background-color: rgb(163, 179, 255); }
+    .bg-indigo-400 { background-color: rgb(124, 134, 255); }
+    .bg-indigo-500 { background-color: rgb(97, 95, 255); }
+    .bg-indigo-600 { background-color: rgb(79, 57, 246); }
+    .bg-indigo-700 { background-color: rgb(67, 45, 215); }
+    .bg-indigo-800 { background-color: rgb(55, 42, 172); }
+    .bg-indigo-900 { background-color: rgb(49, 44, 133); }
+    .bg-indigo-950 { background-color: rgb(30, 26, 77); }
+    .bg-violet-50 { background-color: rgb(245, 243, 255); }
+    .bg-violet-100 { background-color: rgb(237, 233, 254); }
+    .bg-violet-200 { background-color: rgb(221, 214, 255); }
+    .bg-violet-300 { background-color: rgb(196, 180, 255); }
+    .bg-violet-400 { background-color: rgb(166, 132, 255); }
+    .bg-violet-500 { background-color: rgb(142, 81, 255); }
+    .bg-violet-600 { background-color: rgb(127, 34, 254); }
+    .bg-violet-700 { background-color: rgb(112, 8, 231); }
+    .bg-violet-800 { background-color: rgb(93, 14, 192); }
+    .bg-violet-900 { background-color: rgb(77, 23, 154); }
+    .bg-violet-950 { background-color: rgb(47, 13, 104); }
+    .bg-purple-50 { background-color: rgb(250, 245, 255); }
+    .bg-purple-100 { background-color: rgb(243, 232, 255); }
+    .bg-purple-200 { background-color: rgb(233, 212, 255); }
+    .bg-purple-300 { background-color: rgb(218, 178, 255); }
+    .bg-purple-400 { background-color: rgb(194, 122, 255); }
+    .bg-purple-500 { background-color: rgb(173, 70, 255); }
+    .bg-purple-600 { background-color: rgb(152, 16, 250); }
+    .bg-purple-700 { background-color: rgb(130, 0, 219); }
+    .bg-purple-800 { background-color: rgb(110, 17, 176); }
+    .bg-purple-900 { background-color: rgb(89, 22, 139); }
+    .bg-purple-950 { background-color: rgb(60, 3, 102); }
+    .bg-fuchsia-50 { background-color: rgb(253, 244, 255); }
+    .bg-fuchsia-100 { background-color: rgb(250, 232, 255); }
+    .bg-fuchsia-200 { background-color: rgb(246, 207, 255); }
+    .bg-fuchsia-300 { background-color: rgb(244, 168, 255); }
+    .bg-fuchsia-400 { background-color: rgb(237, 106, 255); }
+    .bg-fuchsia-500 { background-color: rgb(225, 42, 251); }
+    .bg-fuchsia-600 { background-color: rgb(200, 0, 222); }
+    .bg-fuchsia-700 { background-color: rgb(168, 0, 183); }
+    .bg-fuchsia-800 { background-color: rgb(138, 1, 148); }
+    .bg-fuchsia-900 { background-color: rgb(114, 19, 120); }
+    .bg-fuchsia-950 { background-color: rgb(75, 0, 79); }
+    .bg-pink-50 { background-color: rgb(253, 242, 248); }
+    .bg-pink-100 { background-color: rgb(252, 231, 243); }
+    .bg-pink-200 { background-color: rgb(252, 206, 232); }
+    .bg-pink-300 { background-color: rgb(253, 165, 213); }
+    .bg-pink-400 { background-color: rgb(251, 100, 182); }
+    .bg-pink-500 { background-color: rgb(246, 51, 154); }
+    .bg-pink-600 { background-color: rgb(230, 0, 118); }
+    .bg-pink-700 { background-color: rgb(198, 0, 92); }
+    .bg-pink-800 { background-color: rgb(163, 0, 76); }
+    .bg-pink-900 { background-color: rgb(134, 16, 67); }
+    .bg-pink-950 { background-color: rgb(81, 4, 36); }
+    .bg-rose-50 { background-color: rgb(255, 241, 242); }
+    .bg-rose-100 { background-color: rgb(255, 228, 230); }
+    .bg-rose-200 { background-color: rgb(255, 204, 211); }
+    .bg-rose-300 { background-color: rgb(255, 161, 173); }
+    .bg-rose-400 { background-color: rgb(255, 99, 126); }
+    .bg-rose-500 { background-color: rgb(255, 32, 86); }
+    .bg-rose-600 { background-color: rgb(236, 0, 63); }
+    .bg-rose-700 { background-color: rgb(199, 0, 54); }
+    .bg-rose-800 { background-color: rgb(165, 0, 54); }
+    .bg-rose-900 { background-color: rgb(139, 8, 54); }
+    .bg-rose-950 { background-color: rgb(77, 2, 24); }
+    .text-slate-50 { color: rgb(248, 250, 252); }
+    .text-slate-100 { color: rgb(241, 245, 249); }
+    .text-slate-200 { color: rgb(226, 232, 240); }
+    .text-slate-300 { color: rgb(202, 213, 226); }
+    .text-slate-400 { color: rgb(144, 161, 185); }
+    .text-slate-500 { color: rgb(98, 116, 142); }
+    .text-slate-600 { color: rgb(69, 85, 108); }
+    .text-slate-700 { color: rgb(49, 65, 88); }
+    .text-slate-800 { color: rgb(29, 41, 61); }
+    .text-slate-900 { color: rgb(15, 23, 43); }
+    .text-slate-950 { color: rgb(2, 6, 24); }
+    .text-gray-50 { color: rgb(249, 250, 251); }
+    .text-gray-100 { color: rgb(243, 244, 246); }
+    .text-gray-200 { color: rgb(229, 231, 235); }
+    .text-gray-300 { color: rgb(209, 213, 220); }
+    .text-gray-400 { color: rgb(153, 161, 175); }
+    .text-gray-500 { color: rgb(106, 114, 130); }
+    .text-gray-600 { color: rgb(74, 85, 101); }
+    .text-gray-700 { color: rgb(54, 65, 83); }
+    .text-gray-800 { color: rgb(30, 41, 57); }
+    .text-gray-900 { color: rgb(16, 24, 40); }
+    .text-gray-950 { color: rgb(3, 7, 18); }
+    .text-zinc-50 { color: rgb(250, 250, 250); }
+    .text-zinc-100 { color: rgb(244, 244, 245); }
+    .text-zinc-200 { color: rgb(228, 228, 231); }
+    .text-zinc-300 { color: rgb(212, 212, 216); }
+    .text-zinc-400 { color: rgb(159, 159, 169); }
+    .text-zinc-500 { color: rgb(113, 113, 123); }
+    .text-zinc-600 { color: rgb(82, 82, 92); }
+    .text-zinc-700 { color: rgb(63, 63, 70); }
+    .text-zinc-800 { color: rgb(39, 39, 42); }
+    .text-zinc-900 { color: rgb(24, 24, 27); }
+    .text-zinc-950 { color: rgb(9, 9, 11); }
+    .text-neutral-50 { color: rgb(250, 250, 250); }
+    .text-neutral-100 { color: rgb(245, 245, 245); }
+    .text-neutral-200 { color: rgb(229, 229, 229); }
+    .text-neutral-300 { color: rgb(212, 212, 212); }
+    .text-neutral-400 { color: rgb(161, 161, 161); }
+    .text-neutral-500 { color: rgb(115, 115, 115); }
+    .text-neutral-600 { color: rgb(82, 82, 82); }
+    .text-neutral-700 { color: rgb(64, 64, 64); }
+    .text-neutral-800 { color: rgb(38, 38, 38); }
+    .text-neutral-900 { color: rgb(23, 23, 23); }
+    .text-neutral-950 { color: rgb(10, 10, 10); }
+    .text-stone-50 { color: rgb(250, 250, 249); }
+    .text-stone-100 { color: rgb(245, 245, 244); }
+    .text-stone-200 { color: rgb(231, 229, 228); }
+    .text-stone-300 { color: rgb(214, 211, 209); }
+    .text-stone-400 { color: rgb(166, 160, 155); }
+    .text-stone-500 { color: rgb(121, 113, 107); }
+    .text-stone-600 { color: rgb(87, 83, 77); }
+    .text-stone-700 { color: rgb(68, 64, 59); }
+    .text-stone-800 { color: rgb(41, 37, 36); }
+    .text-stone-900 { color: rgb(28, 25, 23); }
+    .text-stone-950 { color: rgb(12, 10, 9); }
+    .text-red-50 { color: rgb(254, 242, 242); }
+    .text-red-100 { color: rgb(255, 226, 226); }
+    .text-red-200 { color: rgb(255, 201, 201); }
+    .text-red-300 { color: rgb(255, 162, 162); }
+    .text-red-400 { color: rgb(255, 100, 103); }
+    .text-red-500 { color: rgb(251, 44, 54); }
+    .text-red-600 { color: rgb(231, 0, 11); }
+    .text-red-700 { color: rgb(193, 0, 7); }
+    .text-red-800 { color: rgb(159, 7, 18); }
+    .text-red-900 { color: rgb(130, 24, 26); }
+    .text-red-950 { color: rgb(70, 8, 9); }
+    .text-orange-50 { color: rgb(255, 247, 237); }
+    .text-orange-100 { color: rgb(255, 237, 212); }
+    .text-orange-200 { color: rgb(255, 214, 167); }
+    .text-orange-300 { color: rgb(255, 184, 106); }
+    .text-orange-400 { color: rgb(255, 137, 4); }
+    .text-orange-500 { color: rgb(255, 105, 0); }
+    .text-orange-600 { color: rgb(245, 73, 0); }
+    .text-orange-700 { color: rgb(202, 53, 0); }
+    .text-orange-800 { color: rgb(159, 45, 0); }
+    .text-orange-900 { color: rgb(126, 42, 12); }
+    .text-orange-950 { color: rgb(68, 19, 6); }
+    .text-amber-50 { color: rgb(255, 251, 235); }
+    .text-amber-100 { color: rgb(254, 243, 198); }
+    .text-amber-200 { color: rgb(254, 230, 133); }
+    .text-amber-300 { color: rgb(255, 210, 48); }
+    .text-amber-400 { color: rgb(255, 185, 0); }
+    .text-amber-500 { color: rgb(254, 154, 0); }
+    .text-amber-600 { color: rgb(225, 113, 0); }
+    .text-amber-700 { color: rgb(187, 77, 0); }
+    .text-amber-800 { color: rgb(151, 60, 0); }
+    .text-amber-900 { color: rgb(123, 51, 6); }
+    .text-amber-950 { color: rgb(70, 25, 1); }
+    .text-yellow-50 { color: rgb(254, 252, 232); }
+    .text-yellow-100 { color: rgb(254, 249, 194); }
+    .text-yellow-200 { color: rgb(255, 240, 133); }
+    .text-yellow-300 { color: rgb(255, 223, 32); }
+    .text-yellow-400 { color: rgb(253, 199, 0); }
+    .text-yellow-500 { color: rgb(240, 177, 0); }
+    .text-yellow-600 { color: rgb(208, 135, 0); }
+    .text-yellow-700 { color: rgb(166, 95, 0); }
+    .text-yellow-800 { color: rgb(137, 75, 0); }
+    .text-yellow-900 { color: rgb(115, 62, 10); }
+    .text-yellow-950 { color: rgb(67, 32, 4); }
+    .text-lime-50 { color: rgb(247, 254, 231); }
+    .text-lime-100 { color: rgb(236, 252, 202); }
+    .text-lime-200 { color: rgb(216, 249, 153); }
+    .text-lime-300 { color: rgb(187, 244, 81); }
+    .text-lime-400 { color: rgb(154, 230, 0); }
+    .text-lime-500 { color: rgb(124, 207, 0); }
+    .text-lime-600 { color: rgb(94, 165, 0); }
+    .text-lime-700 { color: rgb(73, 125, 0); }
+    .text-lime-800 { color: rgb(60, 99, 0); }
+    .text-lime-900 { color: rgb(53, 83, 14); }
+    .text-lime-950 { color: rgb(25, 46, 3); }
+    .text-green-50 { color: rgb(240, 253, 244); }
+    .text-green-100 { color: rgb(220, 252, 231); }
+    .text-green-200 { color: rgb(185, 248, 207); }
+    .text-green-300 { color: rgb(123, 241, 168); }
+    .text-green-400 { color: rgb(5, 223, 114); }
+    .text-green-500 { color: rgb(0, 201, 80); }
+    .text-green-600 { color: rgb(0, 166, 62); }
+    .text-green-700 { color: rgb(0, 130, 54); }
+    .text-green-800 { color: rgb(1, 102, 48); }
+    .text-green-900 { color: rgb(13, 84, 43); }
+    .text-green-950 { color: rgb(3, 46, 21); }
+    .text-emerald-50 { color: rgb(236, 253, 245); }
+    .text-emerald-100 { color: rgb(208, 250, 229); }
+    .text-emerald-200 { color: rgb(164, 244, 207); }
+    .text-emerald-300 { color: rgb(94, 233, 181); }
+    .text-emerald-400 { color: rgb(0, 212, 146); }
+    .text-emerald-500 { color: rgb(0, 188, 125); }
+    .text-emerald-600 { color: rgb(0, 153, 102); }
+    .text-emerald-700 { color: rgb(0, 122, 85); }
+    .text-emerald-800 { color: rgb(0, 96, 69); }
+    .text-emerald-900 { color: rgb(0, 79, 59); }
+    .text-emerald-950 { color: rgb(0, 44, 34); }
+    .text-teal-50 { color: rgb(240, 253, 250); }
+    .text-teal-100 { color: rgb(203, 251, 241); }
+    .text-teal-200 { color: rgb(150, 247, 228); }
+    .text-teal-300 { color: rgb(70, 236, 213); }
+    .text-teal-400 { color: rgb(0, 213, 190); }
+    .text-teal-500 { color: rgb(0, 187, 167); }
+    .text-teal-600 { color: rgb(0, 150, 137); }
+    .text-teal-700 { color: rgb(0, 120, 111); }
+    .text-teal-800 { color: rgb(0, 95, 90); }
+    .text-teal-900 { color: rgb(11, 79, 74); }
+    .text-teal-950 { color: rgb(2, 47, 46); }
+    .text-cyan-50 { color: rgb(236, 254, 255); }
+    .text-cyan-100 { color: rgb(206, 250, 254); }
+    .text-cyan-200 { color: rgb(162, 244, 253); }
+    .text-cyan-300 { color: rgb(83, 234, 253); }
+    .text-cyan-400 { color: rgb(0, 211, 242); }
+    .text-cyan-500 { color: rgb(0, 184, 219); }
+    .text-cyan-600 { color: rgb(0, 146, 184); }
+    .text-cyan-700 { color: rgb(0, 117, 149); }
+    .text-cyan-800 { color: rgb(0, 95, 120); }
+    .text-cyan-900 { color: rgb(16, 78, 100); }
+    .text-cyan-950 { color: rgb(5, 51, 69); }
+    .text-sky-50 { color: rgb(240, 249, 255); }
+    .text-sky-100 { color: rgb(223, 242, 254); }
+    .text-sky-200 { color: rgb(184, 230, 254); }
+    .text-sky-300 { color: rgb(116, 212, 255); }
+    .text-sky-400 { color: rgb(0, 188, 255); }
+    .text-sky-500 { color: rgb(0, 166, 244); }
+    .text-sky-600 { color: rgb(0, 132, 209); }
+    .text-sky-700 { color: rgb(0, 105, 168); }
+    .text-sky-800 { color: rgb(0, 89, 138); }
+    .text-sky-900 { color: rgb(2, 74, 112); }
+    .text-sky-950 { color: rgb(5, 47, 74); }
+    .text-blue-50 { color: rgb(239, 246, 255); }
+    .text-blue-100 { color: rgb(219, 234, 254); }
+    .text-blue-200 { color: rgb(190, 219, 255); }
+    .text-blue-300 { color: rgb(142, 197, 255); }
+    .text-blue-400 { color: rgb(81, 162, 255); }
+    .text-blue-500 { color: rgb(43, 127, 255); }
+    .text-blue-600 { color: rgb(21, 93, 252); }
+    .text-blue-700 { color: rgb(20, 71, 230); }
+    .text-blue-800 { color: rgb(25, 60, 184); }
+    .text-blue-900 { color: rgb(28, 57, 142); }
+    .text-blue-950 { color: rgb(22, 36, 86); }
+    .text-indigo-50 { color: rgb(238, 242, 255); }
+    .text-indigo-100 { color: rgb(224, 231, 255); }
+    .text-indigo-200 { color: rgb(198, 210, 255); }
+    .text-indigo-300 { color: rgb(163, 179, 255); }
+    .text-indigo-400 { color: rgb(124, 134, 255); }
+    .text-indigo-500 { color: rgb(97, 95, 255); }
+    .text-indigo-600 { color: rgb(79, 57, 246); }
+    .text-indigo-700 { color: rgb(67, 45, 215); }
+    .text-indigo-800 { color: rgb(55, 42, 172); }
+    .text-indigo-900 { color: rgb(49, 44, 133); }
+    .text-indigo-950 { color: rgb(30, 26, 77); }
+    .text-violet-50 { color: rgb(245, 243, 255); }
+    .text-violet-100 { color: rgb(237, 233, 254); }
+    .text-violet-200 { color: rgb(221, 214, 255); }
+    .text-violet-300 { color: rgb(196, 180, 255); }
+    .text-violet-400 { color: rgb(166, 132, 255); }
+    .text-violet-500 { color: rgb(142, 81, 255); }
+    .text-violet-600 { color: rgb(127, 34, 254); }
+    .text-violet-700 { color: rgb(112, 8, 231); }
+    .text-violet-800 { color: rgb(93, 14, 192); }
+    .text-violet-900 { color: rgb(77, 23, 154); }
+    .text-violet-950 { color: rgb(47, 13, 104); }
+    .text-purple-50 { color: rgb(250, 245, 255); }
+    .text-purple-100 { color: rgb(243, 232, 255); }
+    .text-purple-200 { color: rgb(233, 212, 255); }
+    .text-purple-300 { color: rgb(218, 178, 255); }
+    .text-purple-400 { color: rgb(194, 122, 255); }
+    .text-purple-500 { color: rgb(173, 70, 255); }
+    .text-purple-600 { color: rgb(152, 16, 250); }
+    .text-purple-700 { color: rgb(130, 0, 219); }
+    .text-purple-800 { color: rgb(110, 17, 176); }
+    .text-purple-900 { color: rgb(89, 22, 139); }
+    .text-purple-950 { color: rgb(60, 3, 102); }
+    .text-fuchsia-50 { color: rgb(253, 244, 255); }
+    .text-fuchsia-100 { color: rgb(250, 232, 255); }
+    .text-fuchsia-200 { color: rgb(246, 207, 255); }
+    .text-fuchsia-300 { color: rgb(244, 168, 255); }
+    .text-fuchsia-400 { color: rgb(237, 106, 255); }
+    .text-fuchsia-500 { color: rgb(225, 42, 251); }
+    .text-fuchsia-600 { color: rgb(200, 0, 222); }
+    .text-fuchsia-700 { color: rgb(168, 0, 183); }
+    .text-fuchsia-800 { color: rgb(138, 1, 148); }
+    .text-fuchsia-900 { color: rgb(114, 19, 120); }
+    .text-fuchsia-950 { color: rgb(75, 0, 79); }
+    .text-pink-50 { color: rgb(253, 242, 248); }
+    .text-pink-100 { color: rgb(252, 231, 243); }
+    .text-pink-200 { color: rgb(252, 206, 232); }
+    .text-pink-300 { color: rgb(253, 165, 213); }
+    .text-pink-400 { color: rgb(251, 100, 182); }
+    .text-pink-500 { color: rgb(246, 51, 154); }
+    .text-pink-600 { color: rgb(230, 0, 118); }
+    .text-pink-700 { color: rgb(198, 0, 92); }
+    .text-pink-800 { color: rgb(163, 0, 76); }
+    .text-pink-900 { color: rgb(134, 16, 67); }
+    .text-pink-950 { color: rgb(81, 4, 36); }
+    .text-rose-50 { color: rgb(255, 241, 242); }
+    .text-rose-100 { color: rgb(255, 228, 230); }
+    .text-rose-200 { color: rgb(255, 204, 211); }
+    .text-rose-300 { color: rgb(255, 161, 173); }
+    .text-rose-400 { color: rgb(255, 99, 126); }
+    .text-rose-500 { color: rgb(255, 32, 86); }
+    .text-rose-600 { color: rgb(236, 0, 63); }
+    .text-rose-700 { color: rgb(199, 0, 54); }
+    .text-rose-800 { color: rgb(165, 0, 54); }
+    .text-rose-900 { color: rgb(139, 8, 54); }
+    .text-rose-950 { color: rgb(77, 2, 24); }
+</style>

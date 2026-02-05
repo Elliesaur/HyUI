@@ -1,4 +1,10 @@
 ### HyUI Changelog
+
+#### 0.6.1 - 3 Feb 2026
+- Add getter for template processor on the UI context.
+- Add "margin" aliases for anchor-*.
+- Remove clip children.
+
 #### 0.6.0 - 1 Feb 2026
 - Add per-player image caching - see the docs for more info.
 - Add async image loading (not the best).

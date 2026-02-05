@@ -124,7 +124,7 @@ public class ProgressBarBuilder extends UIElementBuilder<ProgressBarBuilder> imp
     }
 
     /**
-     * Sets the color of the progress bar fill.
+     * Sets the color of the circular progress bar fill.
      *
      * @param color the color string (e.g. #RRGGBB)
      * @return This builder instance for method chaining.
@@ -195,6 +195,8 @@ public class ProgressBarBuilder extends UIElementBuilder<ProgressBarBuilder> imp
             if (maskTexturePath != null) {
                 sb.append("MaskTexturePath: \"").append(maskTexturePath).append("\"; ");
             }
+            if (color != null)
+                sb.append("Color: \"").append(color).append("\"; ");
             sb.append("Value: 0.0; ");
             sb.append("} ");
         } else {
@@ -204,6 +206,8 @@ public class ProgressBarBuilder extends UIElementBuilder<ProgressBarBuilder> imp
             String inlineEffectTexturePath = effectTexturePath != null ? effectTexturePath : "Common/ProgressBarEffect.png";
             sb.append("BarTexturePath: \"").append(inlineBarTexturePath).append("\"; ");
             sb.append("EffectTexturePath: \"").append(inlineEffectTexturePath).append("\"; ");
+            //if (color != null)
+            //    sb.append("Color: \"").append(color).append("\"; ");
             sb.append("Value: 0.0; ");
             sb.append("} ");
         }
@@ -290,14 +294,6 @@ public class ProgressBarBuilder extends UIElementBuilder<ProgressBarBuilder> imp
         if (value != 0.0f) {
             commands.set(selector + ".Value", value);
         }
-/*      if (barTexturePath != null) {
-            commands.set(selector + ".BarTexturePath", barTexturePath);
-        }
-        if (effectTexturePath != null) {
-            if (!circular) {
-                commands.set(selector + ".EffectTexturePath", effectTexturePath);
-            }
-        }*/
         if (effectWidth != null) {
             if (!circular) {
                 commands.set(selector + ".EffectWidth", effectWidth);
@@ -321,9 +317,6 @@ public class ProgressBarBuilder extends UIElementBuilder<ProgressBarBuilder> imp
         }
         if (bar != null) {
             commands.setObject(selector + ".Bar", bar.getHytalePatchStyle());
-        }
-        if (color != null) {
-            commands.set(selector + ".Color", color);
         }
     }
 }

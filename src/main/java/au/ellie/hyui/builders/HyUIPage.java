@@ -230,6 +230,10 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
         delegate.handleDataEventInternal(data, this);
     }
 
+    public TemplateProcessor getTemplateProcessor() {
+        return delegate.templateProcessor;
+    }
+    
     /*@Override
     public void handleDataEvent(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store, @Nonnull String data) {
         super.handleDataEvent(ref, store, data);

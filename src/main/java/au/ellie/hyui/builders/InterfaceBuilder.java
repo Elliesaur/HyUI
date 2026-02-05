@@ -20,6 +20,7 @@ package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.assets.DynamicImageAsset;
+import au.ellie.hyui.elements.UIType;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.html.HtmlParser;
 import au.ellie.hyui.html.TemplateProcessor;
@@ -35,12 +36,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -62,6 +58,13 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
         return (T) this;
     }
 
+    /**
+     * Sets the UI file path for this interface.
+     * Note: Event listeners will NOT work on elements defined in a .ui file.
+     *
+     * @param uiFile The path to the .ui file (e.g. "Pages/MyInterface.ui")
+     * @return This builder instance for method chaining
+     */
     public T fromFile(String uiFile) {
         this.uiFile = uiFile;
         this.templateHtml = null;
@@ -70,16 +73,52 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
         return self();
     }
 
-    public T fromHtml(String html) {
+    /**
+     * Parses the provided HTML string into this interface with a specific style.
+     *
+     * @param html  The HTML string to parse
+     * @param style The UIType style to apply (e.g. {@link UIType#HYWIND})
+     * @return This builder instance for method chaining
+     */
+    public T fromHtml(String html, UIType style) {
         this.templateHtml = null;
         this.templateProcessor = null;
         this.runtimeTemplateUpdatesEnabled = false;
+        html = addUIStyleToHtml(html, style);
         new HtmlParser().parseToInterface(this, html);
         return self();
     }
-
+    
     /**
-     * Loads and processes an HTML template with variable substitution.
+     * Parses the provided HTML template into this interface with variable substitution and a specific style.
+     *
+     * @param html     The HTML template with {{$variable}} placeholders
+     * @param template The template processor with variables set
+     * @param style    The UIType style to apply (e.g. {@link UIType#HYWIND})
+     * @return This builder instance for method chaining
+     */
+    public T fromTemplate(String html, TemplateProcessor template, UIType style) {
+        this.templateHtml = html;
+        this.templateProcessor = template;
+        HtmlParser parser = new HtmlParser();
+        parser.setTemplateProcessor(template);
+        html = addUIStyleToHtml(html, style);
+        parser.parseToInterface(this, html);
+        return self();
+    }
+    
+    /**
+     * Parses the provided HTML string into this interface.
+     *
+     * @param html The HTML string to parse
+     * @return This builder instance for method chaining
+     */
+    public T fromHtml(String html) {
+        return fromHtml(html, UIType.NONE);
+    }
+    
+    /**
+     * Parses the provided HTML template into this interface with variable substitution.
      *
      * <p>Example usage:</p>
      * <pre>
@@ -96,12 +135,7 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
      * @return This builder instance for method chaining
      */
     public T fromTemplate(String html, TemplateProcessor template) {
-        this.templateHtml = html;
-        this.templateProcessor = template;
-        HtmlParser parser = new HtmlParser();
-        parser.setTemplateProcessor(template);
-        parser.parseToInterface(this, html);
-        return self();
+        return fromTemplate(html, template, UIType.NONE);
     }
     
     private String loadHtmlFromResources(String resourceFileName) {
@@ -132,6 +166,17 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
         }
     }
 
+    private String addUIStyleToHtml(String html, UIType style) {
+        String uiStyleFilePath = null;
+        if (Objects.requireNonNull(style) == UIType.HYWIND) {
+            uiStyleFilePath = "/Common/UI/Custom/Pages/Styles/hywind.html";
+        } else {
+            return html;
+        }
+        String contents = loadHtmlFromResources(uiStyleFilePath);
+        return contents + "\n\n" + html;
+    }
+    
     /**
      * Loads an HTML file from resources under Common/UI/Custom and parses it into this interface.
      *
@@ -139,10 +184,21 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
      * @return This builder instance for method chaining
      */
     public T loadHtml(String resourcePath) {
-        String html = loadHtmlFromResources(resolveCustomResourcePath(resourcePath));
-        return fromHtml(html);
+        return loadHtml(resourcePath, UIType.NONE);
     }
-
+    
+    /**
+     * Loads an HTML file from resources under Common/UI/Custom and parses it into this interface.
+     *
+     * @param resourcePath Path relative to Common/UI/Custom (e.g. "Pages/Something.html")
+     * @param style        The UIType style to apply (e.g. {@link UIType#HYWIND})
+     * @return This builder instance for method chaining
+     */
+    public T loadHtml(String resourcePath, UIType style) {
+        String html = loadHtmlFromResources(resolveCustomResourcePath(resourcePath));
+        return fromHtml(html, style);
+    }
+    
     /**
      * Loads an HTML template from resources under Common/UI/Custom with a template processor.
      *
@@ -151,12 +207,24 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
      * @return This builder instance for method chaining
      */
     public T loadHtml(String resourcePath, TemplateProcessor template) {
-        String html = loadHtmlFromResources(resolveCustomResourcePath(resourcePath));
-        return fromTemplate(html, template);
+        return loadHtml(resourcePath, template, UIType.NONE);
     }
 
     /**
-     * Loads an HTML template from resources under Common/UI/Custom with variables.
+     * Loads an HTML template from resources under Common/UI/Custom with a template processor and a specific style.
+     *
+     * @param resourcePath Path relative to Common/UI/Custom (e.g. "Pages/Something.html")
+     * @param template     The template processor with variables set
+     * @param style        The UIType style to apply (e.g. {@link UIType#HYWIND})
+     * @return This builder instance for method chaining
+     */
+    public T loadHtml(String resourcePath, TemplateProcessor template, UIType style) {
+        String html = loadHtmlFromResources(resolveCustomResourcePath(resourcePath));
+        return fromTemplate(html, template, style);
+    }
+    
+    /**
+     * Loads an HTML template from resources under Common/UI/Custom with variable substitution.
      *
      * @param resourcePath Path relative to Common/UI/Custom (e.g. "Pages/Something.html")
      * @param variables    Map of variable names to values
@@ -167,6 +235,19 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
         return fromTemplate(html, variables);
     }
 
+    /**
+     * Loads an HTML template from resources under Common/UI/Custom with variables and a specific style.
+     *
+     * @param resourcePath Path relative to Common/UI/Custom (e.g. "Pages/Something.html")
+     * @param variables    Map of variable names to values
+     * @param style        The UIType style to apply (e.g. {@link UIType#HYWIND})
+     * @return This builder instance for method chaining
+     */
+    public T loadHtml(String resourcePath, Map<String, ?> variables, UIType style) {
+        String html = loadHtmlFromResources(resolveCustomResourcePath(resourcePath));
+        return fromTemplate(html, variables, style);
+    }
+    
     public T enableRuntimeTemplateUpdates(boolean enabled) {
         this.runtimeTemplateUpdatesEnabled = enabled;
         return self();
@@ -178,16 +259,28 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
     }
 
     /**
-     * Loads and processes an HTML template with a map of variables.
+     * Parses the provided HTML template into this interface with variable substitution.
      *
      * @param html      The HTML template with {{$variable}} placeholders
      * @param variables Map of variable names to values
      * @return This builder instance for method chaining
      */
     public T fromTemplate(String html, Map<String, ?> variables) {
-        return fromTemplate(html, new TemplateProcessor().setVariables(variables));
+        return fromTemplate(html, variables, UIType.NONE);
     }
-
+    
+    /**
+     * Parses the provided HTML template into this interface with variable substitution and a specific style.
+     *
+     * @param html      The HTML template with {{$variable}} placeholders
+     * @param variables Map of variable names to values
+     * @param style     The UIType style to apply (e.g. {@link UIType#HYWIND})
+     * @return This builder instance for method chaining
+     */
+    public T fromTemplate(String html, Map<String, ?> variables, UIType style) {
+        return fromTemplate(html, new TemplateProcessor().setVariables(variables), style);
+    }
+    
     private String resolveCustomResourcePath(String resourcePath) {
         if (resourcePath == null || resourcePath.isBlank()) {
             throw new IllegalArgumentException("Resource path cannot be null or blank.");
