@@ -1,4 +1,4 @@
-package au.ellie.hyui.html.ast.utils;
+package au.ellie.hyui.html.template.utils;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

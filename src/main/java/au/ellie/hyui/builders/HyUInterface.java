@@ -18,9 +18,11 @@
 
 package au.ellie.hyui.builders;
 
+import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.HyUIPluginLogger;
 import au.ellie.hyui.events.DragCancelledEventData;
 import au.ellie.hyui.events.DroppedEventData;
+import au.ellie.hyui.events.DynamicPageData;
 import au.ellie.hyui.events.SlotClickPressWhileDraggingEventData;
 import au.ellie.hyui.events.SlotClickReleaseWhileDraggingEventData;
 import au.ellie.hyui.events.SlotClickingEventData;
@@ -39,8 +41,6 @@ import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import au.ellie.hyui.HyUIPlugin;
-import au.ellie.hyui.events.DynamicPageData;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -50,11 +50,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 public abstract class HyUInterface implements UIContext {
 
+    private final Set<String> dirtyValueIds = new HashSet<>();
     protected String uiFile;
     protected List<UIElementBuilder<?>> elements;
     protected List<Consumer<UICommandBuilder>> editCallbacks;
@@ -64,7 +65,6 @@ public abstract class HyUInterface implements UIContext {
     protected TemplateProcessor templateProcessor;
     private boolean hasBuilt;
     private boolean runtimeTemplateUpdatesEnabled;
-    private final Set<String> dirtyValueIds = new HashSet<>();
 
     public HyUInterface(String uiFile,
                         List<UIElementBuilder<?>> elements,
@@ -102,8 +102,9 @@ public abstract class HyUInterface implements UIContext {
     }
 
     @Override
-    public void updatePage(boolean shouldClose) {}
-    
+    public void updatePage(boolean shouldClose) {
+    }
+
     public void build(@Nonnull Ref<EntityStore> ref,
                       @Nonnull UICommandBuilder uiCommandBuilder,
                       @Nonnull UIEventBuilder uiEventBuilder,
@@ -116,7 +117,7 @@ public abstract class HyUInterface implements UIContext {
                       @Nonnull UIEventBuilder uiEventBuilder,
                       @Nonnull Store<EntityStore> store,
                       boolean updateOnly) {
-        
+
         HyUIPlugin.getLog().logFinest("REBUILD: HyUInterface build updateOnly=" + updateOnly);
         HyUIPlugin.getLog().logFinest("Building HyUInterface" + (uiFile != null ? " from file: " + uiFile : ""));
 
@@ -298,8 +299,8 @@ public abstract class HyUInterface implements UIContext {
                 if (finalValue != null && userId != null && listener.type() != CustomUIEventBindingType.FocusGained) {
                     //Object previous = elementValues.get(userId);
                     //if (!Objects.equals(previous, finalValue)) {
-                        elementValues.put(userId, finalValue);
-                        dirtyValueIds.add(userId);
+                    elementValues.put(userId, finalValue);
+                    dirtyValueIds.add(userId);
                     //}
                 }
 
@@ -445,9 +446,9 @@ public abstract class HyUInterface implements UIContext {
         }
         HyUIPlugin.getLog().logFinest("REBUILD: Template refresh");
         HtmlParser parser = new HtmlParser();
-        String processedHtml = templateProcessor.process(templateHtml, context);
+        String processedHtml = templateProcessor.setTemplate(templateHtml).process(context);
         List<UIElementBuilder<?>> updatedElements = parser.parse(processedHtml);
-        
+
         this.elements = mergeElementLists(this.elements, updatedElements);
         applyRuntimeValues(this.elements, context);
         reapplyTabSelections(this.elements, context);
@@ -457,7 +458,7 @@ public abstract class HyUInterface implements UIContext {
     }
 
     private List<UIElementBuilder<?>> mergeElementLists(List<UIElementBuilder<?>> currentElements,
-                                                       List<UIElementBuilder<?>> updatedElements) {
+                                                        List<UIElementBuilder<?>> updatedElements) {
 /*
         for (var e : updatedElements) {
             HyUIPlugin.getLog().logInfo("UPDATED ELEMENT: \n\n" + e);

@@ -16,26 +16,31 @@
  *
  */
 
-package au.ellie.hyui.html.ast;
+package au.ellie.hyui.html.template;
 
 import au.ellie.hyui.HyUIPlugin;
-import au.ellie.hyui.html.ast.context.FilterRegistry;
-import au.ellie.hyui.html.ast.context.VariableStack.VariableStackImpl;
-import au.ellie.hyui.html.ast.item.Node;
-import au.ellie.hyui.html.ast.item.Node.BlockNode.EachBlockNode;
-import au.ellie.hyui.html.ast.item.Node.BlockNode.IfBlockNode;
-import au.ellie.hyui.html.ast.item.Node.ExpressionNode;
-import au.ellie.hyui.html.ast.item.Node.ExpressionNode.BinaryOpNode;
-import au.ellie.hyui.html.ast.item.Node.ExpressionNode.DefaultNode;
-import au.ellie.hyui.html.ast.item.Node.ExpressionNode.LiteralNode;
-import au.ellie.hyui.html.ast.item.Node.ExpressionNode.PipeNode;
-import au.ellie.hyui.html.ast.item.Node.ExpressionNode.PropertyAccessNode;
-import au.ellie.hyui.html.ast.item.Node.ExpressionNode.TextNode;
-import au.ellie.hyui.html.ast.item.Node.ExpressionNode.VariableNode;
-import au.ellie.hyui.html.ast.utils.NumericUtils;
-import au.ellie.hyui.html.ast.utils.ReflectionUtils;
+import au.ellie.hyui.html.TemplateProcessor.CachedComponent;
+import au.ellie.hyui.html.template.context.FilterRegistry;
+import au.ellie.hyui.html.template.context.VariableStack;
+import au.ellie.hyui.html.template.item.Node;
+import au.ellie.hyui.html.template.item.Node.AttributeValueNode.DynamicAttributeNode;
+import au.ellie.hyui.html.template.item.Node.AttributeValueNode.FlagAttributeNode;
+import au.ellie.hyui.html.template.item.Node.AttributeValueNode.StaticAttributeNode;
+import au.ellie.hyui.html.template.item.Node.BlockNode.EachBlockNode;
+import au.ellie.hyui.html.template.item.Node.BlockNode.IfBlockNode;
+import au.ellie.hyui.html.template.item.Node.ComponentElementNode;
+import au.ellie.hyui.html.template.item.Node.ExpressionNode;
+import au.ellie.hyui.html.template.item.Node.ExpressionNode.BinaryOpNode;
+import au.ellie.hyui.html.template.item.Node.ExpressionNode.DefaultNode;
+import au.ellie.hyui.html.template.item.Node.ExpressionNode.LiteralNode;
+import au.ellie.hyui.html.template.item.Node.ExpressionNode.PipeNode;
+import au.ellie.hyui.html.template.item.Node.ExpressionNode.PropertyAccessNode;
+import au.ellie.hyui.html.template.item.Node.ExpressionNode.TextNode;
+import au.ellie.hyui.html.template.item.Node.ExpressionNode.VariableNode;
+import au.ellie.hyui.html.template.item.Symbols;
+import au.ellie.hyui.html.template.utils.NumericUtils;
+import au.ellie.hyui.html.template.utils.ReflectionUtils;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,13 +48,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public class Evaluator {
     private final FilterRegistry filterRegistry;
-    private final VariableStackImpl contextStack;
+    private final VariableStack contextStack;
+    private Map<String, CachedComponent> components;
 
-    public Evaluator(Map<String, Object> variables, FilterRegistry filterRegistry) {
-        this.contextStack = new VariableStackImpl(variables);
+    public Evaluator(VariableStack context, FilterRegistry filterRegistry, Map<String, CachedComponent> components) {
+        this.components = components;
+        this.contextStack = context;
         this.filterRegistry = filterRegistry;
     }
 
@@ -60,7 +68,7 @@ public class Evaluator {
      * @return The resulting string after evaluation.
      */
     public String evaluate(List<Node> nodes) {
-        StringBuilder result = new StringBuilder();
+        var result = new StringBuilder();
 
         for (Node node : nodes)
             result.append(evaluateNode(node));
@@ -78,11 +86,12 @@ public class Evaluator {
         return switch (node) {
             case TextNode text -> text.content();
             case ExpressionNode expr -> {
-                Object value = evaluateExpression(expr);
+                var value = evaluateExpression(expr);
                 yield value == null ? "" : value.toString();
             }
             case IfBlockNode ifBlock -> evaluateIfBlock(ifBlock);
             case EachBlockNode eachBlock -> evaluateEachBlock(eachBlock);
+            case ComponentElementNode component -> evaluateComponent(component);
 
             default -> throw new IllegalStateException("Unexpected value: " + node);
         };
@@ -96,6 +105,7 @@ public class Evaluator {
      */
     private Object evaluateExpression(ExpressionNode node) {
         return switch (node) {
+            case TextNode literal -> literal.content();
             case LiteralNode literal -> literal.value();
             case VariableNode var -> contextStack.getVariable(var.name());
             case PropertyAccessNode prop -> evaluatePropertyAccess(prop);
@@ -112,10 +122,10 @@ public class Evaluator {
      * @return The value of the accessed property, or null if not found.
      */
     private Object evaluatePropertyAccess(PropertyAccessNode node) {
-        Object obj = evaluateExpression(node.object());
+        var obj = evaluateExpression(node.object());
         if (obj == null) return null;
 
-        String property = node.property();
+        var property = node.property();
 
         // Access via Map
         if (obj instanceof Map<?, ?> map)
@@ -123,23 +133,23 @@ public class Evaluator {
 
         // Access via Reflection
         try {
-            Class<?> clazz = obj.getClass();
+            var clazz = obj.getClass();
 
             try {
-                Field field = clazz.getDeclaredField(property);
+                var field = clazz.getDeclaredField(property);
                 field.setAccessible(true);
 
                 return field.get(obj);
             } catch (NoSuchFieldException e) {
                 var propName = property.substring(0, 1).toUpperCase() + property.substring(1);
-                List<String> methodNames = new ArrayList<>() {{
+                var methodNames = new ArrayList<String>() {{
                     add(property);
                     add("get" + propName);
                     add("is" + propName);
                 }};
 
                 // Open methods
-                for (String name : methodNames) {
+                for (var name : methodNames) {
                     var method = ReflectionUtils.getPublicMethod(clazz, name);
 
                     if (method.isPresent())
@@ -160,19 +170,20 @@ public class Evaluator {
      * @return The result of the binary operation.
      */
     private Object evaluateBinaryOp(BinaryOpNode node) {
-        Object left = evaluateExpression(node.left());
-        Object right = evaluateExpression(node.right());
+        var left = evaluateExpression(node.left());
+        var right = evaluateExpression(node.right());
 
         return switch (node.operator()) {
-            case COMP_EQUALS -> evaluateEquals(left, right);
-            case COMP_NOT_EQUALS -> !evaluateEquals(left, right);
-            case COMP_LESS_THAN -> evaluateComparison(left, right) < 0;
-            case COMP_GREATER_THAN -> evaluateComparison(left, right) > 0;
-            case COMP_LESS_EQUALS -> evaluateComparison(left, right) <= 0;
-            case COMP_GREATER_EQUALS -> evaluateComparison(left, right) >= 0;
-            case COMP_AND -> toBoolean(left) && toBoolean(right);
-            case COMP_OR -> toBoolean(left) || toBoolean(right);
-            case COMP_IN -> evaluateIn(left, right);
+            case Symbols.EQUALS -> evaluateEquals(left, right);
+            case Symbols.NOT_EQUALS -> !evaluateEquals(left, right);
+            case Symbols.LESS_THAN -> evaluateComparison(left, right) < 0;
+            case Symbols.GREATER_THAN -> evaluateComparison(left, right) > 0;
+            case Symbols.LESS_THAN_EQUALS -> evaluateComparison(left, right) <= 0;
+            case Symbols.GREATER_THAN_EQUALS -> evaluateComparison(left, right) >= 0;
+            case Symbols.AND -> toBoolean(left) && toBoolean(right);
+            case Symbols.OR -> toBoolean(left) || toBoolean(right);
+            case Symbols.IN -> evaluateIn(left, right);
+            case Symbols.NOT_IN -> !evaluateIn(left, right);
             default -> throw new RuntimeException("Unknown operator: " + node.operator());
         };
     }
@@ -188,8 +199,8 @@ public class Evaluator {
         if (left == null && right == null) return true;
         if (left == null || right == null) return false;
 
-        Number leftNum = NumericUtils.toNumber(left);
-        Number rightNum = NumericUtils.toNumber(right);
+        var leftNum = NumericUtils.toNumber(left);
+        var rightNum = NumericUtils.toNumber(right);
 
         if (leftNum != null && rightNum != null)
             return NumericUtils.equals(leftNum, rightNum);
@@ -204,20 +215,20 @@ public class Evaluator {
      * @param right Right value of comparison
      * @return Negative if left < right, 0 if left == right, positive if left > right
      */
+    @SuppressWarnings("unchecked")
     private int evaluateComparison(Object left, Object right) {
         if (left == null && right == null) return 0;
         if (left == null) return -1;
         if (right == null) return 1;
 
-        Number leftNum = NumericUtils.toNumber(left);
-        Number rightNum = NumericUtils.toNumber(right);
+        var leftNum = NumericUtils.toNumber(left);
+        var rightNum = NumericUtils.toNumber(right);
 
         if (leftNum != null && rightNum != null)
             return NumericUtils.compare(leftNum, rightNum);
 
         if (left instanceof Comparable && left.getClass().isInstance(right)) {
-            @SuppressWarnings("unchecked")
-            Comparable<Object> leftComp = (Comparable<Object>) left;
+            var leftComp = (Comparable<Object>) left;
             return leftComp.compareTo(right);
         }
 
@@ -232,8 +243,8 @@ public class Evaluator {
      * @return The result of the filter application
      */
     private Object evaluatePipe(PipeNode node) {
-        Object value = evaluateExpression(node.expression());
-        FilterRegistry.Filter filter = filterRegistry.get(node.filterName());
+        var value = evaluateExpression(node.expression());
+        var filter = filterRegistry.get(node.filterName());
 
         return filter.apply(value);
     }
@@ -246,7 +257,7 @@ public class Evaluator {
      */
     private Object evaluateDefault(DefaultNode node) {
         for (ExpressionNode alternative : node.alternatives()) {
-            Object value = evaluateExpression(alternative);
+            var value = evaluateExpression(alternative);
             if (value != null && !value.toString().isEmpty())
                 return value;
         }
@@ -261,9 +272,9 @@ public class Evaluator {
      * @return The resulting string after evaluation.
      */
     private String evaluateIfBlock(IfBlockNode node) {
-        Object conditionValue = evaluateExpression(node.condition());
+        var conditionValue = evaluateExpression(node.condition());
 
-        StringBuilder result = new StringBuilder();
+        var result = new StringBuilder();
         if (toBoolean(conditionValue)) {
             for (Node child : node.thenBody())
                 result.append(evaluateNode(child));
@@ -282,16 +293,16 @@ public class Evaluator {
      * @return The resulting string after evaluation.
      */
     private String evaluateEachBlock(EachBlockNode node) {
-        Object collectionValue = evaluateExpression(node.collection());
+        var collectionValue = evaluateExpression(node.collection());
 
         if (collectionValue == null)
             return "";
 
-        Iterable<?> items = toIterable(collectionValue);
-        StringBuilder result = new StringBuilder();
+        var items = toIterable(collectionValue);
+        var result = new StringBuilder();
 
         for (Object item : items) {
-            Map<String, Object> context = new HashMap<>();
+            var context = new HashMap<String, Object>();
             context.put(node.itemName(), item);
 
             contextStack.pushScope(context);
@@ -304,6 +315,45 @@ public class Evaluator {
         }
 
         return result.toString();
+    }
+
+    /**
+     * Evaluate a `component` element node and return the resulting string.
+     *
+     * @param component The `component` element node to evaluate.
+     * @return The resulting string after evaluation.
+     */
+    private String evaluateComponent(ComponentElementNode component) {
+        var componentDef = component.tagName();
+        var cachedComponent = components.get(componentDef);
+
+        if (cachedComponent == null)
+            throw new RuntimeException("Component not found: " + componentDef);
+
+        var context = new HashMap<String, Object>();
+        for (var entry : component.attributes().entrySet()) {
+            switch (entry.getValue()) {
+                case DynamicAttributeNode dynamicAttributeNode ->
+                        context.put(entry.getKey(), evaluateExpression(dynamicAttributeNode.expression()));
+                case StaticAttributeNode staticAttributeNode ->
+                        context.put(entry.getKey(), staticAttributeNode.value());
+                case FlagAttributeNode _ -> context.put(entry.getKey(), true);
+            }
+        }
+
+        context.put("children", (Supplier<String>) () -> {
+            var result = new StringBuilder();
+            for (Node child : component.children())
+                result.append(evaluateNode(child));
+            return result.toString();
+        });
+
+        contextStack.pushScope(context);
+        try {
+            return evaluate(cachedComponent.getAst(components));
+        } finally {
+            contextStack.popScope();
+        }
     }
 
     // ===== Helpers =====

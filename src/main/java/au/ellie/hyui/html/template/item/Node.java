@@ -16,7 +16,7 @@
  *
  */
 
-package au.ellie.hyui.html.ast.item;
+package au.ellie.hyui.html.template.item;
 
 import java.util.List;
 import java.util.Map;
@@ -29,7 +29,7 @@ public interface Node {
         /**
          * Represents plain text in the template
          */
-        record TextNode(String content) implements Node {
+        record TextNode(String content) implements ExpressionNode {
         }
 
         /**
@@ -53,7 +53,7 @@ public interface Node {
         /**
          * Represents a binary operation between two expressions
          */
-        record BinaryOpNode(ExpressionNode left, Token.Type operator, ExpressionNode right) implements ExpressionNode {
+        record BinaryOpNode(ExpressionNode left, String operator, ExpressionNode right) implements ExpressionNode {
         }
 
         /**
@@ -67,7 +67,6 @@ public interface Node {
          */
         record DefaultNode(List<ExpressionNode> alternatives) implements ExpressionNode {
         }
-
     }
 
     // ---- Control Flow Nodes ----
@@ -86,28 +85,43 @@ public interface Node {
         }
     }
 
-    // ---- Attribute Value Nodes ----
+    // ---- Component Nodes ----
 
-    sealed interface AttributeValue {
-        record Static(String value) implements AttributeValue {
+    sealed interface AttributeValueNode extends Node {
+        String getName();
+
+        record StaticAttributeNode(String name, String value) implements AttributeValueNode {
+            public String getName() {
+                return name;
+            }
         }
 
-        record Dynamic(ExpressionNode expression) implements AttributeValue {
+        record DynamicAttributeNode(String name, ExpressionNode expression) implements AttributeValueNode {
+            public String getName() {
+                return name;
+            }
         }
 
-        record Flag() implements AttributeValue {
+        record FlagAttributeNode(String name) implements AttributeValueNode {
+            public String getName() {
+                return name;
+            }
         }
     }
 
-    // ---- HTML Nodes ----
-
-    record HtmlElementNode(
+    record ComponentElementNode(
             String tagName,
-            Map<String, AttributeValue> attributes,
-            Map<String, AttributeValue> customAttributes,
-            List<Node> children,
-            boolean selfClosing
+            Map<String, AttributeValueNode> attributes,
+            List<Node> expressionAttributes,
+            List<Node> children
     ) implements Node {
+        public boolean hasAttribute(String name) {
+            return attributes.containsKey(name);
+        }
+
+        public AttributeValueNode getAttribute(String name) {
+            return attributes.get(name);
+        }
     }
 }
 

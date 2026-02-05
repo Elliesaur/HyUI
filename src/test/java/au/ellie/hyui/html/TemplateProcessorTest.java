@@ -58,13 +58,13 @@ class TemplateProcessorTest {
     record Person(String name, int age, Address address) {
     }
 
-    record User(String name) {
+    record User(String name, String lastName) {
     }
 
     record Category(String name, List<String> items) {
     }
 
-    record Item(String name, boolean active, String display) {
+    record Item(String name, boolean active, String display, int count) {
     }
 
     record Box(int size) {
@@ -83,20 +83,23 @@ class TemplateProcessorTest {
         @DisplayName("Should return plain text unchanged")
         void plainText() {
             String template = "<div>Hello World</div>";
-            assertEquals("<div>Hello World</div>", processor.process(template));
+            assertEquals("<div>Hello World</div>", processor.setTemplate(template).process());
         }
 
         @Test
         @DisplayName("Should replace simple variables")
         void simpleVariable() {
             processor.setVariable("name", "John");
-            assertEquals("Hello John!", processor.process("Hello {{$name}}!"));
+
+            processor.setTemplate("Hello {{$name}}!");
+            assertEquals("Hello John!", processor.process());
         }
 
         @Test
         @DisplayName("Should handle missing variables as empty strings")
         void missingVariable() {
-            assertEquals("Hello !", processor.process("Hello {{$name}}!"));
+            processor.setTemplate("Hello {{$name}}!");
+            assertEquals("Hello !", processor.process());
         }
 
         @Test
@@ -104,13 +107,16 @@ class TemplateProcessorTest {
         void variableNaming() {
             processor.setVariable("my-var", "value1");
             processor.setVariable("my_var", "value2");
-            assertEquals("value1 value2", processor.process("{{$my-var}} {{$my_var}}"));
+
+            processor.setTemplate("{{$my-var}} {{$my_var}}");
+            assertEquals("value1 value2", processor.process());
         }
 
         @Test
         @DisplayName("Should preserve intentional whitespace in HTML")
         void whitespacePreservation() {
-            assertEquals("<div>  Hello  </div>", processor.process("<div>  Hello  </div>"));
+            processor.setTemplate("<div>  Hello  </div>");
+            assertEquals("<div>  Hello  </div>", processor.process());
         }
     }
 
@@ -123,22 +129,29 @@ class TemplateProcessorTest {
         @Test
         @DisplayName("Should handle string literals with escaping")
         void stringLiterals() {
-            assertEquals("Hello World", processor.process("{{\"Hello World\"}}"));
-            assertEquals("Hello \"World\"", processor.process("{{\"Hello \\\"World\\\"\"}}"));
+            processor.setTemplate("{{\"Hello World\"}}");
+            assertEquals("Hello World", processor.process());
+
+            processor.setTemplate("{{\"Hello \\\"World\\\"\"}}");
+            assertEquals("Hello \"World\"", processor.process());
         }
 
         @ParameterizedTest
         @CsvSource({"{{42}}", "{{3.14}}", "{{-5}}"})
         @DisplayName("Should handle numeric literals")
         void numericLiterals(String template) {
-            assertNotNull(processor.process(template));
-            assertFalse(processor.process(template).isBlank());
+            processor.setTemplate(template);
+            var result = processor.process();
+
+            assertNotNull(result);
+            assertFalse(result.isBlank());
         }
 
         @Test
         @DisplayName("Should handle boolean literals")
         void booleanLiterals() {
-            assertEquals("true false", processor.process("{{true}} {{false}}"));
+            processor.setTemplate("{{true}} {{false}}");
+            assertEquals("true false", processor.process());
         }
     }
 
@@ -152,28 +165,36 @@ class TemplateProcessorTest {
         @DisplayName("Should access record properties")
         void recordProperties() {
             processor.setVariable("user", new Person("Alice", 30, null));
-            assertEquals("Alice is 30", processor.process("{{$user.name}} is {{$user.age}}"));
+
+            processor.setTemplate("{{$user.name}} is {{$user.age}}");
+            assertEquals("Alice is 30", processor.process());
         }
 
         @Test
         @DisplayName("Should access map properties")
         void mapProperties() {
             processor.setVariable("user", Map.of("name", "Bob", "age", 25));
-            assertEquals("Bob is 25", processor.process("{{$user.name}} is {{$user.age}}"));
+
+            processor.setTemplate("{{$user.name}} is {{$user.age}}");
+            assertEquals("Bob is 25", processor.process());
         }
 
         @Test
         @DisplayName("Should access nested properties")
         void nestedProperties() {
             processor.setVariable("user", new Person("Charlie", 21, new Address("Paris", "France")));
-            assertEquals("Paris, France", processor.process("{{$user.address.city}}, {{$user.address.country}}"));
+
+            processor.setTemplate("{{$user.address.city}}, {{$user.address.country}}");
+            assertEquals("Paris, France", processor.process());
         }
 
         @Test
         @DisplayName("Should return empty string for missing properties")
         void missingProperties() {
             processor.setVariable("user", new Person("Dave", 32, null));
-            assertEquals("", processor.process("{{$user.id}}"));
+
+            processor.setTemplate("{{$user.id}}");
+            assertEquals("", processor.process());
         }
 
         @ParameterizedTest
@@ -185,20 +206,18 @@ class TemplateProcessorTest {
         void supplierEvaluationOnIfCondition(boolean condition, int value, String expected) {
             AtomicInteger evaluations = new AtomicInteger();
 
-            processor
-                    .setVariable("enabled", condition)
-                    .setVariable("secret", () -> {
-                        evaluations.incrementAndGet();
-                        return "value_" + evaluations;
-                    });
+            processor.setVariable("enabled", condition);
+            processor.setVariable("secret", () -> {
+                evaluations.incrementAndGet();
+                return "value_" + evaluations;
+            });
 
-            String template = """
+            processor.setTemplate("""
                     {{#if $enabled}}
                     {{$secret}} - {{$secret}}
                     {{/if}}
-                    """;
-
-            assertEquals(expected != null ? expected : "", processor.process(template).trim());
+                    """);
+            assertEquals(expected != null ? expected : "", processor.process());
             assertEquals(value, evaluations.get());
         }
 
@@ -211,20 +230,18 @@ class TemplateProcessorTest {
         void functionEvaluationOnIfCondition(boolean condition, int value, String expected) {
             AtomicInteger evaluations = new AtomicInteger();
 
-            processor
-                    .setVariable("enabled", condition)
-                    .setVariable("secret", (_) -> {
-                        evaluations.incrementAndGet();
-                        return "value_" + evaluations;
-                    });
+            processor.setVariable("enabled", condition);
+            processor.setVariable("secret", (_) -> {
+                evaluations.incrementAndGet();
+                return "value_" + evaluations;
+            });
 
-            String template = """
+            processor.setTemplate("""
                     {{#if $enabled}}
                     {{$secret}} - {{$secret}}
                     {{/if}}
-                    """;
-
-            assertEquals(expected != null ? expected : "", processor.process(template).trim());
+                    """);
+            assertEquals(expected != null ? expected : "", processor.process());
             assertEquals(value, evaluations.get());
         }
     }
@@ -248,15 +265,21 @@ class TemplateProcessorTest {
         void comparisonOperators(int left, String op, int right, boolean expected) {
             processor.setVariable("a", left);
             processor.setVariable("b", right);
-            assertEquals(String.valueOf(expected), processor.process("{{$a " + op + " $b}}"));
+
+            processor.setTemplate("{{$a " + op + " $b}}");
+            assertEquals(String.valueOf(expected), processor.process());
         }
 
         @Test
         @DisplayName("Should compare strings")
         void stringComparison() {
             processor.setVariable("name", "Alice");
-            assertEquals("true", processor.process("{{$name == \"Alice\"}}"));
-            assertEquals("false", processor.process("{{$name == \"Bob\"}}"));
+
+            processor.setTemplate("{{$name == \"Alice\"}}");
+            assertEquals("true", processor.process());
+
+            processor.setTemplate("{{$name == \"Bob\"}}");
+            assertEquals("false", processor.process());
         }
 
         @Test
@@ -264,8 +287,12 @@ class TemplateProcessorTest {
         void numericTypeMixing() {
             processor.setVariable("a", 5);
             processor.setVariable("b", 5.0);
-            assertEquals("true", processor.process("{{$a == $b}}"));
-            assertEquals("false", processor.process("{{$a != $b}}"));
+
+            processor.setTemplate("{{$a == $b}}");
+            assertEquals("true", processor.process());
+
+            processor.setTemplate("{{$a != $b}}");
+            assertEquals("false", processor.process());
         }
 
         @Test
@@ -273,13 +300,16 @@ class TemplateProcessorTest {
         void floatingPointEpsilon() {
             processor.setVariable("a", 0.1 + 0.2);
             processor.setVariable("b", 0.3);
-            assertEquals("true", processor.process("{{$a == $b}}"));
+
+            processor.setTemplate("{{$a == $b}}");
+            assertEquals("true", processor.process());
         }
 
         @Test
         @DisplayName("Should handle null comparisons")
         void nullComparison() {
-            assertEquals("true", processor.process("{{$value == $missing}}"));
+            processor.setTemplate("{{$value == $missing}}");
+            assertEquals("true", processor.process());
         }
     }
 
@@ -296,9 +326,14 @@ class TemplateProcessorTest {
             processor.setVariable("b", true);
             processor.setVariable("c", false);
 
-            assertEquals("true", processor.process("{{$a && $b}}"));
-            assertEquals("false", processor.process("{{$a && $c}}"));
-            assertEquals("false", processor.process("{{$c && $c}}"));
+            processor.setTemplate("{{$a && $b}}");
+            assertEquals("true", processor.process());
+
+            processor.setTemplate("{{$a && $c}}");
+            assertEquals("false", processor.process());
+
+            processor.setTemplate("{{$c && $c}}");
+            assertEquals("false", processor.process());
         }
 
         @Test
@@ -307,8 +342,11 @@ class TemplateProcessorTest {
             processor.setVariable("a", true);
             processor.setVariable("b", false);
 
-            assertEquals("true", processor.process("{{$a || $b}}"));
-            assertEquals("false", processor.process("{{$b || $b}}"));
+            processor.setTemplate("{{$a || $b}}");
+            assertEquals("true", processor.process());
+
+            processor.setTemplate("{{$b || $b}}");
+            assertEquals("false", processor.process());
         }
 
         @Test
@@ -318,7 +356,8 @@ class TemplateProcessorTest {
             processor.setVariable("b", false);
             processor.setVariable("c", true);
 
-            assertEquals("true", processor.process("{{$a && $b || $c}}"));
+            processor.setTemplate("{{$a && $b || $c}}");
+            assertEquals("true", processor.process());
         }
 
         @ParameterizedTest
@@ -330,16 +369,15 @@ class TemplateProcessorTest {
         })
         @DisplayName("Should evaluate truthiness correctly")
         void truthiness(String value, boolean isTruthy) {
-            if (value.isEmpty()) {
+            if (value.isEmpty())
                 processor.setVariable("val", "");
-            } else if (value.matches("\\d+")) {
+            else if (value.matches("\\d+"))
                 processor.setVariable("val", Integer.parseInt(value));
-            } else {
+            else
                 processor.setVariable("val", value);
-            }
 
-            String expected = isTruthy ? "true" : "";
-            assertEquals(expected, processor.process("{{#if $val}}true{{/if}}"));
+            processor.setTemplate("{{#if $val}}true{{/if}}");
+            assertEquals(isTruthy ? "true" : "", processor.process());
         }
     }
 
@@ -353,31 +391,43 @@ class TemplateProcessorTest {
         @DisplayName("Should check presence in list")
         void listContains() {
             processor.setVariable("items", List.of("apple", "banana", "cherry"));
-            assertEquals("true", processor.process("{{\"apple\" in $items}}"));
-            assertEquals("false", processor.process("{{\"orange\" in $items}}"));
+
+            processor.setTemplate("{{\"apple\" in $items}}");
+            assertEquals("true", processor.process());
+
+            processor.setTemplate("{{\"orange\" in $items}}");
+            assertEquals("false", processor.process());
         }
 
         @Test
         @DisplayName("Should check key presence in map")
         void mapContainsKey() {
             processor.setVariable("user", Map.of("name", "Alice", "age", 30));
-            assertEquals("true", processor.process("{{\"name\" in $user}}"));
-            assertEquals("false", processor.process("{{\"email\" in $user}}"));
+
+            processor.setTemplate("{{\"name\" in $user}}");
+            assertEquals("true", processor.process());
+
+            processor.setTemplate("{{\"email\" in $user}}");
+            assertEquals("false", processor.process());
         }
 
         @Test
         @DisplayName("Should check substring in string")
         void stringContains() {
             processor.setVariable("text", "Hello World");
-            assertEquals("true", processor.process("{{\"World\" in $text}}"));
-            assertEquals("false", processor.process("{{\"Java\" in $text}}"));
+
+            processor.setTemplate("{{\"World\" in $text}}");
+            assertEquals("true", processor.process());
+
+            processor.setTemplate("{{\"Java\" in $text}}");
+            assertEquals("false", processor.process());
         }
     }
 
     // ========== FILTERS ==========
 
     @Nested
-    @DisplayName("Filters")
+    @DisplayName("Filter transformations")
     class Filters {
 
         @ParameterizedTest
@@ -390,14 +440,18 @@ class TemplateProcessorTest {
         @DisplayName("Should apply built-in filters")
         void builtInFilters(String input, String filter, String expected) {
             processor.setVariable("value", input);
-            assertEquals(expected, processor.process("{{$value | " + filter + "}}"));
+
+            processor.setTemplate("{{$value | " + filter + "}}");
+            assertEquals(expected, processor.process());
         }
 
         @Test
         @DisplayName("Should chain multiple filters")
         void chainedFilters() {
             processor.setVariable("name", "  john doe  ");
-            assertEquals("JOHN DOE", processor.process("{{$name | trim | uppercase}}"));
+
+            processor.setTemplate("{{$name | trim | uppercase}}");
+            assertEquals("JOHN DOE", processor.process());
         }
 
         @Test
@@ -406,9 +460,10 @@ class TemplateProcessorTest {
             processor.registerFilter("reverse", value ->
                     value == null ? null : new StringBuilder(value.toString()).reverse().toString()
             );
-
             processor.setVariable("text", "Hello");
-            assertEquals("olleH", processor.process("{{$text | reverse}}"));
+
+            processor.setTemplate("{{$text | reverse}}");
+            assertEquals("olleH", processor.process());
         }
 
         @Test
@@ -417,8 +472,11 @@ class TemplateProcessorTest {
             processor.setVariable("text", "Hello");
             processor.setVariable("items", List.of("a", "b", "c"));
 
-            assertEquals("5", processor.process("{{$text | length}}"));
-            assertEquals("3", processor.process("{{$items | length}}"));
+            processor.setTemplate("{{$text | length}}");
+            assertEquals("5", processor.process());
+
+            processor.setTemplate("{{$items | length}}");
+            assertEquals("3", processor.process());
         }
 
         @Test
@@ -426,10 +484,8 @@ class TemplateProcessorTest {
         void number_formatsNumber() {
             processor.setVariable("value", 1234);
 
-            assertEquals(
-                    "1,234",
-                    processor.process("{{$value | number}}")
-            );
+            processor.setTemplate("{{$value | number}}");
+            assertEquals("1,234", processor.process());
         }
 
         @Test
@@ -437,10 +493,8 @@ class TemplateProcessorTest {
         void percent_formatsPercent() {
             processor.setVariable("value", 0.125);
 
-            assertEquals(
-                    "13%",
-                    processor.process("{{$value | percent}}")
-            );
+            processor.setTemplate("{{$value | percent}}");
+            assertEquals("13%", processor.process());
         }
     }
 
@@ -454,40 +508,47 @@ class TemplateProcessorTest {
         @DisplayName("Should use first non-null value")
         void firstNonNull() {
             processor.setVariable("name", "Alice");
-            assertEquals("Alice", processor.process("{{$name ?? \"Guest\"}}"));
+
+            processor.setTemplate("{{$name ?? \"Guest\"}}");
+            assertEquals("Alice", processor.process());
         }
 
         @Test
         @DisplayName("Should fallback to default when variable is null")
         void fallbackToDefault() {
-            assertEquals("Guest", processor.process("{{$name ?? \"Guest\"}}"));
+            processor.setTemplate("{{$name ?? \"Guest\"}}");
+            assertEquals("Guest", processor.process());
         }
 
         @Test
         @DisplayName("Should chain multiple defaults")
         void chainedDefaults() {
             processor.setVariable("b", "Value B");
-            assertEquals("Value B", processor.process("{{$a ?? $b ?? \"Default\"}}"));
-            assertEquals("Default", processor.process("{{$a ?? $c ?? \"Default\"}}"));
+
+            processor.setTemplate("{{$a ?? $b ?? \"Default\"}}");
+            assertEquals("Value B", processor.process());
+
+            processor.setTemplate("{{$a ?? $c ?? \"Default\"}}");
+            assertEquals("Default", processor.process());
         }
 
         @Test
         @DisplayName("Should combine defaults with filters")
         void defaultsWithFilters() {
-            assertEquals("GUEST", processor.process("{{$name | uppercase ?? \"GUEST\"}}"));
+            processor.setTemplate("{{$name | uppercase ?? \"GUEST\"}}");
+            assertEquals("GUEST", processor.process());
 
             processor.setVariable("name", "john");
-            assertEquals("JOHN", processor.process("{{$name | uppercase ?? \"GUEST\"}}"));
+            assertEquals("JOHN", processor.process());
         }
 
         @Test
         @DisplayName("Should handle complex expressions with defaults, filters, and properties")
         void complexDefaultExpression() {
-            record User(String firstName, String lastName) {
-            }
             processor.setVariable("user", new User(null, "Doe"));
 
-            assertEquals("DOE", processor.process("{{$user.firstName | uppercase ?? $user.lastName | uppercase ?? \"GUEST\"}}"));
+            processor.setTemplate("{{$user.firstName | uppercase ?? $user.lastName | uppercase ?? \"GUEST\"}}");
+            assertEquals("DOE", processor.process());
         }
     }
 
@@ -501,14 +562,18 @@ class TemplateProcessorTest {
         @DisplayName("Should render content when condition is true")
         void renderWhenTrue() {
             processor.setVariable("show", true);
-            assertEquals("<div>Visible</div>", processor.process("{{#if $show}}<div>Visible</div>{{/if}}"));
+
+            processor.setTemplate("{{#if $show}}<div>Visible</div>{{/if}}");
+            assertEquals("<div>Visible</div>", processor.process());
         }
 
         @Test
         @DisplayName("Should not render content when condition is false")
         void notRenderWhenFalse() {
             processor.setVariable("show", false);
-            assertEquals("", processor.process("{{#if $show}}<div>Hidden</div>{{/if}}"));
+
+            processor.setTemplate("{{#if $show}}<div>Hidden</div>{{/if}}");
+            assertEquals("", processor.process());
         }
 
         @Test
@@ -517,7 +582,8 @@ class TemplateProcessorTest {
             processor.setVariable("count", 5);
             processor.setVariable("enabled", true);
 
-            assertEquals("<div>Show</div>", processor.process("{{#if $enabled && $count > 3}}<div>Show</div>{{/if}}"));
+            processor.setTemplate("{{#if $enabled && $count > 3}}<div>Show</div>{{/if}}");
+            assertEquals("<div>Show</div>", processor.process());
         }
 
         @Test
@@ -526,21 +592,22 @@ class TemplateProcessorTest {
             processor.setVariable("outer", true);
             processor.setVariable("inner", true);
 
-            String template = normalize("""
+            processor.setTemplate(normalize("""
                     {{#if $outer}}
                     Outer
                     {{#if $inner}}
                     Inner
                     {{/if}}
                     {{/if}}
-                    """);
+                    """));
 
-            String result = processor.process(template);
+            String result = processor.process();
             assertTrue(result.contains("Outer"));
             assertTrue(result.contains("Inner"));
 
             processor.setVariable("inner", false);
-            result = processor.process(template);
+
+            result = processor.process();
             assertTrue(result.contains("Outer"));
             assertFalse(result.contains("Inner"));
         }
@@ -550,7 +617,7 @@ class TemplateProcessorTest {
         void complexIfComparison() {
             processor.setVariable("score", 85);
 
-            String template = normalize("""
+            processor.setTemplate(normalize("""
                     {{#if $score >= 90}}
                     A
                     {{/if}}
@@ -560,9 +627,9 @@ class TemplateProcessorTest {
                     {{#if $score < 80}}
                     C
                     {{/if}}
-                    """);
+                    """));
 
-            String result = processor.process(template);
+            String result = processor.process();
             assertTrue(result.contains("B"));
             assertFalse(result.contains("A"));
             assertFalse(result.contains("C"));
@@ -579,19 +646,19 @@ class TemplateProcessorTest {
             processor.setVariable("render", render);
             processor.setVariable("loggedIn", loggedIn);
 
-            String template = """
+            processor.setTemplate("""
                     {{#if $render}}
                     {{#if $loggedIn}}
                     Welcome back!
-                    {{#else}}
+                    {{else}}
                     Please log in
                     {{/if}}
-                    {{#else}}
+                    {{else}}
                     Rendering is disabled
                     {{/if}}
-                    """;
+                    """);
 
-            assertEquals(expected, processor.process(template).trim());
+            assertEquals(expected, processor.process().trim());
         }
     }
 
@@ -605,32 +672,39 @@ class TemplateProcessorTest {
         @DisplayName("Should iterate with default item name")
         void iterateWithDefaultName() {
             processor.setVariable("items", List.of("A", "B", "C"));
-            assertEquals("A B C ", processor.process("{{#each $items}}{{$item}} {{/each}}"));
+
+            processor.setTemplate("{{#each $items}}{{$item}} {{/each}}");
+            assertEquals("A B C ", processor.process());
         }
 
         @Test
         @DisplayName("Should iterate with custom item name")
         void iterateWithCustomName() {
             processor.setVariable("items", List.of("A", "B", "C"));
-            assertEquals("A B C ", processor.process("{{#each $items element}}{{$element}} {{/each}}"));
+
+            processor.setTemplate("{{#each $items element}}{{$element}} {{/each}}");
+            assertEquals("A B C ", processor.process());
         }
 
         @Test
         @DisplayName("Should iterate over records with property access")
         void iterateRecords() {
-            record Item(String name, int value) {
-            }
-            processor.setVariable("items", List.of(new Item("First", 1), new Item("Second", 2)));
+            processor.setVariable("items", List.of(new Item("First", false, "First", 1), new Item("Second", true, "Second", 2)));
 
-            assertEquals("First:1 Second:2 ", processor.process("{{#each $items}}{{$item.name}}:{{$item.value}} {{/each}}"));
-            assertEquals("First:1 Second:2 ", processor.process("{{#each $items product}}{{$product.name}}:{{$product.value}} {{/each}}"));
+            processor.setTemplate("{{#each $items}}{{$item.name}}:{{$item.count}} {{/each}}");
+            assertEquals("First:1 Second:2 ", processor.process());
+
+            processor.setTemplate("{{#each $items product}}{{$product.name}}:{{$product.count}} {{/each}}");
+            assertEquals("First:1 Second:2 ", processor.process());
         }
 
         @Test
         @DisplayName("Should handle empty collections")
         void emptyCollection() {
             processor.setVariable("items", List.of());
-            assertEquals("", processor.process("{{#each $items}}{{$item}}{{/each}}"));
+
+            processor.setTemplate("{{#each $items}}{{$item}}{{/each}}");
+            assertEquals("", processor.process());
         }
 
         @Test
@@ -639,8 +713,11 @@ class TemplateProcessorTest {
             processor.setVariable("prefix", "Item");
             processor.setVariable("numbers", List.of(1, 2, 3));
 
-            assertEquals("Item 1 Item 2 Item 3 ", processor.process("{{#each $numbers}}{{$prefix}} {{$item}} {{/each}}"));
-            assertEquals("Number 1 Number 2 Number 3 ", processor.process("{{#each $numbers num}}Number {{$num}} {{/each}}"));
+            processor.setTemplate("{{#each $numbers}}{{$prefix}} {{$item}} {{/each}}");
+            assertEquals("Item 1 Item 2 Item 3 ", processor.process());
+
+            processor.setTemplate("{{#each $numbers num}}Number {{$num}} {{/each}}");
+            assertEquals("Number 1 Number 2 Number 3 ", processor.process());
         }
 
         @Test
@@ -651,14 +728,14 @@ class TemplateProcessorTest {
                     new Category("Vegetables", List.of("Carrot", "Lettuce"))
             ));
 
-            String template = normalize("""
+            processor.setTemplate(normalize("""
                     {{#each $categories cat}}
                     {{$cat.name}}:
                     {{#each $cat.items product}}
                     - {{$product}}
                     {{/each}}
                     {{/each}}
-                    """);
+                    """));
 
             assertEquals(normalize("""
                     Fruits:
@@ -667,19 +744,20 @@ class TemplateProcessorTest {
                     Vegetables:
                     - Carrot
                     - Lettuce
-                    """), processor.process(template));
+                    """), processor.process());
         }
 
         @Test
         @DisplayName("Should handle null values in collections")
         void nullValuesInCollection() {
-            List<String> items = new ArrayList<>();
-            items.add("A");
-            items.add(null);
-            items.add("C");
-            processor.setVariable("items", items);
+            processor.setVariable("items", new ArrayList<>() {{
+                add("A");
+                add(null);
+                add("C");
+            }});
 
-            assertEquals("A,,C,", processor.process("{{#each $items}}{{$item}},{{/each}}"));
+            processor.setTemplate("{{#each $items}}{{$item}},{{/each}}");
+            assertEquals("A,,C,", processor.process());
         }
     }
 
@@ -693,23 +771,23 @@ class TemplateProcessorTest {
         @DisplayName("Should combine if and each blocks")
         void ifInsideEach() {
             processor.setVariable("items", List.of(
-                    new Item("First", true, null),
-                    new Item("Second", false, null),
-                    new Item("Third", true, null)
+                    new Item("First", true, null, 0),
+                    new Item("Second", false, null, 0),
+                    new Item("Third", true, null, 0)
             ));
 
-            String template = normalize("""
+            processor.setTemplate(normalize("""
                     {{#each $items}}
                     {{#if $item.active}}
                     <div>{{$item.name}}</div>
                     {{/if}}
                     {{/each}}
-                    """);
+                    """));
 
             assertEquals(normalize("""
                     <div>First</div>
                     <div>Third</div>
-                    """), processor.process(template));
+                    """), processor.process());
         }
 
         @Test
@@ -718,11 +796,12 @@ class TemplateProcessorTest {
             processor.setVariable("preset-active", "preset_01");
             processor.setVariable("render", true);
             processor.setVariable("preset-list", List.of(
-                    new Item("preset_01", true, "Test name"),
-                    new Item("preset_02", true, "Test name 02")
+                    new Item("preset_01", true, "Test name", 0),
+                    new Item("preset_02", true, "Test name 02", 1)
             ));
 
-            String template = normalize("""
+
+            processor.setTemplate(normalize("""
                     <div class="container-contents">
                         <div class="content-name">
                             <input placeholder="Preset..." type="text" value=""/>
@@ -738,9 +817,8 @@ class TemplateProcessorTest {
                         </div>
                         {{/if}}
                     </div>
-                    """);
+                    """));
 
-            String result = processor.process(template);
             assertEquals(normalize("""
                     <div class="container-contents">
                         <div class="content-name">
@@ -754,43 +832,110 @@ class TemplateProcessorTest {
                             </select>
                         </div>
                     </div>
-                    """), result);
+                    """), processor.process());
         }
     }
 
     // ========== COMPONENTS ==========
 
-//    @Nested
-//    @DisplayName("Components")
-//    class Components {
-//
-//        @Test
-//        @DisplayName("Should expand simple component with parameters")
-//        void expandsComponentWithParameters() {
-//            processor.registerComponent(
-//                    "button",
-//                    "<button id=\"{{$id}}\">{{$text}}</button>"
-//            );
-//
-//            assertEquals(
-//                    "<button id=\"myBtn\">Click Me</button>",
-//                    processor.process("{{@button:text=Click Me,id=myBtn}}")
-//            );
-//        }
-//
-//        @Test
-//        @DisplayName("Should allow components to access variables from scope")
-//        void componentCanAccessVariablesFromScope() {
-//            processor
-//                    .setVariable("label", "Submit")
-//                    .registerComponent("button", "<button>{{$label}}</button>");
-//
-//            assertEquals(
-//                    "<button>Submit</button>",
-//                    processor.process("{{@button}}")
-//            );
-//        }
-//    }
+    @Nested
+    @DisplayName("Components")
+    class Components {
+
+        @Test
+        @DisplayName("Should expand component with parameters")
+        void expandsComponentWithParameters() {
+            processor.setVariable("number", 12.847);
+            processor.registerComponent("statCard", """
+                    <div style="background-color: #2a2a3e; padding: 10; anchor-width: 120; anchor-height: 60;">
+                        <p style="color: #888888; font-size: 11;">{{$label}}</p>
+                        <p style="color: #ffffff; font-size: 18; font-weight: bold;">{{$value}}</p>
+                    </div>
+                    """);
+
+            processor.setTemplate("<statCard label=\"Blocks Placed\" value={{$number}} />");
+            assertEquals(normalize("""
+                    <div style="background-color: #2a2a3e; padding: 10; anchor-width: 120; anchor-height: 60;">
+                        <p style="color: #888888; font-size: 11;">Blocks Placed</p>
+                        <p style="color: #ffffff; font-size: 18; font-weight: bold;">12.847</p>
+                    </div>
+                    """), processor.process());
+        }
+
+        @Test
+        @DisplayName("Should expand component inside another component with parameters")
+        void expandsComponentWithinComponent() {
+            processor.setVariable("text", "Deep Component");
+            processor.registerComponent("panel", """
+                    <div style="background-color: #2a2a3e; padding: 10; anchor-width: 120; anchor-height: 60;">
+                        <view content={{$text}} />
+                        <view />
+                    </div>
+                    """);
+            processor.registerComponent("view", """
+                    <span>{{ $content ?? "undefined" }}</span>
+                    """);
+
+            processor.setTemplate("<panel content={{ $number }} />");
+            assertEquals(normalize("""
+                    <div style="background-color: #2a2a3e; padding: 10; anchor-width: 120; anchor-height: 60;">
+                        <span>Deep Component</span>
+                        <span>undefined</span>
+                    </div>
+                    """), processor.process());
+        }
+
+        @Test
+        @DisplayName("Should allow components to access variables from global scope")
+        void componentCanAccessVariablesFromGlobalScope() {
+            processor.setVariable("label", "Submit");
+            processor.registerComponent("submit", "<button>{{$label}}</button>");
+
+            processor.setTemplate("<submit/>");
+            assertEquals(
+                    "<button>Submit</button>",
+                    processor.process()
+            );
+        }
+
+        @Test
+        @DisplayName("Should prioritize local scope over global scope in components")
+        void componentPrioritizeVariableFromLocalScope() {
+            processor.setVariable("label", "global scope");
+            processor.registerComponent("submit", "<button>{{$label}}</button>");
+
+            processor.setTemplate("<submit label=\"local scope\"/>");
+            assertEquals(
+                    "<button>local scope</button>",
+                    processor.process()
+            );
+        }
+
+        @Test
+        @DisplayName("Should allow components to pass existing parameters")
+        void componentCanPassExistingParameters() {
+            processor.registerComponent("button", "<button style=\"{{$style}}\">Submit</button>");
+
+            processor.setTemplate("<button style=\"align: center\" />");
+            assertEquals(
+                    "<button style=\"align: center\">Submit</button>",
+                    processor.process()
+            );
+        }
+
+        @Test
+        @DisplayName("Should allow components to use children as content")
+        void componentCanPassChildren() {
+            processor.registerComponent("panel", "<div style=\"background: red\">{{ $children }}</div>");
+            processor.registerComponent("bigButton", "<h1>{{ $children }}</h1>");
+
+            processor.setTemplate("<panel><bigButton>Deep Big Button</bigButton></panel>");
+            assertEquals(
+                    "<div style=\"background: red\"><h1>Deep Big Button</h1></div>",
+                    processor.process()
+            );
+        }
+    }
 
     // ========== ERROR HANDLING ==========
 
@@ -801,33 +946,38 @@ class TemplateProcessorTest {
         @Test
         @DisplayName("Should throw exception for unterminated string")
         void unterminatedString() {
-            assertThrows(RuntimeException.class, () -> processor.process("{{\"unterminated}}"));
+            processor.setTemplate("{{\"unterminated}}");
+            assertThrows(RuntimeException.class, () -> processor.process());
         }
 
         @Test
         @DisplayName("Should throw exception for unknown filter")
         void unknownFilter() {
             processor.setVariable("name", "John");
-            assertThrows(RuntimeException.class, () -> processor.process("{{$name | unknownfilter}}"));
+
+            processor.setTemplate("{{$name | unknownfilter}}");
+            assertThrows(RuntimeException.class, () -> processor.process());
         }
 
         @Test
         @DisplayName("Should throw exception for unclosed if block")
         void unclosedIfBlock() {
-            assertThrows(RuntimeException.class, () -> processor.process("{{#if $var}}Content"));
+            processor.setTemplate("{{#if $var}}Content");
+            assertThrows(RuntimeException.class, () -> processor.process());
         }
 
         @Test
         @DisplayName("Should throw exception for unclosed each block")
         void unclosedEachBlock() {
-            assertThrows(RuntimeException.class, () -> processor.process("{{#each $items}}Content"));
+            processor.setTemplate("{{#each $items}}Content");
+            assertThrows(RuntimeException.class, () -> processor.process());
         }
     }
 
     // ========== PERFORMANCE ==========
 
     @Nested
-    @DisplayName("Performance")
+    @DisplayName("Performance measurements")
     class Performance {
 
         @Test
@@ -838,7 +988,8 @@ class TemplateProcessorTest {
             processor.setVariable("numbers", largeList);
 
             long start = System.currentTimeMillis();
-            String result = processor.process("{{#each $numbers}}{{$item}},{{/each}}");
+            processor.setTemplate("{{#each $numbers}}{{$item}},{{/each}}");
+            String result = processor.process();
             long duration = System.currentTimeMillis() - start;
 
             assertTrue(duration < 1000, "Processing 1000 items should complete in less than 1 second");
@@ -858,7 +1009,7 @@ class TemplateProcessorTest {
                     """);
 
             long start = System.currentTimeMillis();
-            for (int i = 0; i < 100; i++) processor.process(template);
+            for (int i = 0; i < 100; i++) processor.setTemplate(template).process();
             long duration = System.currentTimeMillis() - start;
 
             assertTrue(duration < 1000, "100 iterations should complete in less than 1 second");

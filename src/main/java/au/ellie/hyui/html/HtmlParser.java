@@ -19,10 +19,25 @@
 package au.ellie.hyui.html;
 
 import au.ellie.hyui.HyUIPlugin;
-import au.ellie.hyui.builders.LabelBuilder;
 import au.ellie.hyui.builders.InterfaceBuilder;
+import au.ellie.hyui.builders.LabelBuilder;
 import au.ellie.hyui.builders.UIElementBuilder;
-import au.ellie.hyui.html.handlers.*;
+import au.ellie.hyui.html.handlers.ButtonHandler;
+import au.ellie.hyui.html.handlers.DivHandler;
+import au.ellie.hyui.html.handlers.HyvatarHandler;
+import au.ellie.hyui.html.handlers.ImgHandler;
+import au.ellie.hyui.html.handlers.InputHandler;
+import au.ellie.hyui.html.handlers.ItemGridHandler;
+import au.ellie.hyui.html.handlers.ItemIconHandler;
+import au.ellie.hyui.html.handlers.ItemSlotHandler;
+import au.ellie.hyui.html.handlers.LabelHandler;
+import au.ellie.hyui.html.handlers.ProgressBarHandler;
+import au.ellie.hyui.html.handlers.SelectHandler;
+import au.ellie.hyui.html.handlers.SpriteHandler;
+import au.ellie.hyui.html.handlers.TabContentHandler;
+import au.ellie.hyui.html.handlers.TabNavigationHandler;
+import au.ellie.hyui.html.handlers.TextAreaHandler;
+import au.ellie.hyui.html.handlers.TimerHandler;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -38,7 +53,7 @@ import java.util.List;
 public class HtmlParser {
     private final List<TagHandler> handlers = new ArrayList<>();
     private TemplateProcessor templateProcessor;
-    
+
     public HtmlParser() {
         // Register default handlers
         registerHandler(new ItemGridHandler());
@@ -69,6 +84,15 @@ public class HtmlParser {
     }
 
     /**
+     * Gets the current template processor.
+     *
+     * @return The template processor, or null if not set.
+     */
+    public TemplateProcessor getTemplateProcessor() {
+        return templateProcessor;
+    }
+
+    /**
      * Sets the template processor for variable interpolation and component inclusion.
      *
      * @param processor The template processor to use.
@@ -77,15 +101,6 @@ public class HtmlParser {
         this.templateProcessor = processor;
     }
 
-    /**
-     * Gets the current template processor.
-     *
-     * @return The template processor, or null if not set.
-     */
-    public TemplateProcessor getTemplateProcessor() {
-        return templateProcessor;
-    }
-    
     /**
      * Parses the HTML string and adds elements to the InterfaceBuilder.
      *
@@ -109,7 +124,7 @@ public class HtmlParser {
         // Apply template processing if a processor is set
         String processedHtml = html;
         if (templateProcessor != null) {
-            processedHtml = templateProcessor.process(html);
+            processedHtml = templateProcessor.setTemplate(html).process();
             HyUIPlugin.getLog().logFinest("Processed template: " + processedHtml);
         }
         Document doc = Jsoup.parseBodyFragment(processedHtml);
@@ -128,10 +143,10 @@ public class HtmlParser {
         List<UIElementBuilder<?>> builders = new ArrayList<>();
         for (Node child : parent.childNodes()) {
             HyUIPlugin.getLog().logFinest("Parsing child node: " + child.nodeName());
-            
+
             if (child instanceof Element) {
                 HyUIPlugin.getLog().logFinest("Parsing ELEMENT node: " + child.nodeName());
-                
+
                 UIElementBuilder<?> builder = handleElement((Element) child);
                 if (builder != null) {
                     HyUIPlugin.getLog().logFinest("Parsed element: " + builder.getClass().getSimpleName());

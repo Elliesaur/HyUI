@@ -16,7 +16,7 @@
  *
  */
 
-package au.ellie.hyui.html.ast.context;
+package au.ellie.hyui.html.template.context;
 
 import java.util.Collection;
 import java.util.HashMap;

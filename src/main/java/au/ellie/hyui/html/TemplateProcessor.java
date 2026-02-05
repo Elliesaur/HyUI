@@ -20,14 +20,15 @@ package au.ellie.hyui.html;
 
 import au.ellie.hyui.builders.UIElementBuilder;
 import au.ellie.hyui.events.UIContext;
-import au.ellie.hyui.html.ast.Evaluator;
-import au.ellie.hyui.html.ast.Lexer;
-import au.ellie.hyui.html.ast.Parser;
-import au.ellie.hyui.html.ast.context.FilterRegistry;
-import au.ellie.hyui.html.ast.context.VariableStack;
-import au.ellie.hyui.html.ast.item.Node;
-import au.ellie.hyui.html.ast.item.Token;
+import au.ellie.hyui.html.template.Evaluator;
+import au.ellie.hyui.html.template.Lexer;
+import au.ellie.hyui.html.template.Parser;
+import au.ellie.hyui.html.template.context.FilterRegistry;
+import au.ellie.hyui.html.template.context.VariableStack;
+import au.ellie.hyui.html.template.item.Node;
+import au.ellie.hyui.html.template.item.Token;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,9 +39,12 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
+
+import static au.ellie.hyui.html.template.context.VariableStack.NULL_SENTINEL;
 
 /**
  * Preprocessor for HyUIML templates that supports variable interpolation and component inclusion.
@@ -73,14 +77,24 @@ import java.util.function.Supplier;
  * </pre>
  */
 public class TemplateProcessor {
-
-    private static final Object NULL_SENTINEL = new Object();
-
     private final Map<String, Object> variables = new HashMap<>();
-    private final Map<String, String> components = new HashMap<>();
+    private final Map<String, CachedComponent> components = new HashMap<>();
     private final FilterRegistry filterRegistry = new FilterRegistry();
+    private final CachedComponent root = new CachedComponent("__root__");
+
     private ValueResolver valueResolver;
     private boolean preferDynamicValues;
+
+    /**
+     * Sets the template string to be processed.
+     *
+     * @param template The template string
+     */
+    public TemplateProcessor setTemplate(String template) {
+        root.setTemplate(template);
+
+        return this;
+    }
 
     /**
      * Sets a template variable from any object.
@@ -154,8 +168,19 @@ public class TemplateProcessor {
      * @param template Component HTML template
      * @return This processor for chaining
      */
-    public TemplateProcessor registerComponent(String name, String template) {
-        components.put(name, template);
+    public TemplateProcessor registerComponent(@Nonnull String name, @Nonnull String template) {
+        assert !name.isEmpty() : "Component name cannot be empty.";
+        assert !template.isEmpty() : "Component template cannot be empty.";
+
+
+        var cache = components.computeIfAbsent(name, _ -> new CachedComponent(name));
+        var updated = cache.setTemplate(template);
+
+        // Invalidate other components cache
+        if (updated && root.invalidate())
+            for (Map.Entry<String, CachedComponent> entry : components.entrySet())
+                entry.getValue().invalidate();
+
         return this;
     }
 
@@ -178,21 +203,19 @@ public class TemplateProcessor {
     /**
      * Process a template with the current variables.
      *
-     * @param template The template string.
      * @return The processed template.
      */
-    public String process(String template) {
-        return process(template, (Map<String, Object>) null);
+    public String process() {
+        return process((Map<String, Object>) null);
     }
 
     /**
      * Processes the template using the provided UI context to resolve element IDs.
      *
-     * @param template The template string
-     * @param context  The UI context for runtime values
+     * @param context The UI context for runtime values
      * @return Processed HTML string
      */
-    public String process(String template, @Nullable UIContext context) {
+    public String process(@Nullable UIContext context) {
         ValueResolver previousResolver = this.valueResolver;
         boolean previousPreferDynamic = this.preferDynamicValues;
         this.valueResolver = name -> {
@@ -208,25 +231,30 @@ public class TemplateProcessor {
 
         this.preferDynamicValues = true;
         try {
-            return process(template, new HashMap<>(variables));
+            return process(new HashMap<>(variables));
         } finally {
             this.valueResolver = previousResolver;
             this.preferDynamicValues = previousPreferDynamic;
         }
     }
 
-    public String process(String template, @Nullable Map<String, Object> additionalVariables) {
-        // Lexer / Parser
-        List<Token> tokens = new Lexer(template).tokenize();
-        List<Node> ast = new Parser(tokens).parse();
-
+    /**
+     * Processes the template with additional variables that can override existing ones.
+     *
+     * @param additionalVariables Additional variables to use during processing (can override existing variables)
+     * @return The processed template.
+     */
+    public String process(@Nullable Map<String, Object> additionalVariables) {
         // Inject additional variables, this allows for per-call variable overrides
         Map<String, Object> parameters = additionalVariables == null ? variables : new HashMap<>(variables);
         if (additionalVariables != null)
             parameters.putAll(additionalVariables);
 
+        var stack = new VariableStack(parameters, valueResolver, preferDynamicValues);
+        var rootAst = this.root.getAst(components);
+
         // Evaluator
-        return new Evaluator(parameters, filterRegistry).evaluate(ast);
+        return new Evaluator(stack, filterRegistry, components).evaluate(rootAst);
     }
 
     // ===== Internal =====
@@ -287,5 +315,68 @@ public class TemplateProcessor {
     @FunctionalInterface
     public interface ValueResolver {
         Optional<Object> resolve(String name);
+    }
+
+    public static class CachedComponent {
+        private List<Node> ast;
+        private String template;
+        private String name;
+
+        public CachedComponent(String name) {
+            this.template = "";
+            this.name = name;
+        }
+
+        /**
+         * Gets the current template string for this component.
+         */
+        public String getTemplate() {
+            return template;
+        }
+
+        /**
+         * Sets the template string for this component
+         * and invalidates the cached AST if the template has changed.
+         *
+         * @param template The new template string
+         * @return True if the template was updated, false if the template was unchanged.
+         */
+        public boolean setTemplate(String template) {
+            if (!Objects.equals(template, this.template)) {
+                this.template = template;
+                this.ast = null; // Invalidate cache
+                return true;
+            }
+
+            return false;
+        }
+
+        /**
+         * Invalidates the cached AST for this component.
+         * Should be called if the template is modified externally after being set.
+         *
+         * @return True if the cache was invalidated, false if it was already null.
+         */
+        public boolean invalidate() {
+            boolean wasCached = this.ast != null;
+            ast = null;
+
+            return wasCached;
+        }
+
+        /**
+         * Retrieve the AST for this component,
+         * parsing the template if it hasn't been parsed yet.
+         *
+         * @return The built template processor.
+         */
+        public List<Node> getAst(Map<String, CachedComponent> componentCache) {
+            if (ast == null) {
+                List<Token> tokens = new Lexer(template, componentCache, name).tokenize();
+                ast = new Parser(tokens, componentCache).parse();
+            }
+
+            return ast;
+        }
     }
 }
