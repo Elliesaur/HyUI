@@ -114,7 +114,6 @@ public class GroupBuilder extends UIElementBuilder<GroupBuilder> implements
         if (selector == null) return;
 
         applyLayoutMode(commands, selector);
-        applyBackground(commands, selector);
         applyScrollbarStyle(commands, selector);
     }
 }

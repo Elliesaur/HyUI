@@ -21,6 +21,7 @@ package au.ellie.hyui.builders;
 import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.elements.BackgroundSupported;
 import au.ellie.hyui.elements.LayoutModeSupported;
+import au.ellie.hyui.elements.ScrollbarStyleSupported;
 import au.ellie.hyui.elements.UIElements;
 import au.ellie.hyui.theme.Theme;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
@@ -30,7 +31,7 @@ import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
  * Builder for creating progress bar UI elements.
  * Progress bars are used to display the completion status of a task or process.
  */
-public class ProgressBarBuilder extends UIElementBuilder<ProgressBarBuilder> implements BackgroundSupported<ProgressBarBuilder>, LayoutModeSupported<ProgressBarBuilder> {
+public class ProgressBarBuilder extends UIElementBuilder<ProgressBarBuilder> implements LayoutModeSupported<ProgressBarBuilder>, ScrollbarStyleSupported<ProgressBarBuilder> {
     private float value = 0.0f;
     private String barTexturePath;
     private String effectTexturePath;
@@ -39,10 +40,8 @@ public class ProgressBarBuilder extends UIElementBuilder<ProgressBarBuilder> imp
     private Integer effectOffset;
     private String direction;
     private String alignment;
-    private String maskTexturePath;
     private boolean circular;
     private String color;
-    private HyUIPatchStyle background;
     private HyUIPatchStyle bar;
     private String layoutMode;
     private HyUIAnchor outerAnchor;
@@ -118,6 +117,7 @@ public class ProgressBarBuilder extends UIElementBuilder<ProgressBarBuilder> imp
         return this;
     }
 
+    @Override
     public ProgressBarBuilder withMaskTexturePath(String maskTexturePath) {
         this.maskTexturePath = maskTexturePath;
         return this;
@@ -161,14 +161,18 @@ public class ProgressBarBuilder extends UIElementBuilder<ProgressBarBuilder> imp
     }
 
     @Override
-    public ProgressBarBuilder withBackground(HyUIPatchStyle background) {
-        this.background = background;
-        return this;
+    public ProgressBarBuilder withScrollbarStyle(String document, String styleReference) {
+        return this; // Not supported
     }
 
     @Override
-    public HyUIPatchStyle getBackground() {
-        return this.background;
+    public String getScrollbarStyleReference() {
+        return null;
+    }
+
+    @Override
+    public String getScrollbarStyleDocument() {
+        return null;
     }
 
     public ProgressBarBuilder withBar(HyUIPatchStyle bar) {
@@ -283,7 +287,10 @@ public class ProgressBarBuilder extends UIElementBuilder<ProgressBarBuilder> imp
         }
 
         applyLayoutMode(commands, outerSelector);
-        applyBackground(commands, outerSelector);
+        
+        if (background != null) {
+            commands.setObject(outerSelector + ".Background", background.getHytalePatchStyle());
+        }
 
         // Use outerAnchor if provided, otherwise fallback to the standard anchor
         HyUIAnchor effectiveOuterAnchor = (outerAnchor != null) ? outerAnchor : anchor;

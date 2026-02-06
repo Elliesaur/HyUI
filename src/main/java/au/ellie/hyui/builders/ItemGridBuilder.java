@@ -223,7 +223,6 @@ public class ItemGridBuilder extends UIElementBuilder<ItemGridBuilder> implement
         if (selector == null) return;
 
         applyLayoutMode(commands, selector);
-        applyBackground(commands, selector);
         applyScrollbarStyle(commands, selector);
         
         if (backgroundMode != null) {

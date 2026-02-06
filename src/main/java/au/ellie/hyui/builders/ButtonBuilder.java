@@ -337,8 +337,6 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
         // Make sure we apply the layout mode to the wrapping group, not the button itself.
         applyLayoutMode(commands, "#" + getEffectiveId());
         
-        applyBackground(commands, selector);
-
         if (text != null && isTextButtonElement()) {
             HyUIPlugin.getLog().logFinest("Setting Text: " + text + " for " + selector);
             commands.set(selector + ".Text", text);

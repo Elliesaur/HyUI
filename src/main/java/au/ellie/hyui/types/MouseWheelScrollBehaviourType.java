@@ -16,27 +16,13 @@
  *
  */
 
-package au.ellie.hyui.elements;
-
-import au.ellie.hyui.builders.HyUIPatchStyle;
+package au.ellie.hyui.types;
 
 /**
- * Interface for UI elements that support backgrounds.
+ * Enum for mouse wheel scroll behavior types.
  */
-public interface BackgroundSupported<T extends BackgroundSupported<T>> {
-    
-    /**
-     * Sets the background for the element.
-     * 
-     * @param background The PatchStyle to set as background.
-     * @return This builder instance for method chaining.
-     */
-    T withBackground(HyUIPatchStyle background);
-
-    /**
-     * Gets the current background.
-     * 
-     * @return The PatchStyle, or null if not set.
-     */
-    HyUIPatchStyle getBackground();
+public enum MouseWheelScrollBehaviourType {
+    Default,
+    VerticalOnly,
+    HorizontalOnly
 }

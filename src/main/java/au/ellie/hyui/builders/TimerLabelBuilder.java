@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
  * This is a specialized Label that provides time formatting utilities.
  * The actual timer logic should be handled externally (e.g., via a TickingSystem).
  */
-public class TimerLabelBuilder extends UIElementBuilder<TimerLabelBuilder> implements BackgroundSupported<TimerLabelBuilder> {
+public class TimerLabelBuilder extends UIElementBuilder<TimerLabelBuilder> {
 
     public enum TimerFormat {
         /** Display as HH:MM:SS (e.g., "01:23:45") */
@@ -127,17 +127,6 @@ public class TimerLabelBuilder extends UIElementBuilder<TimerLabelBuilder> imple
         return this;
     }
 
-    @Override
-    public TimerLabelBuilder withBackground(HyUIPatchStyle background) {
-        this.background = background;
-        return this;
-    }
-
-    @Override
-    public HyUIPatchStyle getBackground() {
-        return this.background;
-    }
-
     /**
      * Formats the time value according to the current format setting.
      */
@@ -190,8 +179,6 @@ public class TimerLabelBuilder extends UIElementBuilder<TimerLabelBuilder> imple
     protected void onBuild(UICommandBuilder commands, UIEventBuilder events) {
         String selector = getSelector();
         if (selector == null) return;
-
-        applyBackground(commands, selector);
 
         String displayText = getDisplayText();
         HyUIPlugin.getLog().logFinest("Setting Timer Text: " + displayText + " for " + selector);

@@ -20,5 +20,6 @@ package au.ellie.hyui.builders;
 
 public enum ColorFormat {
     Rgb,
-    Rgba
+    Rgba,
+    RgbShort
 }

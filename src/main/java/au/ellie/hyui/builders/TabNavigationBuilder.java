@@ -311,7 +311,6 @@ public class TabNavigationBuilder extends UIElementBuilder<TabNavigationBuilder>
         if (selector == null) return;
 
         applyLayoutMode(commands, selector);
-        applyBackground(commands, selector);
 
         if ((selectedTabId == null || !hasTab(selectedTabId)) && !tabs.isEmpty()) {
             selectedTabId = tabs.get(0).id();

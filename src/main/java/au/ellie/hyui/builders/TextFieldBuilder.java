@@ -42,7 +42,7 @@ import java.util.function.Consumer;
  * Builder for creating text field UI elements. Also known as Text Input elements.
  */
 public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
-        implements BackgroundSupported<TextFieldBuilder>, ScrollbarStyleSupported<TextFieldBuilder> {
+        implements ScrollbarStyleSupported<TextFieldBuilder> {
     private String value;
     private String placeholderText;
     private Integer maxLength;
@@ -51,7 +51,6 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
     private Boolean password;
     private String passwordChar;
     private Boolean autoGrow;
-    private HyUIPatchStyle background;
     private String backgroundStyleReference;
     private String backgroundStyleDocument;
     private String scrollbarStyleReference;
@@ -62,6 +61,8 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
     private boolean isCompact;
     private Integer collapsedWidth;
     private Integer expandedWidth;
+    private HyUIStyle placeholderStyle;
+    private InputFieldStyle placeholderTypedStyle;
 
     /**
      * DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING.
@@ -263,6 +264,7 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
      * @return This TextFieldBuilder instance for method chaining.
      */
     @Override
+    @SuppressWarnings("unchecked")
     public TextFieldBuilder withBackground(HyUIPatchStyle background) {
         if (!isMultiline) return this;
         this.background = background;
@@ -410,7 +412,18 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
         if (placeholderText != null) {
             commands.set(selector + ".PlaceholderText", placeholderText);
         }
-        
+
+        if (placeholderStyle != null) {
+            BsonDocumentHelper doc = PropertyBatcher.beginSet();
+            applyStyle(commands, selector + ".PlaceholderStyle", placeholderStyle, doc);
+            PropertyBatcher.endSet(selector + ".PlaceholderStyle", doc, commands);
+            applyRawStyleProperties(commands, selector + ".PlaceholderStyle", placeholderStyle);
+        } else if (placeholderTypedStyle != null) {
+            BsonDocumentHelper doc = PropertyBatcher.beginSet();
+            placeholderTypedStyle.applyTo(doc);
+            PropertyBatcher.endSet(selector + ".PlaceholderStyle", doc, commands);
+        }
+
         if (maxLength != null) {
             commands.set(selector + ".MaxLength", maxLength);
         }
@@ -449,10 +462,8 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
 
         if (backgroundStyleReference != null && backgroundStyleDocument != null) {
             commands.set(selector + ".Background", Value.ref(backgroundStyleDocument, backgroundStyleReference));
-        } else {
-            applyBackground(commands, selector);
         }
-
+        
         applyScrollbarStyle(commands, selector);
 
         if (contentPadding != null) {

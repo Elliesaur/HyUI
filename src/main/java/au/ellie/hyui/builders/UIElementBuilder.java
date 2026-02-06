@@ -22,7 +22,11 @@ import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.theme.Theme;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventListener;
+import au.ellie.hyui.elements.BackgroundSupported;
 import au.ellie.hyui.types.HyUIBsonSerializable;
+import au.ellie.hyui.types.LabelSpan;
+import au.ellie.hyui.types.MouseWheelScrollBehaviourType;
+import au.ellie.hyui.types.TextTooltipStyle;
 import au.ellie.hyui.utils.BsonDocumentHelper;
 import au.ellie.hyui.utils.PropertyBatcher;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
@@ -46,7 +50,7 @@ import java.lang.reflect.Modifier;
  * as styles, visibility, children, tooltips, custom callbacks, and more. This class is intended 
  * to be extended and further customized.
  */
-public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
+public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements BackgroundSupported<T> {
     protected final Theme theme;
     protected String elementPath;
     protected String uiFilePath;
@@ -65,8 +69,22 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
     protected HyUIPadding padding;
     protected Boolean visible;
     protected Message tooltipTextSpan;
+    protected String tooltipText;
+    protected List<LabelSpan> tooltipTextSpans;
+    protected TextTooltipStyle textTooltipStyle;
+    protected Float textTooltipShowDelay;
     protected Boolean hitTestVisible;
     protected Integer flexWeight;
+    protected Integer contentWidth;
+    protected Integer contentHeight;
+    protected Boolean autoScrollDown;
+    protected Boolean keepScrollPosition;
+    protected MouseWheelScrollBehaviourType mouseWheelScrollBehaviour;
+    protected HyUIPatchStyle background;
+    protected String maskTexturePath;
+    protected String outlineColor;
+    protected Float outlineSize;
+    protected Boolean overscroll;
     protected final List<BiConsumer<UICommandBuilder, String>> editAfterCallbacks = new ArrayList<>();
     protected final List<BiConsumer<UICommandBuilder, String>> editBeforeCallbacks = new ArrayList<>();
     protected final Map<String, HyUIStyle> secondaryStyles = new HashMap<>();
@@ -367,6 +385,180 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
     }
 
     /**
+     * Configures the tooltip text spans for the UI element.
+     *
+     * @param tooltipTextSpans the list of LabelSpan to be displayed as tooltip
+     * @return the builder instance of type {@code T} for method chaining
+     */
+    @SuppressWarnings("unchecked")
+    public T withTooltipTextSpans(List<LabelSpan> tooltipTextSpans) {
+        this.tooltipTextSpans = tooltipTextSpans;
+        return (T) this;
+    }
+
+    /**
+     * Configures the text tooltip style for the UI element.
+     *
+     * @param textTooltipStyle the style options for the text tooltip
+     * @return the builder instance of type {@code T} for method chaining
+     */
+    @SuppressWarnings("unchecked")
+    public T withTextTooltipStyle(TextTooltipStyle textTooltipStyle) {
+        this.textTooltipStyle = textTooltipStyle;
+        return (T) this;
+    }
+
+    /**
+     * Specifies a delay in seconds for how long the mouse has to stay on this element for the tooltip to appear.
+     *
+     * @param delay the delay in seconds
+     * @return the builder instance of type {@code T} for method chaining
+     */
+    @SuppressWarnings("unchecked")
+    public T withTextTooltipShowDelay(float delay) {
+        this.textTooltipShowDelay = delay;
+        return (T) this;
+    }
+
+    /**
+     * Sets the content width for the UI element. If set, this element will display a horizontal scrollbar.
+     *
+     * @param width the content width
+     * @return the builder instance of type {@code T} for method chaining
+     */
+    @SuppressWarnings("unchecked")
+    public T withContentWidth(int width) {
+        this.contentWidth = width;
+        return (T) this;
+    }
+
+    /**
+     * Sets the content height for the UI element. If set, this element will display a vertical scrollbar.
+     *
+     * @param height the content height
+     * @return the builder instance of type {@code T} for method chaining
+     */
+    @SuppressWarnings("unchecked")
+    public T withContentHeight(int height) {
+        this.contentHeight = height;
+        return (T) this;
+    }
+
+    /**
+     * Makes the element automatically scroll down to the bottom of the element.
+     *
+     * @param autoScrollDown whether to automatically scroll down
+     * @return the builder instance of type {@code T} for method chaining
+     */
+    @SuppressWarnings("unchecked")
+    public T withAutoScrollDown(boolean autoScrollDown) {
+        this.autoScrollDown = autoScrollDown;
+        return (T) this;
+    }
+
+    /**
+     * Whether to keep the scrolling position, even after the element has been unmounted.
+     *
+     * @param keepScrollPosition whether to keep the scroll position
+     * @return the builder instance of type {@code T} for method chaining
+     */
+    @SuppressWarnings("unchecked")
+    public T withKeepScrollPosition(boolean keepScrollPosition) {
+        this.keepScrollPosition = keepScrollPosition;
+        return (T) this;
+    }
+
+    /**
+     * Sets the mouse wheel scroll behaviour for the UI element.
+     *
+     * @param behaviour the scroll behaviour type
+     * @return the builder instance of type {@code T} for method chaining
+     */
+    @SuppressWarnings("unchecked")
+    public T withMouseWheelScrollBehaviour(MouseWheelScrollBehaviourType behaviour) {
+        this.mouseWheelScrollBehaviour = behaviour;
+        return (T) this;
+    }
+
+    /**
+     * Sets a background image or color.
+     *
+     * @param background the patch style to set as background
+     * @return the builder instance of type {@code T} for method chaining
+     */
+    @Override
+    @SuppressWarnings("unchecked")
+    public T withBackground(HyUIPatchStyle background) {
+        this.background = background;
+        return (T) this;
+    }
+
+    /**
+     * Sets a background color using a string.
+     *
+     * @param color the color string
+     * @return the builder instance of type {@code T} for method chaining
+     */
+    @SuppressWarnings("unchecked")
+    public T withBackground(String color) {
+        this.background = new HyUIPatchStyle().setTexturePath(color);
+        return (T) this;
+    }
+
+    @Override
+    public HyUIPatchStyle getBackground() {
+        return background;
+    }
+
+    /**
+     * Sets a mask texture to be used for clipping.
+     *
+     * @param maskTexturePath the path to the mask texture
+     * @return the builder instance of type {@code T} for method chaining
+     */
+    @SuppressWarnings("unchecked")
+    public T withMaskTexturePath(String maskTexturePath) {
+        this.maskTexturePath = maskTexturePath;
+        return (T) this;
+    }
+
+    /**
+     * Sets the color for the outline to render.
+     *
+     * @param outlineColor the outline color string
+     * @return the builder instance of type {@code T} for method chaining
+     */
+    @SuppressWarnings("unchecked")
+    public T withOutlineColor(String outlineColor) {
+        this.outlineColor = outlineColor;
+        return (T) this;
+    }
+
+    /**
+     * Draws a basic outline around the element with the specified size.
+     *
+     * @param outlineSize the size of the outline
+     * @return the builder instance of type {@code T} for method chaining
+     */
+    @SuppressWarnings("unchecked")
+    public T withOutlineSize(float outlineSize) {
+        this.outlineSize = outlineSize;
+        return (T) this;
+    }
+
+    /**
+     * If enabled, scrolling areas will be extended by the size of the element.
+     *
+     * @param overscroll whether overscroll is enabled
+     * @return the builder instance of type {@code T} for method chaining
+     */
+    @SuppressWarnings("unchecked")
+    public T withOverscroll(boolean overscroll) {
+        this.overscroll = overscroll;
+        return (T) this;
+    }
+
+    /**
      * Configures the tooltip text for the UI element using a raw string.
      *
      * @param tooltipText the tooltip text to display
@@ -374,9 +566,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
      */
     @SuppressWarnings("unchecked")
     public T withTooltipText(String tooltipText) {
-        if (tooltipText != null) {
-            this.tooltipTextSpan = Message.raw(tooltipText);
-        }
+        this.tooltipText = tooltipText;
         return (T) this;
     }
 
@@ -566,6 +756,23 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
             if (tooltipTextSpan != null) {
                 HyUIPlugin.getLog().logFinest("Setting TooltipTextSpans for " + selector);
                 commands.set(selector + ".TooltipTextSpans", tooltipTextSpan);
+            } else if (tooltipTextSpans != null) {
+                HyUIPlugin.getLog().logFinest("Setting TooltipTextSpans for " + selector);
+                // TODO: Figure out if it is possible to send Bson array instead...
+                //PropertyBatcher.endSet(selector + ".TooltipTextSpans", tooltipTextSpans.stream().map(HyUIBsonSerializable::toBsonDocument).toList(), commands);
+            } else if (tooltipText != null) {
+                HyUIPlugin.getLog().logFinest("Setting TooltipText for " + selector);
+                commands.set(selector + ".TooltipText", tooltipText);
+            }
+
+            if (textTooltipStyle != null) {
+                HyUIPlugin.getLog().logFinest("Setting TextTooltipStyle for " + selector);
+                commands.setObject(selector + ".TextTooltipStyle", textTooltipStyle.toBsonDocument());
+            }
+
+            if (textTooltipShowDelay != null) {
+                HyUIPlugin.getLog().logFinest("Setting TextTooltipShowDelay for " + selector);
+                commands.set(selector + ".TextTooltipShowDelay", textTooltipShowDelay);
             }
 
             if (hitTestVisible != null) {
@@ -577,6 +784,56 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
                 String flexSelector = wrapInGroup ? "#" + getWrappingGroupId() : selector;
                 HyUIPlugin.getLog().logFinest("Setting FlexWeight: " + flexWeight + " for " + flexSelector);
                 commands.set(flexSelector + ".FlexWeight", flexWeight);
+            }
+
+            if (contentWidth != null) {
+                HyUIPlugin.getLog().logFinest("Setting ContentWidth for " + selector);
+                commands.set(selector + ".ContentWidth", contentWidth);
+            }
+
+            if (contentHeight != null) {
+                HyUIPlugin.getLog().logFinest("Setting ContentHeight for " + selector);
+                commands.set(selector + ".ContentHeight", contentHeight);
+            }
+
+            if (autoScrollDown != null) {
+                HyUIPlugin.getLog().logFinest("Setting AutoScrollDown for " + selector);
+                commands.set(selector + ".AutoScrollDown", autoScrollDown);
+            }
+
+            if (keepScrollPosition != null) {
+                HyUIPlugin.getLog().logFinest("Setting KeepScrollPosition for " + selector);
+                commands.set(selector + ".KeepScrollPosition", keepScrollPosition);
+            }
+
+            if (mouseWheelScrollBehaviour != null) {
+                HyUIPlugin.getLog().logFinest("Setting MouseWheelScrollBehaviour for " + selector);
+                commands.set(selector + ".MouseWheelScrollBehaviour", mouseWheelScrollBehaviour.name());
+            }
+
+            if (background != null) {
+                HyUIPlugin.getLog().logFinest("Setting Background for " + selector);
+                commands.setObject(selector + ".Background", background.getHytalePatchStyle());
+            }
+
+            if (maskTexturePath != null) {
+                HyUIPlugin.getLog().logFinest("Setting MaskTexturePath for " + selector);
+                commands.set(selector + ".MaskTexturePath", maskTexturePath);
+            }
+
+            if (outlineColor != null) {
+                HyUIPlugin.getLog().logFinest("Setting OutlineColor for " + selector);
+                commands.set(selector + ".OutlineColor", outlineColor);
+            }
+
+            if (outlineSize != null) {
+                HyUIPlugin.getLog().logFinest("Setting OutlineSize for " + selector);
+                commands.set(selector + ".OutlineSize", outlineSize);
+            }
+
+            if (overscroll != null) {
+                HyUIPlugin.getLog().logFinest("Setting Overscroll for " + selector);
+                commands.set(selector + ".Overscroll", overscroll);
             }
             
             // Cannot set for checkbox builder.

@@ -137,7 +137,6 @@ public class ContainerBuilder extends UIElementBuilder<ContainerBuilder> impleme
         if (selector == null) return;
 
         applyLayoutMode(commands, selector);
-        applyBackground(commands, selector);
         applyScrollbarStyle(commands, selector);
         
         if (titleText != null) {
