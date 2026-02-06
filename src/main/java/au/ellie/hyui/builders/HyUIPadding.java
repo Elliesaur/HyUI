@@ -18,6 +18,8 @@
 
 package au.ellie.hyui.builders;
 
+import au.ellie.hyui.utils.BsonDocumentHelper;
+import org.bson.BsonDocument;
 /**
  * Represents the padding for a UI element.
  */
@@ -26,6 +28,9 @@ public class HyUIPadding {
     private Integer top;
     private Integer right;
     private Integer bottom;
+    private Integer full;
+    private Integer horizontal;
+    private Integer vertical;
 
     public HyUIPadding() {}
 
@@ -81,6 +86,7 @@ public class HyUIPadding {
     }
 
     public HyUIPadding setFull(int value) {
+        this.full = value;
         this.left = value;
         this.top = value;
         this.right = value;
@@ -89,10 +95,37 @@ public class HyUIPadding {
     }
 
     public HyUIPadding setSymmetric(int vertical, int horizontal) {
+        this.vertical = vertical;
+        this.horizontal = horizontal;
         this.left = horizontal;
         this.right = horizontal;
         this.top = vertical;
         this.bottom = vertical;
         return this;
+    }
+
+    public HyUIPadding setHorizontal(Integer horizontal) {
+        this.horizontal = horizontal;
+        return this;
+    }
+
+    public HyUIPadding setVertical(Integer vertical) {
+        this.vertical = vertical;
+        return this;
+    }
+
+    public BsonDocument toBsonDocument() {
+        BsonDocumentHelper doc = new BsonDocumentHelper();
+        if (full != null) {
+            doc.set("Full", full);
+            return doc.getDocument();
+        }
+        if (horizontal != null) doc.set("Horizontal", horizontal);
+        if (vertical != null) doc.set("Vertical", vertical);
+        if (left != null) doc.set("Left", left);
+        if (right != null) doc.set("Right", right);
+        if (top != null) doc.set("Top", top);
+        if (bottom != null) doc.set("Bottom", bottom);
+        return doc.getDocument();
     }
 }

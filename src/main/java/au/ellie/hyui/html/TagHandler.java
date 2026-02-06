@@ -22,6 +22,13 @@ import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.builders.*;
 import au.ellie.hyui.elements.BackgroundSupported;
 import au.ellie.hyui.elements.LayoutModeSupported;
+import au.ellie.hyui.types.ButtonStyle;
+import au.ellie.hyui.types.CheckBoxStyle;
+import au.ellie.hyui.types.ColorPickerDropdownBoxStyle;
+import au.ellie.hyui.types.ColorPickerStyle;
+import au.ellie.hyui.types.DefaultStyles;
+import au.ellie.hyui.types.InputFieldStyle;
+import au.ellie.hyui.types.SliderStyle;
 import au.ellie.hyui.utils.ParseUtils;
 import au.ellie.hyui.utils.StyleUtils;
 import com.hypixel.hytale.server.core.Message;
@@ -72,9 +79,11 @@ public interface TagHandler {
             } catch (NumberFormatException ignored) {}
         }
 
+        boolean defaultStyleApplied = applyDefaultStyleIfRequested(builder, element);
+
         if (element.hasAttr("style")) {
             Map<String, Object> styles = parseStyleAttribute(element.attr("style"));
-            applyStyles(builder, styles);
+            applyStyles(builder, styles, defaultStyleApplied);
         }
 
         if (element.hasAttr("data-hyui-hover-style")) {
@@ -164,10 +173,22 @@ public interface TagHandler {
         return styles;
     }
 
-    private void applyStyles(UIElementBuilder<?> builder, Map<String, Object> styles) {
+    private void applyStyles(UIElementBuilder<?> builder, Map<String, Object> styles, boolean defaultStyleApplied) {
         ParsedStyles parsed = getStylesAnchorsPadding(styles, builder);
         if (parsed.hasStyle) {
-            builder.withStyle(parsed.style);
+            if (defaultStyleApplied && isInputFieldBuilder(builder)) {
+                InputFieldStyle inputFieldStyle = InputFieldStyle.defaultStyle();
+                applyInputFieldOverrides(inputFieldStyle, parsed.style);
+                applyInputFieldStyle(builder, inputFieldStyle);
+            } else {
+                HyUIStyle currentStyle = builder.getHyUIStyle();
+                if (currentStyle != null && defaultStyleApplied) {
+                    mergeHyUIStyle(currentStyle, parsed.style);
+                    builder.withStyle(currentStyle);
+                } else {
+                    builder.withStyle(parsed.style);
+                }
+            }
         }
         if (parsed.hasAnchor) {
             builder.withAnchor(parsed.anchor);
@@ -501,6 +522,97 @@ public interface TagHandler {
             }
         }
         return parsed;
+    }
+
+    private boolean applyDefaultStyleIfRequested(UIElementBuilder<?> builder, Element element) {
+        if (!element.hasClass("default-style") && !element.hasAttr("data-hyui-default-style")) {
+            return false;
+        }
+        if (builder instanceof LabelBuilder) {
+            builder.withStyle(DefaultStyles.defaultLabelStyle());
+            return true;
+        }
+        if (builder instanceof TextFieldBuilder || builder instanceof NumberFieldBuilder) {
+            builder.withStyle(InputFieldStyle.defaultStyle());
+            return true;
+        }
+        if (builder instanceof SliderNumberFieldBuilder || builder instanceof FloatSliderNumberFieldBuilder) {
+            applyInputFieldStyle(builder, InputFieldStyle.defaultStyle());
+            applySliderStyle(builder);
+            return true;
+        }
+        if (builder instanceof SliderBuilder || builder instanceof FloatSliderBuilder) {
+            builder.withStyle(SliderStyle.defaultStyle());
+            return true;
+        }
+        if (builder instanceof CheckBoxBuilder) {
+            builder.withStyle(CheckBoxStyle.defaultStyle());
+            return true;
+        }
+        if (builder instanceof ColorPickerBuilder) {
+            builder.withStyle(ColorPickerStyle.defaultStyle());
+            return true;
+        }
+        if (builder instanceof ColorPickerDropdownBoxBuilder) {
+            builder.withStyle(ColorPickerDropdownBoxStyle.defaultStyle());
+            return true;
+        }
+        if (builder instanceof ToggleButtonBuilder) {
+            builder.withStyle(ButtonStyle.primaryStyle());
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isInputFieldBuilder(UIElementBuilder<?> builder) {
+        return builder instanceof TextFieldBuilder
+                || builder instanceof NumberFieldBuilder
+                || builder instanceof SliderNumberFieldBuilder
+                || builder instanceof FloatSliderNumberFieldBuilder;
+    }
+
+    private void applyInputFieldOverrides(InputFieldStyle inputFieldStyle, HyUIStyle overrides) {
+        if (overrides.getTextColor() != null) inputFieldStyle.withTextColor(overrides.getTextColor());
+        if (overrides.getFontSize() != null) inputFieldStyle.withFontSize(overrides.getFontSize().intValue());
+        if (overrides.getRenderBold() != null) inputFieldStyle.withRenderBold(overrides.getRenderBold());
+        if (overrides.getRenderItalics() != null) inputFieldStyle.withRenderItalics(overrides.getRenderItalics());
+        if (overrides.getRenderUppercase() != null) inputFieldStyle.withRenderUppercase(overrides.getRenderUppercase());
+    }
+
+    private void applyInputFieldStyle(UIElementBuilder<?> builder, InputFieldStyle style) {
+        if (builder instanceof SliderNumberFieldBuilder sliderNumberFieldBuilder) {
+            sliderNumberFieldBuilder.withNumberFieldStyle(style);
+        } else if (builder instanceof FloatSliderNumberFieldBuilder floatSliderNumberFieldBuilder) {
+            floatSliderNumberFieldBuilder.withNumberFieldStyle(style);
+        } else {
+            builder.withStyle(style);
+        }
+    }
+
+    private void applySliderStyle(UIElementBuilder<?> builder) {
+        if (builder instanceof SliderNumberFieldBuilder sliderNumberFieldBuilder) {
+            sliderNumberFieldBuilder.withSliderStyle(SliderStyle.defaultStyle());
+        } else if (builder instanceof FloatSliderNumberFieldBuilder floatSliderNumberFieldBuilder) {
+            floatSliderNumberFieldBuilder.withSliderStyle(SliderStyle.defaultStyle());
+        }
+    }
+
+    private void mergeHyUIStyle(HyUIStyle target, HyUIStyle source) {
+        if (source.getFontSize() != null) target.setFontSize(source.getFontSize());
+        if (source.getRenderBold() != null) target.setRenderBold(source.getRenderBold());
+        if (source.getRenderItalics() != null) target.setRenderItalics(source.getRenderItalics());
+        if (source.getRenderUppercase() != null) target.setRenderUppercase(source.getRenderUppercase());
+        if (source.getTextColor() != null) target.setTextColor(source.getTextColor());
+        if (source.getLetterSpacing() != null) target.setLetterSpacing(source.getLetterSpacing());
+        if (source.getWrap() != null) target.setWrap(source.getWrap());
+        if (source.getFontName() != null) target.setFontName(source.getFontName());
+        if (source.getOutlineColor() != null) target.setOutlineColor(source.getOutlineColor());
+        if (source.getHorizontalAlignment() != null) target.setHorizontalAlignment(source.getHorizontalAlignment());
+        if (source.getVerticalAlignment() != null) target.setVerticalAlignment(source.getVerticalAlignment());
+        if (source.getAlignment() != null) target.setAlignment(source.getAlignment());
+        if (!source.getRawProperties().isEmpty()) {
+            target.set(source.getRawProperties());
+        }
     }
 
     private Object parseStyleValue(String value) {

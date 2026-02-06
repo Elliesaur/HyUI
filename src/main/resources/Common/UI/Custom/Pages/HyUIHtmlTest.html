@@ -78,6 +78,24 @@
             </sprite>
             <button id="btn2"><span class="item-icon" data-hyui-item-id="Tool_Pickaxe_Crude" style="anchor-width: 64; anchor-height: 64;"></span></button>
             <input type="reset" value="Cancel Operation" class="cancel-btn" style="font-size: 25px"/>
+            <button class="action-button" data-hyui-action-name="ExampleAction" data-hyui-key-binding-label="K">Action Button</button>
+            <button class="toggle-button">Toggle Button</button>
+            <button class="item-slot-button" style="layout-mode: left;">
+                <span class="item-slot" data-hyui-item-id="Tool_Pickaxe_Crude" style="anchor-width: 48; anchor-height: 48;"></span>
+            </button>
+            <block-selector data-hyui-capacity="8"></block-selector>
+            <color-picker-dropdown-box data-hyui-format="rgba" data-hyui-display-text-field="true"></color-picker-dropdown-box>
+            <input type="range" class="float-slider" min="0" max="1" step="0.05" value="0.3"/>
+            <input type="range" class="slider-number-field" min="0" max="100" step="5" value="25"/>
+            <input type="range" class="float-slider-number-field" min="0" max="10" step="0.5" value="2.5" data-hyui-number-field-max-decimal-places="2"/>
+            <hotkey-label data-hyui-input-binding-key="Jump"></hotkey-label>
+            <labeled-checkbox></labeled-checkbox>
+            <menu-item data-hyui-text="Menu Item"></menu-item>
+            <div class="panel" style="background-color: #000000(0.2); anchor-width: 120; anchor-height: 40;">
+                <p>Panel</p>
+            </div>
+            <reorderable-list-grip></reorderable-list-grip>
+            <scene-blur></scene-blur>
         </div>
     </div>
 </div>

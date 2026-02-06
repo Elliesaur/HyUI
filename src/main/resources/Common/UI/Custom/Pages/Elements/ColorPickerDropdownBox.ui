@@ -1,0 +1,4 @@
+ColorPickerDropdownBox #HyUIColorPickerDropdownBox {
+    Anchor: (Width: 50, Height: 32);
+    Format: Rgb;
+}

@@ -35,6 +35,27 @@ public class UIElements {
     public static final String SPRITE = "Sprite";
     public static final String ITEM_GRID = "ItemGrid";
     public static final String ITEM_SLOT = "ItemSlot";
+    public static final String COMPACT_TEXT_FIELD = "CompactTextField";
+    public static final String FLOAT_SLIDER = "FloatSlider";
+    public static final String COLOR_PICKER_DROPDOWN_BOX = "ColorPickerDropdownBox";
+    public static final String CIRCULAR_PROGRESS_BAR = "CircularProgressBar";
+    public static final String ITEM_SLOT_BUTTON = "ItemSlotButton";
+    public static final String SCENE_BLUR = "SceneBlur";
+    public static final String BACKGROUND_IMAGE = "BackgroundImage";
+    public static final String TOGGLE_BUTTON = "ToggleButton";
+    public static final String ITEM_PREVIEW_COMPONENT = "ItemPreviewComponent";
+    public static final String CHARACTER_PREVIEW_COMPONENT = "CharacterPreviewComponent";
+    public static final String SLIDER_NUMBER_FIELD = "SliderNumberField";
+    public static final String BLOCK_SELECTOR = "BlockSelector";
+    public static final String REORDERABLE_LIST_GRIP = "ReorderableListGrip";
+    public static final String TAB_BUTTON = "TabButton";
+    public static final String FLOAT_SLIDER_NUMBER_FIELD = "FloatSliderNumberField";
+    public static final String ACTION_BUTTON = "ActionButton";
+    public static final String PANEL = "Panel";
+    public static final String LABELED_CHECK_BOX = "LabeledCheckBox";
+    public static final String PLAYER_PREVIEW_COMPONENT = "PlayerPreviewComponent";
+    public static final String HOTKEY_LABEL = "HotkeyLabel";
+    public static final String MENU_ITEM = "MenuItem";
 
     // Macros (Common.ui)
     public static final String PAGE_OVERLAY = "PageOverlay";
@@ -57,7 +78,45 @@ public class UIElements {
     public static final String TIMER_LABEL = "TimerLabel";
     public static final String TAB_NAVIGATION = "TabNavigation";
     public static final Set<String> NORMAL_ELEMENTS = Set.of(
-            GROUP, LABEL, COLOR_PICKER, BUTTON, TEXT_FIELD, MULTILINE_TEXT_FIELD, "Input", "CheckBox", "Slider", ITEM_SLOT, "Text", PROGRESS_BAR, ITEM_ICON, SPRITE, ITEM_GRID, TIMER_LABEL, TAB_NAVIGATION
+            GROUP,
+            LABEL,
+            COLOR_PICKER,
+            BUTTON,
+            TEXT_FIELD,
+            MULTILINE_TEXT_FIELD,
+            COMPACT_TEXT_FIELD,
+            "Input",
+            "CheckBox",
+            SLIDER,
+            FLOAT_SLIDER,
+            SLIDER_NUMBER_FIELD,
+            FLOAT_SLIDER_NUMBER_FIELD,
+            ITEM_SLOT,
+            ITEM_SLOT_BUTTON,
+            "Text",
+            PROGRESS_BAR,
+            CIRCULAR_PROGRESS_BAR,
+            ITEM_ICON,
+            SPRITE,
+            ITEM_GRID,
+            TIMER_LABEL,
+            TAB_NAVIGATION,
+            TAB_BUTTON,
+            DROPDOWN_BOX,
+            COLOR_PICKER_DROPDOWN_BOX,
+            TOGGLE_BUTTON,
+            ACTION_BUTTON,
+            BLOCK_SELECTOR,
+            REORDERABLE_LIST_GRIP,
+            BACKGROUND_IMAGE,
+            SCENE_BLUR,
+            ITEM_PREVIEW_COMPONENT,
+            CHARACTER_PREVIEW_COMPONENT,
+            PLAYER_PREVIEW_COMPONENT,
+            HOTKEY_LABEL,
+            MENU_ITEM,
+            PANEL,
+            LABELED_CHECK_BOX
     );
 
     public static final Set<String> MACRO_ELEMENTS = Set.of(

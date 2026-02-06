@@ -28,6 +28,7 @@ import au.ellie.hyui.utils.HyvatarUtils;
 import au.ellie.hyui.utils.PngDownloadUtils;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
+import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 
 import java.io.IOException;
@@ -45,7 +46,7 @@ import java.util.function.Consumer;
 
 public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
     protected final Map<String, UIElementBuilder<?>> elementRegistry = new LinkedHashMap<>();
-    protected final List<Consumer<UICommandBuilder>> editCallbacks = new ArrayList<>();
+    protected final List<BiConsumer<UICommandBuilder, UIEventBuilder>> editCallbacks = new ArrayList<>();
     protected String uiFile;
     protected String templateHtml;
     protected TemplateProcessor templateProcessor;
@@ -430,10 +431,14 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
     }
 
     public T editElement(Consumer<UICommandBuilder> callback) {
+        return this.editElement((uiCommandBuilder, _) -> callback.accept(uiCommandBuilder));
+    }
+    
+    public T editElement(BiConsumer<UICommandBuilder, UIEventBuilder> callback) {
         this.editCallbacks.add(callback);
         return self();
     }
-
+    
     protected void sendDynamicImageIfNeeded(PlayerRef pRef) {
         if (pRef == null || !pRef.isValid()) {
             return;

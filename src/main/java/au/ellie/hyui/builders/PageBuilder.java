@@ -50,6 +50,7 @@ public class PageBuilder extends InterfaceBuilder<PageBuilder> {
     private CustomPageLifetime lifetime = CustomPageLifetime.CanDismiss;
     private long refreshRateMs = 0;
     private Function<HyUIPage, PageRefreshResult> refreshListener;
+    private BiConsumer<HyUIPage, Boolean> onDismissListener;
     private HyUIPage lastPage;
 
     /**
@@ -127,6 +128,21 @@ public class PageBuilder extends InterfaceBuilder<PageBuilder> {
     }
 
     /**
+     * Registers a callback to be triggered when the page is dismissed.
+     * The second boolean argument of the listener indicates if it was closed
+     * by the player, or code that called close.
+     * 
+     * True = closed by code, false = closed by player.
+     *
+     * @param listener The listener callback.
+     * @return The PageBuilder instance.
+     */
+    public PageBuilder onDismiss(BiConsumer<HyUIPage, Boolean> listener) {
+        this.onDismissListener = listener;
+        return this;
+    }
+    
+    /**
      * Opens a custom UI page for the associated player using the provided store.
      * This method retrieves the player's page manager and creates a new instance
      * of the HyUIPage based on the specified parameters and fields defined in the
@@ -153,7 +169,16 @@ public class PageBuilder extends InterfaceBuilder<PageBuilder> {
     public HyUIPage open(@Nonnull PlayerRef playerRefParam, Store<EntityStore> store) {
         Player playerComponent = store.getComponent(playerRefParam.getReference(), Player.getComponentType());
         PageManager pageManager = playerComponent.getPageManager();
-        this.lastPage = new HyUIPage(playerRefParam, lifetime, uiFile, getTopLevelElements(), editCallbacks, templateHtml, templateProcessor, runtimeTemplateUpdatesEnabled);
+        this.lastPage = new HyUIPage(
+                playerRefParam, 
+                lifetime, 
+                uiFile, 
+                getTopLevelElements(), 
+                editCallbacks, 
+                templateHtml, 
+                templateProcessor, 
+                runtimeTemplateUpdatesEnabled,
+                onDismissListener);
         this.lastPage.setRefreshRateMs(refreshRateMs);
         this.lastPage.setRefreshListener(refreshListener);
         pageManager.openCustomPage(playerRefParam.getReference(), store, this.lastPage);

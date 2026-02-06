@@ -23,6 +23,7 @@ import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventActions;
 import au.ellie.hyui.elements.UIElements;
 import au.ellie.hyui.theme.Theme;
+import au.ellie.hyui.utils.PropertyBatcher;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.ui.Value;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
@@ -85,7 +86,7 @@ public class SliderBuilder extends UIElementBuilder<SliderBuilder> {
         this.step = step;
         return this;
     }
-
+    
     public SliderBuilder withValue(int value) {
         this.value = value;
         return this;
@@ -161,9 +162,11 @@ public class SliderBuilder extends UIElementBuilder<SliderBuilder> {
             commands.set(selector + ".Value", value);
         }
 
-        if (hyUIStyle == null && style != null) {
+        if ( hyUIStyle == null && typedStyle == null && style != null) {
             HyUIPlugin.getLog().logFinest("Setting Style for Slider " + selector);
             commands.set(selector + ".Style", style);
+        } else if (hyUIStyle == null && typedStyle != null) {
+            PropertyBatcher.endSet(selector + ".Style", typedStyle.toBsonDocument(), commands);
         } else {
             HyUIPlugin.getLog().logFinest("Setting Style for Slider to DefaultSliderStyle " + selector);
             commands.set(selector + ".Style", Value.ref("Common.ui", "DefaultSliderStyle"));

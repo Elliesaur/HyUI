@@ -19,19 +19,16 @@
 package au.ellie.hyui.html.handlers;
 
 import au.ellie.hyui.HyUIPlugin;
-import au.ellie.hyui.builders.ButtonBuilder;
-import au.ellie.hyui.builders.CustomButtonBuilder;
-import au.ellie.hyui.builders.HyUIStyle;
-import au.ellie.hyui.builders.HyUIPatchStyle;
-import au.ellie.hyui.builders.LabelBuilder;
-import au.ellie.hyui.builders.UIElementBuilder;
+import au.ellie.hyui.builders.*;
 import au.ellie.hyui.html.HtmlParser;
 import au.ellie.hyui.html.TagHandler;
 import au.ellie.hyui.utils.ParseUtils;
 import au.ellie.hyui.utils.StyleUtils;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.TextNode;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ButtonHandler implements TagHandler {
@@ -56,11 +53,20 @@ public class ButtonHandler implements TagHandler {
         boolean isRaw = hasItemIcon || hasItemSlot || element.hasClass("raw-button");
         boolean isCustomTextButton = element.hasClass("custom-textbutton");
         boolean isCustomButton = element.hasClass("custom-button");
+        boolean isActionButton = element.hasClass("action-button");
+        boolean isToggleButton = element.hasClass("toggle-button");
+        boolean isItemSlotButton = element.hasClass("item-slot-button");
 
         if (isCustomTextButton || isCustomButton) {
             builder = isCustomTextButton
                     ? CustomButtonBuilder.customTextButton()
                     : CustomButtonBuilder.customButton();
+        } else if (isActionButton) {
+            builder = ActionButtonBuilder.actionButton();
+        } else if (isToggleButton) {
+            builder = ToggleButtonBuilder.toggleButton();
+        } else if (isItemSlotButton) {
+            builder = ItemSlotButtonBuilder.itemSlotButton();
         } else {
             if (tag.equals("input") && element.attr("type").equalsIgnoreCase("reset")) {
                 builder = ButtonBuilder.cancelTextButton();
@@ -81,37 +87,40 @@ public class ButtonHandler implements TagHandler {
             }
         }
 
-        // Parse children
-        boolean allowTextContent = !isRaw && !isCustomButton;
-        java.util.List<UIElementBuilder<?>> children = parser.parseChildren(element);
-        if (!children.isEmpty()) {
-            if (builder instanceof CustomButtonBuilder customButtonBuilder) {
-                if (isCustomTextButton && children.size() == 1 && children.get(0) instanceof LabelBuilder label) {
-                    customButtonBuilder.withText(label.getText());
+        boolean actionNameSet = false;
+        if (builder instanceof ActionButtonBuilder actionButtonBuilder) {
+            actionNameSet = applyActionButtonAttributes(actionButtonBuilder, element);
+            applyActionButtonText(actionButtonBuilder, element, actionNameSet);
+        } else {
+            // Parse children
+            boolean allowTextContent = !isRaw && !isCustomButton && builder instanceof ButtonBuilder;
+            List<UIElementBuilder<?>> children = parser.parseChildren(element);
+            if (!children.isEmpty()) {
+                if (builder instanceof CustomButtonBuilder customButtonBuilder) {
+                    if (isCustomTextButton && children.size() == 1 && children.getFirst() instanceof LabelBuilder label) {
+                        customButtonBuilder.withText(label.getText());
+                    } else {
+                        for (UIElementBuilder<?> child : children) {
+                            builder.addChild(child);
+                        }
+                    }
                 } else {
                     for (UIElementBuilder<?> child : children) {
-                        builder.addChild(child);
+                        if (allowTextContent && child instanceof LabelBuilder label && builder instanceof ButtonBuilder buttonBuilder) {
+                            buttonBuilder.withText(label.getText());
+                        } else {
+                            builder.addChild(child);
+                        }
                     }
                 }
             } else {
-                for (UIElementBuilder<?> child : children) {
-                    if (allowTextContent && child instanceof LabelBuilder label) {
-                        if (builder instanceof ButtonBuilder buttonBuilder) {
-                            buttonBuilder.withText(label.getText());
-                        }
-                    } else {
-                        builder.addChild(child);
-                    }
+                String text = element.text();
+                if (tag.equals("input") && element.hasAttr("value")) {
+                    text = element.attr("value");
                 }
-            }
-        } else {
-            String text = element.text();
-            if (tag.equals("input") && element.hasAttr("value")) {
-                text = element.attr("value");
-            }
 
-            if (!text.isEmpty() && allowTextContent) {
-                if (builder instanceof ButtonBuilder buttonBuilder) {
+                if (!text.isEmpty() && allowTextContent) {
+                    ButtonBuilder buttonBuilder = (ButtonBuilder) builder;
                     buttonBuilder.withText(text);
                 }
             }
@@ -119,6 +128,9 @@ public class ButtonHandler implements TagHandler {
 
         if (builder instanceof CustomButtonBuilder customButtonBuilder) {
             applyCustomButtonStyleAttributes(customButtonBuilder, element, isCustomTextButton);
+        }
+        if (builder instanceof ItemSlotButtonBuilder itemSlotButtonBuilder) {
+            applyItemSlotButtonAttributes(itemSlotButtonBuilder, element);
         }
         applyButtonStateAttributes(builder, element);
         applyCommonAttributes(builder, element);
@@ -134,6 +146,8 @@ public class ButtonHandler implements TagHandler {
                 buttonBuilder.withDisabled(disabled);
             } else if (builder instanceof CustomButtonBuilder customButtonBuilder) {
                 customButtonBuilder.withDisabled(disabled);
+            } else if (builder instanceof ActionButtonBuilder actionButtonBuilder) {
+                actionButtonBuilder.withDisabled(disabled);
             }
         }
         if (element.hasAttr("data-hyui-overscroll")) {
@@ -143,6 +157,47 @@ public class ButtonHandler implements TagHandler {
             } else if (builder instanceof CustomButtonBuilder customButtonBuilder) {
                 customButtonBuilder.withOverscroll(overscroll);
             }
+        }
+    }
+
+    private boolean applyActionButtonAttributes(ActionButtonBuilder builder, Element element) {
+        boolean actionNameSet = false;
+        if (element.hasAttr("data-hyui-action-name")) {
+            builder.withActionName(element.attr("data-hyui-action-name"));
+            actionNameSet = true;
+        } else if (element.hasAttr("data-hyui-action")) {
+            builder.withActionName(element.attr("data-hyui-action"));
+            actionNameSet = true;
+        }
+        if (element.hasAttr("data-hyui-key-binding-label")) {
+            builder.withKeyBindingLabel(element.attr("data-hyui-key-binding-label"));
+        }
+        if (element.hasAttr("data-hyui-action-button-alignment")) {
+            builder.withAlignment(Alignment.valueOf(element.attr("data-hyui-action-button-alignment")));
+        }
+        return actionNameSet;
+    }
+
+    private void applyActionButtonText(ActionButtonBuilder builder, Element element, boolean actionNameSet) {
+        if (actionNameSet) {
+            return;
+        }
+        for (var node : element.childNodes()) {
+            if (node instanceof TextNode textNode) {
+                String text = textNode.text().trim();
+                if (!text.isEmpty()) {
+                    builder.withActionName(text);
+                    return;
+                }
+            }
+        }
+    }
+
+    private void applyItemSlotButtonAttributes(ItemSlotButtonBuilder builder, Element element) {
+        if (element.hasAttr("data-hyui-layout-mode")) {
+            builder.withLayoutMode(element.attr("data-hyui-layout-mode"));
+        } else if (element.hasAttr("layout-mode")) {
+            builder.withLayoutMode(element.attr("layout-mode"));
         }
     }
 

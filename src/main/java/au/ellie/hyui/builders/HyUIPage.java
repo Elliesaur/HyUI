@@ -35,11 +35,9 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implements UIContext {
@@ -49,16 +47,19 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
     private Function<HyUIPage, PageRefreshResult> refreshListener;
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private ScheduledFuture<?> refreshTask;
-
+    private BiConsumer<HyUIPage, Boolean> onDismissListener;
+    
     public HyUIPage(PlayerRef playerRef,
                     CustomPageLifetime lifetime,
                     String uiFile,
                     List<UIElementBuilder<?>> elements,
-                    List<Consumer<UICommandBuilder>> editCallbacks,
+                    List<BiConsumer<UICommandBuilder, UIEventBuilder>> editCallbacks,
                     String templateHtml,
                     TemplateProcessor templateProcessor,
-                    boolean runtimeTemplateUpdatesEnabled) {
+                    boolean runtimeTemplateUpdatesEnabled,
+                    BiConsumer<HyUIPage, Boolean> onDismissListener) {
         super(playerRef, lifetime, DynamicPageData.CODEC);
+        this.onDismissListener = onDismissListener;
         this.delegate = new HyUInterface(uiFile, elements, editCallbacks, templateHtml, templateProcessor, runtimeTemplateUpdatesEnabled) {};
     }
 
@@ -127,6 +128,9 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
         super.close();
         HyUIPlugin.getLog().logFinest("Page closed!");
         delegate.releaseDynamicImages(playerRef.getUuid());
+        if (onDismissListener != null) {
+            onDismissListener.accept(this, true);
+        }
     }
     
     @Override
@@ -216,6 +220,9 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
         stopRefreshTask();
         HyUIPlugin.getLog().logFinest("Page dismissed!");
         delegate.releaseDynamicImages(playerRef.getUuid());
+        if (onDismissListener != null) {
+            onDismissListener.accept(this, false);
+        }
     }
     
     @Override

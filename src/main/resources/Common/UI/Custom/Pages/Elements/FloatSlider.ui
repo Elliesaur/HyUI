@@ -1,0 +1,8 @@
+$C = "../../Common.ui";
+FloatSlider #HyUIFloatSlider {
+  Style: $C.@DefaultSliderStyle;
+  Min: 0;
+  Max: 10;
+  Step: 0.1;
+  Value: 1;
+}

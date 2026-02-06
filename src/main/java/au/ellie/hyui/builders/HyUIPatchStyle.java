@@ -21,6 +21,8 @@ package au.ellie.hyui.builders;
 import com.hypixel.hytale.server.core.ui.Area;
 import com.hypixel.hytale.server.core.ui.PatchStyle;
 import com.hypixel.hytale.server.core.ui.Value;
+import au.ellie.hyui.utils.BsonDocumentHelper;
+import org.bson.BsonDocument;
 
 /**
  * Represents a PatchStyle which can be used for backgrounds.
@@ -160,6 +162,16 @@ public class HyUIPatchStyle {
         }
         
         return hytalePatchStyle;
+    }
+
+    public BsonDocument toBsonDocument() {
+        BsonDocumentHelper doc = new BsonDocumentHelper();
+        if (texturePath != null) doc.set("TexturePath", texturePath);
+        if (verticalBorder != null) doc.set("VerticalBorder", verticalBorder);
+        if (horizontalBorder != null) doc.set("HorizontalBorder", horizontalBorder);
+        if (border != null) doc.set("Border", border);
+        if (color != null) doc.set("Color", color);
+        return doc.getDocument();
     }
 
     @Override

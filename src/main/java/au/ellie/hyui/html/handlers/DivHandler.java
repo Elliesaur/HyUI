@@ -45,6 +45,8 @@ public class DivHandler implements TagHandler {
         UIElementBuilder<?> builder;
         if (element.hasClass("page-overlay")) {
             builder = PageOverlayBuilder.pageOverlay();
+        } else if (element.hasClass("panel")) {
+            builder = PanelBuilder.panel();
         } else if (element.hasClass("container") || element.hasClass("decorated-container")) {
             builder = element.hasClass("decorated-container") ? 
                     ContainerBuilder.decoratedContainer() 

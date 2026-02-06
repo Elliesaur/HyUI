@@ -24,6 +24,10 @@ import au.ellie.hyui.elements.BackgroundSupported;
 import au.ellie.hyui.elements.ScrollbarStyleSupported;
 import au.ellie.hyui.elements.UIElements;
 import au.ellie.hyui.theme.Theme;
+import au.ellie.hyui.types.InputFieldDecorationStyle;
+import au.ellie.hyui.types.InputFieldStyle;
+import au.ellie.hyui.utils.BsonDocumentHelper;
+import au.ellie.hyui.utils.PropertyBatcher;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.ui.Value;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
@@ -53,7 +57,11 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
     private String scrollbarStyleReference;
     private String scrollbarStyleDocument;
     private HyUIPadding contentPadding;
+    private InputFieldDecorationStyle decoration;
     private boolean isMultiline;
+    private boolean isCompact;
+    private Integer collapsedWidth;
+    private Integer expandedWidth;
 
     /**
      * DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING.
@@ -121,6 +129,16 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
     }
 
     /**
+     * Creates a compact text field element.
+     * @return A new TextFieldBuilder instance configured for compact text input.
+     */
+    public static TextFieldBuilder compactTextField() {
+        TextFieldBuilder builder = new TextFieldBuilder(Theme.RAW, UIElements.COMPACT_TEXT_FIELD, UIElements.COMPACT_TEXT_FIELD);
+        builder.isCompact = true;
+        return builder;
+    }
+
+    /**
      * Sets the initial value of the text field.
      * @param value The initial value to set for the text field.
      * @return This TextFieldBuilder instance for method chaining.
@@ -146,8 +164,37 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
      * @param placeholderStyle The style reference for the placeholder text.
      * @return This TextFieldBuilder instance for method chaining.
      */
+    @Deprecated(forRemoval = true)
     public TextFieldBuilder withPlaceholderStyle(HyUIStyle placeholderStyle) {
+        if (placeholderStyle == null) {
+            return this;
+        }
+        InputFieldStyle mapped = new InputFieldStyle()
+                .withTextColor(placeholderStyle.getTextColor())
+                .withFontSize(placeholderStyle.getFontSize() != null ? placeholderStyle.getFontSize().intValue() : null)
+                .withRenderBold(placeholderStyle.getRenderBold())
+                .withRenderItalics(placeholderStyle.getRenderItalics())
+                .withRenderUppercase(placeholderStyle.getRenderUppercase());
+        return withPlaceholderStyle(mapped);
+    }
+
+    /**
+     * Sets the style for the placeholder text.
+     * @param placeholderStyle The style reference for the placeholder text.
+     * @return This TextFieldBuilder instance for method chaining.
+     */
+    public TextFieldBuilder withPlaceholderStyle(InputFieldStyle placeholderStyle) {
         return withSecondaryStyle("PlaceholderStyle", placeholderStyle);
+    }
+
+    /**
+     * Sets the input field decoration style.
+     * @param decoration The decoration style to apply.
+     * @return This TextFieldBuilder instance for method chaining.
+     */
+    public TextFieldBuilder withDecoration(InputFieldDecorationStyle decoration) {
+        this.decoration = decoration;
+        return this;
     }
 
     /**
@@ -261,6 +308,18 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
         return this;
     }
 
+    public TextFieldBuilder withCollapsedWidth(int collapsedWidth) {
+        if (!isCompact) return this;
+        this.collapsedWidth = collapsedWidth;
+        return this;
+    }
+
+    public TextFieldBuilder withExpandedWidth(int expandedWidth) {
+        if (!isCompact) return this;
+        this.expandedWidth = expandedWidth;
+        return this;
+    }
+
     @Override
     public TextFieldBuilder withScrollbarStyle(String document, String styleReference) {
         if (!isMultiline) return this;
@@ -323,8 +382,19 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
     }
 
     @Override
-    protected Set<String> getUnsupportedStyleProperties() {
-        return Set.of("TextColor");
+    protected boolean isStyleWhitelist() {
+        return true;
+    }
+
+    @Override
+    protected Set<String> getSupportedStyleProperties() {
+        return Set.of(
+                "TextColor",
+                "FontSize",
+                "RenderBold",
+                "RenderItalics",
+                "RenderUppercase"
+        );
     }
 
     @Override
@@ -350,6 +420,7 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
         }
 
         if (readOnly != null) {
+            commands.set(selector + ".IsReadOnly", readOnly);
             commands.set(selector + ".ReadOnly", readOnly);
         }
 
@@ -363,6 +434,17 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
 
         if (autoGrow != null) {
             commands.set(selector + ".AutoGrow", autoGrow);
+        }
+        if (collapsedWidth != null) {
+            commands.set(selector + ".CollapsedWidth", collapsedWidth);
+        }
+        if (expandedWidth != null) {
+            commands.set(selector + ".ExpandedWidth", expandedWidth);
+        }
+        if (decoration != null) {
+            BsonDocumentHelper decorationDoc = PropertyBatcher.beginSet();
+            decoration.applyTo(decorationDoc);
+            PropertyBatcher.endSet(selector + ".Decoration", decorationDoc, commands);
         }
 
         if (backgroundStyleReference != null && backgroundStyleDocument != null) {
@@ -380,9 +462,11 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
             if (contentPadding.getBottom() != null) commands.set(selector + ".ContentPadding.Bottom", contentPadding.getBottom());
         }
 
-        if (hyUIStyle == null && style != null) {
+        if ( hyUIStyle == null && typedStyle == null  && style != null) {
             HyUIPlugin.getLog().logFinest("Setting Style: " + style + " for " + selector);
             commands.set(selector + ".Style", style);
+        } else if (hyUIStyle == null && typedStyle != null) {
+            PropertyBatcher.endSet(selector + ".Style", typedStyle.toBsonDocument(), commands);
         }
         if (listeners.isEmpty()) {
             // To handle data back to the .getValue, we need to add at least one listener.
