@@ -19,7 +19,6 @@
 package au.ellie.hyui.html.template.item;
 
 import java.util.List;
-import java.util.Map;
 
 public interface Node {
 
@@ -107,21 +106,19 @@ public interface Node {
                 return name;
             }
         }
+
+        record ExpressionAttributeNode(Node expressions) implements AttributeValueNode {
+            public String getName() {
+                return "<expression>";
+            }
+        }
     }
 
     record ComponentElementNode(
-            String tagName,
-            Map<String, AttributeValueNode> attributes,
-            List<Node> expressionAttributes,
+            String tag,
+            List<AttributeValueNode> attributes,
             List<Node> children
     ) implements Node {
-        public boolean hasAttribute(String name) {
-            return attributes.containsKey(name);
-        }
-
-        public AttributeValueNode getAttribute(String name) {
-            return attributes.get(name);
-        }
     }
 }
 

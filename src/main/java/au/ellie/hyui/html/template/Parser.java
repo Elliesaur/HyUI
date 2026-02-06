@@ -22,6 +22,7 @@ import au.ellie.hyui.html.TemplateProcessor.CachedComponent;
 import au.ellie.hyui.html.template.item.Node;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode.DynamicAttributeNode;
+import au.ellie.hyui.html.template.item.Node.AttributeValueNode.ExpressionAttributeNode;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode.FlagAttributeNode;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode.StaticAttributeNode;
 import au.ellie.hyui.html.template.item.Node.BlockNode.EachBlockNode;
@@ -40,7 +41,7 @@ import au.ellie.hyui.html.template.item.Token;
 import au.ellie.hyui.html.template.item.Token.Type;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
@@ -346,16 +347,16 @@ public class Parser {
         context.push(identifier);
 
         // Parse attributes
-        var attributes = new LinkedHashMap<String, AttributeValueNode>();
-        var blockAttributes = new ArrayList<Node>();
+        var attributes = new LinkedList<AttributeValueNode>();
 
         try {
             while (!peek(COMPONENT_CLOSE) && !isAtEnd()) {
                 var attribute = parseAttribute();
                 if (attribute instanceof AttributeValueNode attrNode)
-                    attributes.put(attrNode.getName(), attrNode);
-                else
-                    blockAttributes.add(attribute);
+                    attributes.add(attrNode);
+                else {
+
+                }
             }
         } finally {
             context.pop();
@@ -365,7 +366,7 @@ public class Parser {
         var selfClosing = expect(COMPONENT_CLOSE).match(Symbols.COMPONENT_SELF_CLOSE);
         var children = selfClosing ? new ArrayList<Node>() : parseHtmlChildren(identifier.value());
 
-        return new ComponentElementNode(identifier.value(), attributes, blockAttributes, children);
+        return new ComponentElementNode(identifier.value(), attributes, children);
     }
 
     /**
@@ -397,7 +398,7 @@ public class Parser {
 
             throw new RuntimeException("Expected attribute value at position " + current().position());
         } else if (peek(EXPRESSION_OPEN))
-            return parseExpressionOrBlock();
+            return new ExpressionAttributeNode(parseExpressionOrBlock());
 
         throw new RuntimeException("Unexpected token in tag <" + context.value() + ">: " + current());
     }

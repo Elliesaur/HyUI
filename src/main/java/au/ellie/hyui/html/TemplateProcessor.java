@@ -243,7 +243,7 @@ public class TemplateProcessor {
     /**
      * Processes the template with additional variables that can override existing ones.
      *
-     * @param additionalVariables Additional variables to use during processing (can override existing variables)
+     * @param additionalVariables Additional variables to use during processing
      * @return The processed template.
      */
     public String process(@Nullable Map<String, Object> additionalVariables) {
@@ -252,11 +252,10 @@ public class TemplateProcessor {
         if (additionalVariables != null)
             parameters.putAll(additionalVariables);
 
+        var rootAst = this.root.getAst(components);
         var scope = new VariableScope(ROOT_SCOPE_NAME, parameters);
         var stack = new VariableStack(scope, valueResolver, preferDynamicValues);
-        var rootAst = this.root.getAst(components);
 
-        // Evaluator
         return new Evaluator(stack, filterRegistry, components).evaluate(rootAst);
     }
 

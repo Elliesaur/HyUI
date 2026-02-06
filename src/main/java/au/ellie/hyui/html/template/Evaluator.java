@@ -24,7 +24,9 @@ import au.ellie.hyui.html.template.context.FilterRegistry;
 import au.ellie.hyui.html.template.context.VariableStack;
 import au.ellie.hyui.html.template.context.VariableStack.VariableScope;
 import au.ellie.hyui.html.template.item.Node;
+import au.ellie.hyui.html.template.item.Node.AttributeValueNode;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode.DynamicAttributeNode;
+import au.ellie.hyui.html.template.item.Node.AttributeValueNode.ExpressionAttributeNode;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode.FlagAttributeNode;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode.StaticAttributeNode;
 import au.ellie.hyui.html.template.item.Node.BlockNode.EachBlockNode;
@@ -95,6 +97,7 @@ public class Evaluator {
             case IfBlockNode ifBlock -> evaluateIfBlock(ifBlock);
             case EachBlockNode eachBlock -> evaluateEachBlock(eachBlock);
             case ComponentElementNode component -> evaluateComponent(component);
+            case AttributeValueNode attributeValueNode -> evaluateAttributeValueNode(attributeValueNode);
 
             default -> throw new IllegalStateException("Unexpected value: " + node);
         };
@@ -310,23 +313,30 @@ public class Evaluator {
      * @return The resulting string after evaluation.
      */
     private String evaluateComponent(ComponentElementNode component) {
-        var componentDef = component.tagName();
+        var componentDef = component.tag();
         var cachedComponent = components.get(componentDef);
 
         if (cachedComponent == null)
             throw new RuntimeException("Component not found: " + componentDef);
 
+        // Attributes
         var context = new HashMap<String, Object>();
-        for (var entry : component.attributes().entrySet()) {
-            switch (entry.getValue()) {
+        for (var attribute : component.attributes()) {
+            switch (attribute) {
                 case DynamicAttributeNode dynamicAttributeNode ->
-                        context.put(entry.getKey(), evaluateExpression(dynamicAttributeNode.expression()));
+                        context.put(attribute.getName(), evaluateExpression(dynamicAttributeNode.expression()));
                 case StaticAttributeNode staticAttributeNode ->
-                        context.put(entry.getKey(), staticAttributeNode.value());
-                case FlagAttributeNode _ -> context.put(entry.getKey(), true);
+                        context.put(attribute.getName(), staticAttributeNode.value());
+                case ExpressionAttributeNode expressionAttributeNode -> {
+                    var evaluatedValue = evaluateNode(expressionAttributeNode.expressions());
+                    if (!evaluatedValue.isEmpty())
+                        parseInlineAttributes(evaluatedValue, context);
+                }
+                case FlagAttributeNode _ -> context.put(attribute.getName(), true);
             }
         }
 
+        // Children
         var scope = new VariableScope(COMPONENT_SCOPE_PREFIX + componentDef, context);
         scope.putKeyed("children", (Supplier<String>) () -> {
             var result = new StringBuilder();
@@ -340,6 +350,97 @@ public class Evaluator {
             return evaluate(cachedComponent.getAst(components));
         } finally {
             contextStack.popScope();
+        }
+    }
+
+    /**
+     * Evaluate an attribute value node and return the resulting string.
+     *
+     * @param attributeValueNode The attribute value node to evaluate.
+     * @return The resulting string after evaluation.
+     */
+    private String evaluateAttributeValueNode(AttributeValueNode attributeValueNode) {
+        var sb = new StringBuilder();
+
+        switch (attributeValueNode) {
+            case DynamicAttributeNode dynamic ->
+                    sb.append(dynamic.getName()).append("=\"").append(evaluateNode(dynamic.expression())).append("\"");
+            case StaticAttributeNode staticNode ->
+                    sb.append(staticNode.getName()).append("=\"").append(staticNode.value()).append("\"");
+            case FlagAttributeNode flag -> sb.append(flag.getName());
+            default -> {
+                // We don't support expression attributes here
+            }
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * Parse inline attributes from evaluated expression content.
+     * Handles formats like: "--selected", "--name=value", "class=active"
+     *
+     * @param content The evaluated content containing attributes
+     * @param context The context map to add attributes to
+     */
+    private void parseInlineAttributes(String content, Map<String, Object> context) {
+        var trimmed = content.trim();
+        var len = trimmed.length();
+        var i = 0;
+
+        while (i < len) {
+            while (i < len && Character.isWhitespace(trimmed.charAt(i)))
+                i++;
+
+            if (i >= len)
+                break;
+
+            var nameStart = i;
+
+            // Skip whitespaces
+            while (i < len && !Character.isWhitespace(trimmed.charAt(i)) && trimmed.charAt(i) != '=')
+                i++;
+
+            String name = trimmed.substring(nameStart, i);
+            if (name.isEmpty())
+                break;
+
+            // Skip whitespaces
+            while (i < len && Character.isWhitespace(trimmed.charAt(i)))
+                i++;
+
+            if (i < len && trimmed.charAt(i) == '=') {
+
+                do i++;
+                while (i < len && Character.isWhitespace(trimmed.charAt(i)));
+
+                // Read value
+                String value;
+                if (i < len && (trimmed.charAt(i) == '"' || trimmed.charAt(i) == '\'')) {
+                    var quote = trimmed.charAt(i++);
+                    nameStart = i;
+
+                    // Find closing quote
+                    while (i < len && trimmed.charAt(i) != quote)
+                        i++;
+
+                    value = trimmed.substring(nameStart, i);
+
+                    // Skip closing quote
+                    if (i < len)
+                        i++;
+                } else {
+                    // Unquoted value - read until whitespace
+                    int valueStart = i;
+                    while (i < len && !Character.isWhitespace(trimmed.charAt(i)))
+                        i++;
+
+                    value = trimmed.substring(valueStart, i);
+                }
+
+                context.put(name, value);
+            } else
+                context.put(name, true);
         }
     }
 

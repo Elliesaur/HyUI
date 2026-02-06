@@ -78,6 +78,15 @@ class TemplateProcessorTest {
         }
     }
 
+    class Modulator {
+        public int size;
+
+        public int increment() {
+            size = (size + 1) % 2;
+            return size;
+        }
+    }
+
     // ========== BASIC FUNCTIONALITY ==========
 
     @Nested
@@ -800,6 +809,33 @@ class TemplateProcessorTest {
             assertEquals(normalize("""
                     Weapon: tag_sword, tag_axe
                     Potion: tag_healing, tag_mana
+                    """), processor.process());
+        }
+
+        @Test
+        @DisplayName("Should call function with arguments and dynamic variables")
+        void callFunctionWithArgumentsAndDynamic() {
+            final var modulator = new Modulator();
+
+            processor.setVariable("list", List.of(1, 2, 3, 4));
+            processor.setVariable("modulation", (_) -> modulator.increment());
+            processor.setVariable("style", (stack) -> (int) stack.getVariable("key") < 3 ? "color: red;" : null);
+
+            processor.registerComponent("module", """
+                    <div{{#if $style}} style="{{$style}}"{{/if}}>Module {{$key}} -> Active : {{ $active ?? false }}</div>
+                    """);
+
+            processor.setTemplate(normalize("""
+                    {{#each $list key}}
+                    <module key={{$key}} {{#if $modulation == 0 }} {{#if $key < 3 }} active {{/if}} {{/if}} style={{$style}} />
+                    {{/each}}
+                    """));
+
+            assertEquals(normalize("""
+                    <div style="color: red;">Module 1 -> Active : false</div>
+                    <div style="color: red;">Module 2 -> Active : true</div>
+                    <div>Module 3 -> Active : false</div>
+                    <div>Module 4 -> Active : false</div>
                     """), processor.process());
         }
     }
