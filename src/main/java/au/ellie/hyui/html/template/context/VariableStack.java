@@ -19,32 +19,45 @@
 package au.ellie.hyui.html.template.context;
 
 import au.ellie.hyui.html.TemplateProcessor.ValueResolver;
+import au.ellie.hyui.html.template.utils.LambdaUtils;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayDeque;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.Set;
 import java.util.function.Supplier;
 
 public class VariableStack {
     public static final Object NULL_SENTINEL = new Object();
 
-    private final ArrayDeque<Map<String, Object>> stack = new ArrayDeque<>();
+    private final ArrayDeque<VariableScope> stack = new ArrayDeque<>();
     private final ValueResolver valueResolver;
     private final boolean preferDynamicValues;
 
-    public VariableStack(Map<String, Object> globalScope, @Nullable ValueResolver valueResolver, boolean preferDynamicValues) {
+    public VariableStack(VariableScope globalScope, @Nullable ValueResolver valueResolver, boolean preferDynamicValues) {
         this.valueResolver = valueResolver;
         this.preferDynamicValues = preferDynamicValues;
 
         pushScope(globalScope);
     }
 
-    public void pushScope(Map<String, Object> scope) {
+    /**
+     * Push a new scope onto the stack.
+     *
+     * @param scope Scope to push
+     */
+    public void pushScope(VariableScope scope) {
         stack.push(scope);
     }
 
+    /**
+     * Pop the current scope from the stack.
+     * Cannot pop the global scope.
+     */
     public void popScope() {
         if (stack.size() > 1)
             stack.pop();
@@ -69,7 +82,7 @@ public class VariableStack {
      * @param defaultValue Default value if variable not found
      * @return Variable value, or defaultValue if not found
      */
-    public Object getVariable(String name, Object defaultValue) {
+    public Object getVariable(String name, Supplier<Object> defaultValue) {
         // Check dynamic values first if preferred
         if (preferDynamicValues && valueResolver != null) {
             Optional<Object> resolved = valueResolver.resolve(name);
@@ -77,30 +90,19 @@ public class VariableStack {
                 return resolved;
         }
 
-        for (Map<String, Object> scope : stack) {
+        for (VariableScope scope : stack) {
             if (scope.containsKey(name)) {
                 var object = scope.get(name);
+                if (object == null)
+                    return null;
 
-                switch (object) {
-                    case Supplier<?> supplier -> {
-                        object = supplier.get();
-                        scope.put(name, object);
-                        return object;
-                    }
-                    case Function<?, ?> function -> {
-                        @SuppressWarnings("unchecked")
-                        Function<VariableStack, ?> stackFunction =
-                                (Function<VariableStack, ?>) function;
+                if (object instanceof Supplier<?> supplier) {
+                    object = supplier.get();
+                    scope.put(name, object);
+                } else if (LambdaUtils.isFunction(object))
+                    object = LambdaUtils.call(object, this, defaultValue);
 
-                        return stackFunction.apply(this);
-                    }
-                    case null -> {
-                        return null;
-                    }
-                    default -> {
-                        return object;
-                    }
-                }
+                return object;
             }
         }
 
@@ -113,6 +115,92 @@ public class VariableStack {
             }
         }
 
-        return defaultValue;
+        return defaultValue.get();
+    }
+
+    /**
+     * Get the name of the current scope.
+     */
+    @Nonnull
+    public String getScopeName() {
+        var scope = stack.peek();
+
+        return scope != null ? scope.getName() : "none";
+    }
+
+    /**
+     * Check if the current scope has the given name.
+     *
+     * @param name Scope name to check
+     */
+    public boolean isScope(String name) {
+        var scope = stack.peek();
+
+        return scope != null && scope.getName().equals(name);
+    }
+
+    /**
+     * Get the keys of the current scope, if available.
+     */
+    public Set<String> getScopeKeys() {
+        var scope = stack.peek();
+
+        return scope != null ? scope.getKeys() : null;
+    }
+
+    // ===== Scope =====
+
+    public static class VariableScope {
+
+        public static final String COMPONENT_SCOPE_PREFIX = "component:";
+        public static final String ROOT_SCOPE_NAME = "root";
+        public static final String EACH_SCOPE_NAME = "each";
+
+        private final Map<String, Object> content;
+        private final Set<String> keys;
+        private final String name;
+
+        public VariableScope(String name) {
+            this(name, new HashMap<>(), new HashSet<>());
+        }
+
+        public VariableScope(String name, Map<String, Object> content) {
+            this(name, content, new HashSet<>());
+        }
+
+        public VariableScope(String name, Map<String, Object> content, @Nonnull Set<String> keys) {
+            this.name = name;
+            this.content = content;
+            this.keys = keys;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public Map<String, Object> getContent() {
+            return content;
+        }
+
+        public Set<String> getKeys() {
+            return keys;
+        }
+
+        public boolean containsKey(String key) {
+            return content.containsKey(key);
+        }
+
+        public Object get(String key) {
+            return content.get(key);
+        }
+
+        public void put(String key, Object value) {
+            content.put(key, value);
+        }
+
+        public void putKeyed(String key, Object value) {
+            content.put(key, value);
+            keys.add(key);
+        }
     }
 }

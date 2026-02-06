@@ -22,6 +22,7 @@ import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.html.TemplateProcessor.CachedComponent;
 import au.ellie.hyui.html.template.context.FilterRegistry;
 import au.ellie.hyui.html.template.context.VariableStack;
+import au.ellie.hyui.html.template.context.VariableStack.VariableScope;
 import au.ellie.hyui.html.template.item.Node;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode.DynamicAttributeNode;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode.FlagAttributeNode;
@@ -41,7 +42,6 @@ import au.ellie.hyui.html.template.item.Symbols;
 import au.ellie.hyui.html.template.utils.NumericUtils;
 import au.ellie.hyui.html.template.utils.ReflectionUtils;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -49,6 +49,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
+
+import static au.ellie.hyui.html.template.context.VariableStack.VariableScope.COMPONENT_SCOPE_PREFIX;
+import static au.ellie.hyui.html.template.context.VariableStack.VariableScope.EACH_SCOPE_NAME;
 
 public class Evaluator {
     private final FilterRegistry filterRegistry;
@@ -107,11 +110,21 @@ public class Evaluator {
         return switch (node) {
             case TextNode literal -> literal.content();
             case LiteralNode literal -> literal.value();
-            case VariableNode var -> contextStack.getVariable(var.name());
             case PropertyAccessNode prop -> evaluatePropertyAccess(prop);
             case BinaryOpNode binary -> evaluateBinaryOp(binary);
             case PipeNode pipe -> evaluatePipe(pipe);
             case DefaultNode def -> evaluateDefault(def);
+            case VariableNode var -> contextStack.getVariable(var.name(), () -> {
+                for (String key : contextStack.getScopeKeys()) {
+                    try {
+                        return ReflectionUtils.getObjectProperty(contextStack.getVariable(key), var.name());
+                    } catch (Exception _) {
+                        // Ignore and return null
+                    }
+                }
+
+                return null;
+            });
         };
     }
 
@@ -127,35 +140,8 @@ public class Evaluator {
 
         var property = node.property();
 
-        // Access via Map
-        if (obj instanceof Map<?, ?> map)
-            return map.get(property);
-
-        // Access via Reflection
         try {
-            var clazz = obj.getClass();
-
-            try {
-                var field = clazz.getDeclaredField(property);
-                field.setAccessible(true);
-
-                return field.get(obj);
-            } catch (NoSuchFieldException e) {
-                var propName = property.substring(0, 1).toUpperCase() + property.substring(1);
-                var methodNames = new ArrayList<String>() {{
-                    add(property);
-                    add("get" + propName);
-                    add("is" + propName);
-                }};
-
-                // Open methods
-                for (var name : methodNames) {
-                    var method = ReflectionUtils.getPublicMethod(clazz, name);
-
-                    if (method.isPresent())
-                        return method.get().invoke(obj);
-                }
-            }
+            return ReflectionUtils.getObjectProperty(obj, property);
         } catch (Exception _) {
             HyUIPlugin.getLog().logWarn("Error accessing property " + property + " on " + obj.getClass());
         }
@@ -302,10 +288,10 @@ public class Evaluator {
         var result = new StringBuilder();
 
         for (Object item : items) {
-            var context = new HashMap<String, Object>();
-            context.put(node.itemName(), item);
+            var scope = new VariableScope(EACH_SCOPE_NAME);
+            scope.putKeyed(node.itemName(), item);
 
-            contextStack.pushScope(context);
+            contextStack.pushScope(scope);
             try {
                 for (Node child : node.body())
                     result.append(evaluateNode(child));
@@ -341,14 +327,15 @@ public class Evaluator {
             }
         }
 
-        context.put("children", (Supplier<String>) () -> {
+        var scope = new VariableScope(COMPONENT_SCOPE_PREFIX + componentDef, context);
+        scope.putKeyed("children", (Supplier<String>) () -> {
             var result = new StringBuilder();
             for (Node child : component.children())
                 result.append(evaluateNode(child));
             return result.toString();
         });
 
-        contextStack.pushScope(context);
+        contextStack.pushScope(scope);
         try {
             return evaluate(cachedComponent.getAst(components));
         } finally {
@@ -385,6 +372,9 @@ public class Evaluator {
     private Iterable<?> toIterable(Object value) {
         if (value instanceof Iterable<?> iterable)
             return iterable;
+
+        if (value instanceof Map<?, ?> map)
+            return map.entrySet();
 
         if (value.getClass().isArray())
             return Arrays.asList((Object[]) value);

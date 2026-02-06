@@ -11,7 +11,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
+import static au.ellie.hyui.html.template.context.VariableStack.VariableScope.EACH_SCOPE_NAME;
 import static org.junit.jupiter.api.Assertions.*;
 
 class TemplateProcessorTest {
@@ -71,6 +73,9 @@ class TemplateProcessorTest {
     }
 
     record Product(String name, List<String> tags) {
+        public String getTagsWithPrefix(String prefix) {
+            return tags.stream().map(tag -> prefix + tag).collect(Collectors.joining(", "));
+        }
     }
 
     // ========== BASIC FUNCTIONALITY ==========
@@ -758,6 +763,44 @@ class TemplateProcessorTest {
 
             processor.setTemplate("{{#each $items}}{{$item}},{{/each}}");
             assertEquals("A,,C,", processor.process());
+        }
+    }
+
+    // ========== FUNCTION CALLS ==========
+
+    @Nested
+    @DisplayName("Function Calls in Templates")
+    class FunctionCalls {
+
+        @Test
+        @DisplayName("Should call function with arguments")
+        void callFunctionWithArguments() {
+            processor.setVariable("products", List.of(
+                    new Product("Weapon", List.of("sword", "axe")),
+                    new Product("Potion", List.of("healing", "mana"))
+            ));
+            processor.setVariable("tags", (stack) -> {
+                if (!stack.isScope(EACH_SCOPE_NAME))
+                    return "";
+
+                String key = stack.getScopeKeys().iterator().next();
+                Object value = stack.getVariable(key);
+                if (!(value instanceof Product product))
+                    return "";
+
+                return product.getTagsWithPrefix("tag_");
+            });
+
+            processor.setTemplate(normalize("""
+                    {{#each $products product}}
+                    {{$name}}: {{$tags}}
+                    {{/each}}
+                    """));
+
+            assertEquals(normalize("""
+                    Weapon: tag_sword, tag_axe
+                    Potion: tag_healing, tag_mana
+                    """), processor.process());
         }
     }
 

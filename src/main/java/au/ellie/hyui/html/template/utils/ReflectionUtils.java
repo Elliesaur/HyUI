@@ -23,6 +23,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -30,6 +31,48 @@ import java.util.Optional;
  * Based on the work of Dr Heinz M. Kabutz
  */
 public class ReflectionUtils {
+
+    /**
+     * Get the value of a property from an object,
+     * supporting both Map access and reflection.
+     *
+     * @param obj          Object to access
+     * @param propertyName Name of the property to retrieve
+     * @return The value of the property, or null if not found
+     * @throws Exception If an error occurs during reflection access
+     */
+    public static Object getObjectProperty(Object obj, String propertyName) throws Exception {
+        // Map access
+        if (obj instanceof Map<?, ?> map)
+            return map.get(propertyName);
+
+        // Reflection access
+        var clazz = obj.getClass();
+
+        try {
+            var field = clazz.getDeclaredField(propertyName);
+            field.setAccessible(true);
+
+            return field.get(obj);
+        } catch (NoSuchFieldException e) {
+            var propName = propertyName.substring(0, 1).toUpperCase() + propertyName.substring(1);
+            var methodNames = new ArrayList<String>() {{
+                add(propertyName);
+                add("get" + propName);
+                add("is" + propName);
+            }};
+
+            // Open methods
+            for (var name : methodNames) {
+                var method = ReflectionUtils.getPublicMethod(clazz, name);
+
+                if (method.isPresent())
+                    return method.get().invoke(obj);
+            }
+        }
+
+        return null;
+    }
 
     /**
      * Get a truly public method (i.e., a method that is public and declared in a public class or interface)
