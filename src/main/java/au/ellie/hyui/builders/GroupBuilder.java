@@ -46,7 +46,6 @@ public class GroupBuilder extends UIElementBuilder<GroupBuilder> implements
         BackgroundSupported<GroupBuilder>, 
         ScrollbarStyleSupported<GroupBuilder> {
     private String layoutMode;
-    private HyUIPatchStyle background;
     private String scrollbarStyleReference;
     private String scrollbarStyleDocument;
 
@@ -83,18 +82,7 @@ public class GroupBuilder extends UIElementBuilder<GroupBuilder> implements
     public String getLayoutMode() {
         return this.layoutMode;
     }
-
-    @Override
-    public GroupBuilder withBackground(HyUIPatchStyle background) {
-        this.background = background;
-        return this;
-    }
-
-    @Override
-    public HyUIPatchStyle getBackground() {
-        return this.background;
-    }
-
+    
     @Override
     public GroupBuilder withScrollbarStyle(String document, String styleReference) {
         this.scrollbarStyleDocument = document;

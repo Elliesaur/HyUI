@@ -459,14 +459,14 @@ public interface TagHandler {
                     }
                     break;
                 case "background-image":
-                    if (builder instanceof BackgroundSupported) {
+                    if (builder != null) {
                         StyleUtils.BackgroundParts parts = StyleUtils.parseBackgroundParts(value, true);
                         String realUrl = parts.value();
-                        HyUIPatchStyle background = ((BackgroundSupported<?>) builder).getBackground();
+                        HyUIPatchStyle background = builder.getBackground();
                         if (background == null) {
                             HyUIPatchStyle bg = new HyUIPatchStyle().setTexturePath(realUrl);
                             StyleUtils.applyBorders(bg, parts);
-                            ((BackgroundSupported<?>) builder).withBackground(bg);
+                            builder.withBackground(bg);
                         } else {
                             background.setTexturePath(realUrl);
                             StyleUtils.applyBorders(background, parts);
@@ -474,14 +474,14 @@ public interface TagHandler {
                     }
                     break;
                 case "background-color":
-                    if (builder instanceof BackgroundSupported) {
+                    if (builder != null) {
                         StyleUtils.BackgroundParts parts = StyleUtils.parseBackgroundParts(value, false);
                         String normalizedColor = StyleUtils.normalizeBackgroundColor(parts.value());
-                        HyUIPatchStyle background = ((BackgroundSupported<?>) builder).getBackground();
+                        HyUIPatchStyle background = builder.getBackground();
                         if (background == null) {
                             HyUIPatchStyle bg = new HyUIPatchStyle().setColor(normalizedColor);
                             StyleUtils.applyBorders(bg, parts);
-                            ((BackgroundSupported<?>) builder).withBackground(bg);
+                            builder.withBackground(bg);
                         } else {
                             background.setColor(normalizedColor);
                             StyleUtils.applyBorders(background, parts);

@@ -175,7 +175,7 @@ public class ToggleButtonBuilder extends UIElementBuilder<ToggleButtonBuilder> {
             if (listener.type() == CustomUIEventBindingType.ValueChanged) {
                 HyUIPlugin.getLog().logFinest("Adding ValueChanged event binding for " + selector + " with eventId: " + eventId);
                 events.addEventBinding(CustomUIEventBindingType.ValueChanged, selector,
-                        EventData.of("@ValueBool", selector + ".Value")
+                        EventData.of("@ValueBool", selector + ".IsChecked")
                             .append("Target", eventId)
                             .append("Action", UIEventActions.VALUE_CHANGED), false);
             } else if (listener.type() == CustomUIEventBindingType.Activating) {

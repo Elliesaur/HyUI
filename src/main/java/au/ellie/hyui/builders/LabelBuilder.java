@@ -119,20 +119,22 @@ public class LabelBuilder extends UIElementBuilder<LabelBuilder> {
 
     @Override
     protected Set<String> getSupportedStyleProperties() {
-        return Set.of(
-                "HorizontalAlignment",
-                "VerticalAlignment",
-                "Wrap",
-                "FontName",
-                "FontSize",
-                "TextColor",
-                "OutlineColor",
-                "LetterSpacing",
-                "RenderUppercase",
-                "RenderBold",
-                "RenderItalics",
-                "RenderUnderlined",
-                "Alignment"
+        return StylePropertySets.merge(
+                StylePropertySets.PADDING, 
+                Set.of(
+                    "HorizontalAlignment",
+                    "VerticalAlignment",
+                    "Wrap",
+                    "FontName",
+                    "FontSize",
+                    "TextColor",
+                    "OutlineColor",
+                    "LetterSpacing",
+                    "RenderUppercase",
+                    "RenderBold",
+                    "RenderItalics",
+                    "RenderUnderlined",
+                    "Alignment")
         );
     }
 
@@ -154,8 +156,6 @@ public class LabelBuilder extends UIElementBuilder<LabelBuilder> {
         if ( hyUIStyle == null && typedStyle == null  && style != null) {
             HyUIPlugin.getLog().logFinest("Setting Raw Style: " + style + " for " + selector);
             commands.set(selector + ".Style", style);
-        } else if (hyUIStyle == null && typedStyle != null) {
-            PropertyBatcher.endSet(selector + ".Style", filterStyleDocument(typedStyle.toBsonDocument()), commands);
         }
     }
 }

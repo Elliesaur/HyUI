@@ -819,10 +819,11 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
                 commands.setObject(selector + ".Background", background.getHytalePatchStyle());
             }
 
-            if (maskTexturePath != null) {
-                HyUIPlugin.getLog().logFinest("Setting MaskTexturePath for " + selector);
-                commands.set(selector + ".MaskTexturePath", maskTexturePath);
-            }
+            // TODO: Always inline the MaskTexturePath... this is tricky to do, for later we do this.
+            //if (maskTexturePath != null) {
+            //    HyUIPlugin.getLog().logFinest("Setting MaskTexturePath for " + selector);
+            //    commands.set(selector + ".MaskTexturePath", maskTexturePath);
+            //}
 
             if (outlineColor != null) {
                 HyUIPlugin.getLog().logFinest("Setting OutlineColor for " + selector);
