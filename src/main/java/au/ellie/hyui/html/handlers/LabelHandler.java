@@ -25,7 +25,12 @@ import au.ellie.hyui.html.HtmlParser;
 import au.ellie.hyui.html.TagHandler;
 import au.ellie.hyui.types.TimerDirection;
 import au.ellie.hyui.utils.ParseUtils;
+import com.hypixel.hytale.server.core.Message;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Node;
+import org.jsoup.nodes.TextNode;
+
+import java.util.List;
 
 public class LabelHandler implements TagHandler {
     @Override
@@ -64,8 +69,28 @@ public class LabelHandler implements TagHandler {
         }
 
         // Regular label
-        LabelBuilder builder = LabelBuilder.label().withText(element.text());
+        LabelBuilder builder = LabelBuilder.label();
+        List<Message> spans = parseMessageSpansFromChildren(element, true);
+        if (spans != null && !spans.isEmpty()) {
+            builder.withTextSpans(spans);
+        } else {
+            builder.withText(readDirectText(element));
+        }
         applyCommonAttributes(builder, element);
         return builder;
+    }
+
+    private String readDirectText(Element element) {
+        StringBuilder sb = new StringBuilder();
+        for (Node child : element.childNodes()) {
+            if (child instanceof TextNode textNode) {
+                String text = textNode.text();
+                if (!text.isBlank()) {
+                    sb.append(text);
+                }
+            }
+        }
+        String text = sb.toString().trim();
+        return text.isEmpty() ? element.ownText() : text;
     }
 }

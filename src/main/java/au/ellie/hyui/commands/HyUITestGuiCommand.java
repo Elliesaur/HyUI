@@ -41,6 +41,8 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 
+import java.awt.*;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -73,7 +75,7 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                     return CompletableFuture.runAsync(() -> {
                         PlayerRef playerRef = store.getComponent(ref, PlayerRef.getComponentType());
                         if (playerRef != null) {
-                            openHtmlTestGui2(playerRef, store);
+                            openTestGui(playerRef, store);
                         }
                     }, world);
                 } else {
@@ -506,6 +508,13 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                                 .withStep(0.05f)
                                 .withValue(0.3f)
                                 .withStyle(SliderStyle.defaultStyle()))
+                        .addChild(LabelBuilder.label()
+                                .withText("Hey")
+                                .withTooltipTextSpans(List.of(Message.raw("Lol").bold(true), Message.raw("No").bold(false)))
+                                .addTextSpan(Message.raw("Hey3").bold(true).color(Color.RED))
+                                .addTextSpan(Message.raw("Hey4").bold(true).color(Color.RED))
+                                .addTextSpan(Message.raw("Hey5").bold(true).color(Color.YELLOW))
+                        )
                         .addChild(FloatSliderNumberFieldBuilder.floatSliderNumberField()
                                 .withId("FloatSliderNumberFieldExample")
                                 .withMin(0)

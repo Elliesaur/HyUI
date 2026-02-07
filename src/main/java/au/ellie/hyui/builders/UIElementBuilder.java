@@ -29,6 +29,7 @@ import au.ellie.hyui.types.MouseWheelScrollBehaviourType;
 import au.ellie.hyui.types.TextTooltipStyle;
 import au.ellie.hyui.utils.BsonDocumentHelper;
 import au.ellie.hyui.utils.PropertyBatcher;
+import com.hypixel.hytale.codec.EmptyExtraInfo;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.ui.Value;
@@ -73,7 +74,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
     protected Boolean visible;
     protected Message tooltipTextSpan;
     protected String tooltipText;
-    protected List<LabelSpan> tooltipTextSpans;
+    protected List<Message> tooltipTextSpans;
     protected TextTooltipStyle textTooltipStyle;
     protected Float textTooltipShowDelay;
     protected Boolean hitTestVisible;
@@ -390,11 +391,11 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
     /**
      * Configures the tooltip text spans for the UI element.
      *
-     * @param tooltipTextSpans the list of LabelSpan to be displayed as tooltip
+     * @param tooltipTextSpans the list of Message to be displayed as tooltip
      * @return the builder instance of type {@code T} for method chaining
      */
     @SuppressWarnings("unchecked")
-    public T withTooltipTextSpans(List<LabelSpan> tooltipTextSpans) {
+    public T withTooltipTextSpans(List<Message> tooltipTextSpans) {
         this.tooltipTextSpans = tooltipTextSpans;
         return (T) this;
     }
@@ -761,8 +762,8 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
                 commands.set(selector + ".TooltipTextSpans", tooltipTextSpan);
             } else if (tooltipTextSpans != null) {
                 HyUIPlugin.getLog().logFinest("Setting TooltipTextSpans for " + selector);
-                // TODO: Figure out if it is possible to send Bson array instead...
-                //PropertyBatcher.endSet(selector + ".TooltipTextSpans", tooltipTextSpans.stream().map(HyUIBsonSerializable::toBsonDocument).toList(), commands);
+                Message finalMessage = Message.empty().insertAll(tooltipTextSpans);
+                commands.set(selector + ".TooltipTextSpans", finalMessage);
             } else if (tooltipText != null) {
                 HyUIPlugin.getLog().logFinest("Setting TooltipText for " + selector);
                 commands.set(selector + ".TooltipText", tooltipText);
@@ -842,8 +843,6 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
             
             // Cannot set for checkbox builder.
             if (typedStyle != null && !(this instanceof CheckBoxBuilder) && !(hyUIStyle != null && hyUIStyle.getStyleReference() != null)) {
-                // TODO: URGENT!!! VALIDATE ALL PROPERTIES ALIGN TO THE ELEMENT' STYLE WHITELIST
-                //  MAKE SURE TO UPDATE THE ELEMENT'S STYLE WHITELIST TO MAKE SURE NO CRASHES HAPPEN.
                 BsonDocumentHelper doc = PropertyBatcher.beginSet();
                 typedStyle.applyTo(doc);
                 filterStyleDocument(doc.getDocument());

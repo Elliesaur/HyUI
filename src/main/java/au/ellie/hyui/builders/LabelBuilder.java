@@ -24,8 +24,11 @@ import au.ellie.hyui.elements.UIElements;
 import au.ellie.hyui.theme.Theme;
 import au.ellie.hyui.types.LabelSpan;
 import au.ellie.hyui.utils.PropertyBatcher;
+import com.hypixel.hytale.codec.EmptyExtraInfo;
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
+import org.bson.BsonArray;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +40,7 @@ import java.util.Set;
  */
 public class LabelBuilder extends UIElementBuilder<LabelBuilder> {
     private String text;
-    private List<LabelSpan> textSpans;
+    private List<Message> textSpans;
 
     /**
      * Constructs a new instance of {@code LabelBuilder} for creating label UI elements.
@@ -80,10 +83,10 @@ public class LabelBuilder extends UIElementBuilder<LabelBuilder> {
      * Sets the text spans to be displayed by the label.
      * TextSpans allow for rich text formatting with different styles per span.
      *
-     * @param textSpans The list of LabelSpan objects defining formatted text sections.
+     * @param textSpans The list of Message objects defining formatted text sections.
      * @return The current instance of the {@code LabelBuilder} for method chaining.
      */
-    public LabelBuilder withTextSpans(List<LabelSpan> textSpans) {
+    public LabelBuilder withTextSpans(List<Message> textSpans) {
         this.textSpans = textSpans;
         return this;
     }
@@ -92,10 +95,10 @@ public class LabelBuilder extends UIElementBuilder<LabelBuilder> {
      * Adds a single text span to the label.
      * TextSpans allow for rich text formatting with different styles per span.
      *
-     * @param textSpan The LabelSpan object to add.
+     * @param textSpan The Message object to add.
      * @return The current instance of the {@code LabelBuilder} for method chaining.
      */
-    public LabelBuilder addTextSpan(LabelSpan textSpan) {
+    public LabelBuilder addTextSpan(Message textSpan) {
         if (this.textSpans == null) {
             this.textSpans = new ArrayList<>();
         }
@@ -149,10 +152,9 @@ public class LabelBuilder extends UIElementBuilder<LabelBuilder> {
         }
         if (textSpans != null && !textSpans.isEmpty()) {
             HyUIPlugin.getLog().logFinest("Setting TextSpans for " + selector);
-            // TODO: Work out way to set arrays of bson properly.
-            //PropertyBatcher.endSet(selector + ".TextSpans", textSpans, commands);
+            Message finalMessage = Message.empty().insertAll(textSpans);
+            commands.set(selector + ".TextSpans", finalMessage);
         }
-
         if ( hyUIStyle == null && typedStyle == null  && style != null) {
             HyUIPlugin.getLog().logFinest("Setting Raw Style: " + style + " for " + selector);
             commands.set(selector + ".Style", style);
