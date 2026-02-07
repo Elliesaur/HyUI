@@ -25,6 +25,7 @@ import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.html.TemplateProcessor;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPage;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -241,9 +242,9 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
         return delegate.templateProcessor;
     }
     
-    /*@Override
+/*    @Override
     public void handleDataEvent(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store, @Nonnull String data) {
         super.handleDataEvent(ref, store, data);
-        HyUIPlugin.getLog().logInfo("Handling data event: " + data);
+        HytaleLogger.forEnclosingClass().atInfo().log("Handling data event: " + data);
     }*/
 }

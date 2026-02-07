@@ -40,7 +40,7 @@ public class NativeTabButtonBuilder extends UIElementBuilder<NativeTabButtonBuil
     private LayoutMode layoutMode;
     private HyUIPatchStyle icon;
     private HyUIPatchStyle iconSelected;
-    private String id;
+    private String tabId;
     private Boolean disabled;
 
     public NativeTabButtonBuilder() {
@@ -73,8 +73,13 @@ public class NativeTabButtonBuilder extends UIElementBuilder<NativeTabButtonBuil
         return this;
     }
 
+    @Override
     public NativeTabButtonBuilder withId(String id) {
-        this.id = id;
+        return (NativeTabButtonBuilder) super.withId(id);
+    }
+
+    public NativeTabButtonBuilder withTabId(String tabId) {
+        this.tabId = tabId;
         return this;
     }
 
@@ -168,9 +173,10 @@ public class NativeTabButtonBuilder extends UIElementBuilder<NativeTabButtonBuil
             HyUIPlugin.getLog().logFinest("Setting IconSelected for " + selector);
             commands.setObject(selector + ".IconSelected", iconSelected.getHytalePatchStyle());
         }
-        if (id != null) {
-            HyUIPlugin.getLog().logFinest("Setting Id: " + id + " for " + selector);
-            commands.set(selector + ".Id", id);
+        String resolvedTabId = tabId != null ? tabId : getId();
+        if (resolvedTabId != null) {
+            HyUIPlugin.getLog().logFinest("Setting Id: " + resolvedTabId + " for " + selector);
+            commands.set(selector + ".Id", resolvedTabId);
         }
         if (disabled != null) {
             HyUIPlugin.getLog().logFinest("Setting Disabled: " + disabled + " for " + selector);

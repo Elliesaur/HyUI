@@ -46,8 +46,6 @@ public class DynamicPaneBuilder extends UIElementBuilder<DynamicPaneBuilder> {
 
     public DynamicPaneBuilder() {
         super("DynamicPane", "#HyUIDynamicPane");
-        withUiFile("Pages/Elements/DynamicPane.ui");
-        withWrappingGroup(true);
     }
 
     public static DynamicPaneBuilder dynamicPane() {
@@ -127,6 +125,16 @@ public class DynamicPaneBuilder extends UIElementBuilder<DynamicPaneBuilder> {
     @Override
     protected Set<String> getSupportedStyleProperties() {
         return Set.of();
+    }
+
+    @Override
+    protected boolean hasCustomInlineContent() {
+        return true;
+    }
+
+    @Override
+    protected String generateCustomInlineContent() {
+        return "DynamicPane #" + getEffectiveId() + " { LayoutMode: Top; }";
     }
 
     @Override

@@ -19,13 +19,19 @@
 package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
+import au.ellie.hyui.events.SelectedTabChangedEventData;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventActions;
+import au.ellie.hyui.types.NativeTab;
+import au.ellie.hyui.utils.PropertyBatcher;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
+import org.bson.BsonArray;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -37,6 +43,7 @@ import java.util.function.Consumer;
 public class NativeTabNavigationBuilder extends UIElementBuilder<NativeTabNavigationBuilder> {
     private String selectedTab;
     private Boolean allowUnselection;
+    private final List<NativeTab> tabs = new ArrayList<>();
 
     public NativeTabNavigationBuilder() {
         super("TabNavigation", "#HyUINativeTabNavigation");
@@ -58,18 +65,33 @@ public class NativeTabNavigationBuilder extends UIElementBuilder<NativeTabNaviga
         return this;
     }
 
+    public NativeTabNavigationBuilder addTab(NativeTab tab) {
+        if (tab != null) {
+            this.tabs.add(tab);
+        }
+        return this;
+    }
+
+    public NativeTabNavigationBuilder withTabs(List<NativeTab> tabs) {
+        this.tabs.clear();
+        if (tabs != null) {
+            this.tabs.addAll(tabs);
+        }
+        return this;
+    }
+
     /**
      * Adds an event listener for the SelectedTabChanged event.
      */
-    public NativeTabNavigationBuilder onSelectedTabChanged(Consumer<String> callback) {
-        return addEventListener(CustomUIEventBindingType.SelectedTabChanged, String.class, callback);
+    public NativeTabNavigationBuilder onSelectedTabChanged(Consumer<SelectedTabChangedEventData> callback) {
+        return addEventListener(CustomUIEventBindingType.SelectedTabChanged, SelectedTabChangedEventData.class, callback);
     }
 
     /**
      * Adds an event listener for the SelectedTabChanged event with context.
      */
-    public NativeTabNavigationBuilder onSelectedTabChanged(BiConsumer<String, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.SelectedTabChanged, String.class, callback);
+    public NativeTabNavigationBuilder onSelectedTabChanged(BiConsumer<SelectedTabChangedEventData, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.SelectedTabChanged, SelectedTabChangedEventData.class, callback);
     }
 
     @Override
@@ -92,12 +114,28 @@ public class NativeTabNavigationBuilder extends UIElementBuilder<NativeTabNaviga
                 StylePropertySets.SOUND_STYLE,
                 StylePropertySets.TEXT_TOOLTIP_STYLE,
                 Set.of(
+                        "TabStyle",
+                        "SelectedTabStyle",
+                        "TabSounds",
+                        "SeparatorAnchor",
                         "SeparatorBackground",
                         "Background",
                         "Overlay",
+                        "IconAnchor",
+                        "LabelStyle",
+                        "Padding",
+                        "Anchor",
+                        "TooltipStyle",
                         "IconOpacity",
                         "FlexWeight",
-                        "ContentMaskTexturePath"
+                        "ContentMaskTexturePath",
+                        "Default",
+                        "Hovered",
+                        "Pressed",
+                        "Activate",
+                        "MouseHover",
+                        "Alignment",
+                        "MaxWidth"
                 )
         );
     }
@@ -114,6 +152,16 @@ public class NativeTabNavigationBuilder extends UIElementBuilder<NativeTabNaviga
         if (allowUnselection != null) {
             HyUIPlugin.getLog().logFinest("Setting AllowUnselection: " + allowUnselection + " for " + selector);
             commands.set(selector + ".AllowUnselection", allowUnselection);
+        }
+
+        if (!tabs.isEmpty()) {
+            BsonArray tabArray = new BsonArray();
+            for (NativeTab tab : tabs) {
+                if (tab != null) {
+                    tabArray.add(tab.toBsonDocument());
+                }
+            }
+            PropertyBatcher.setBsonValue(selector + ".Tabs", tabArray, commands);
         }
 
         // Register event listeners

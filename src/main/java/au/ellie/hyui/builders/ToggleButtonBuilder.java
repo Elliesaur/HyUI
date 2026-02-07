@@ -153,7 +153,12 @@ public class ToggleButtonBuilder extends UIElementBuilder<ToggleButtonBuilder> {
             this.initialValue = next;
         }
     }
-
+    
+    @Override
+    protected Object parseValue(String rawValue) {
+        return Boolean.parseBoolean(rawValue);
+    }
+    
     @Override
     protected void onBuild(UICommandBuilder commands, UIEventBuilder events) {
         String selector = getSelector();

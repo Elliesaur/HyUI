@@ -19,18 +19,7 @@
 package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPluginLogger;
-import au.ellie.hyui.events.DragCancelledEventData;
-import au.ellie.hyui.events.DroppedEventData;
-import au.ellie.hyui.events.SlotClickPressWhileDraggingEventData;
-import au.ellie.hyui.events.SlotClickReleaseWhileDraggingEventData;
-import au.ellie.hyui.events.SlotClickingEventData;
-import au.ellie.hyui.events.SlotDoubleClickingEventData;
-import au.ellie.hyui.events.SlotMouseDragCompletedEventData;
-import au.ellie.hyui.events.SlotMouseDragExitedEventData;
-import au.ellie.hyui.events.SlotMouseEnteredEventData;
-import au.ellie.hyui.events.SlotMouseExitedEventData;
-import au.ellie.hyui.events.UIContext;
-import au.ellie.hyui.events.UIEventListener;
+import au.ellie.hyui.events.*;
 import au.ellie.hyui.html.HtmlParser;
 import au.ellie.hyui.html.TemplateProcessor;
 import com.hypixel.hytale.component.Ref;
@@ -40,7 +29,6 @@ import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import au.ellie.hyui.HyUIPlugin;
-import au.ellie.hyui.events.DynamicPageData;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -286,12 +274,11 @@ public abstract class HyUInterface implements UIContext {
                     ((UIEventListener<Void>) listener).callback().accept(null, context);
                     continue;
                 }
-                if (isSlotEventRelated(listener.type())) {
+                if (isSlotEventRelated(listener.type()) || listener.type() == CustomUIEventBindingType.SelectedTabChanged) {
                     Object payload = buildEventPayload(listener.type(), data);
                     ((UIEventListener<Object>) listener).callback().accept(payload, context);
                     continue;
                 }
-
                 String rawValue = element.usesRefValue() ? data.getValue("RefValue") : data.getValue("Value");
                 Object finalValue = rawValue != null ? element.parseValue(rawValue) : null;
 
@@ -341,6 +328,7 @@ public abstract class HyUInterface implements UIContext {
             case SlotMouseDragExited -> SlotMouseDragExitedEventData.from(data);
             case SlotClickReleaseWhileDragging -> SlotClickReleaseWhileDraggingEventData.from(data);
             case SlotClickPressWhileDragging -> SlotClickPressWhileDraggingEventData.from(data);
+            case SelectedTabChanged -> SelectedTabChangedEventData.from(data);
             default -> null;
         };
     }

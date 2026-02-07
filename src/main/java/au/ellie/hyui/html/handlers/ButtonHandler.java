@@ -59,6 +59,9 @@ public class ButtonHandler implements TagHandler {
         boolean isToggleButton = element.hasClass("toggle-button");
         boolean isItemSlotButton = element.hasClass("item-slot-button");
         boolean isNativeTabButton = element.hasClass("native-tab-button");
+        if (isNativeTabButton) {
+            return null;
+        }
 
         if (isCustomTextButton || isCustomButton) {
             builder = isCustomTextButton
@@ -70,8 +73,6 @@ public class ButtonHandler implements TagHandler {
             builder = ToggleButtonBuilder.toggleButton();
         } else if (isItemSlotButton) {
             builder = ItemSlotButtonBuilder.itemSlotButton();
-        } else if (isNativeTabButton) {
-            builder = NativeTabButtonBuilder.nativeTabButton();
         } else {
             if (tag.equals("input") && element.attr("type").equalsIgnoreCase("reset")) {
                 builder = ButtonBuilder.cancelTextButton();
@@ -139,6 +140,7 @@ public class ButtonHandler implements TagHandler {
         }
         applyButtonStateAttributes(builder, element);
         applyCommonAttributes(builder, element);
+        applyNativeTabButtonAttributes(builder, element);
 
         return builder;
     }
@@ -162,6 +164,17 @@ public class ButtonHandler implements TagHandler {
             } else if (builder instanceof CustomButtonBuilder customButtonBuilder) {
                 customButtonBuilder.withOverscroll(overscroll);
             }
+        }
+    }
+
+    private void applyNativeTabButtonAttributes(UIElementBuilder<?> builder, Element element) {
+        if (!(builder instanceof NativeTabButtonBuilder nativeTabButtonBuilder)) {
+            return;
+        }
+        if (element.hasAttr("data-hyui-tab-id")) {
+            nativeTabButtonBuilder.withTabId(element.attr("data-hyui-tab-id"));
+        } else if (element.hasAttr("id")) {
+            nativeTabButtonBuilder.withTabId(element.attr("id"));
         }
     }
 

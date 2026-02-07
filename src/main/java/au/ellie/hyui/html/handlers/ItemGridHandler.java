@@ -24,6 +24,7 @@ import au.ellie.hyui.builders.UIElementBuilder;
 import au.ellie.hyui.html.HtmlParser;
 import au.ellie.hyui.html.TagHandler;
 import au.ellie.hyui.types.ItemGridInfoDisplayMode;
+import au.ellie.hyui.utils.ParseUtils;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.ui.ItemGridSlot;
 import com.hypixel.hytale.server.core.ui.PatchStyle;
@@ -73,14 +74,10 @@ public class ItemGridHandler implements TagHandler {
             }
         }
         if (element.hasAttr("data-hyui-adjacent-info-pane-grid-width")) {
-            try {
-                builder.withAdjacentInfoPaneGridWidth(Integer.parseInt(element.attr("data-hyui-adjacent-info-pane-grid-width")));
-            } catch (NumberFormatException ignored) {}
+            builder.withAdjacentInfoPaneGridWidth(ParseUtils.parseInt(element.attr("data-hyui-adjacent-info-pane-grid-width")).orElse(0));
         }
         if (element.hasAttr("data-hyui-inventory-section-id")) {
-            try {
-                builder.withInventorySectionId(Integer.parseInt(element.attr("data-hyui-inventory-section-id")));
-            } catch (NumberFormatException ignored) {}
+            builder.withInventorySectionId(ParseUtils.parseInt(element.attr("data-hyui-inventory-section-id")).orElse(0));
         }
         if (element.hasAttr("data-hyui-allow-max-stack-draggable-items")) {
             builder.withAllowMaxStackDraggableItems(Boolean.parseBoolean(

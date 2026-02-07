@@ -68,4 +68,15 @@ public final class PropertyBatcher {
             throw new RuntimeException("Failed to apply BSON styles to " + targetSelector, e);
         }
     }
+
+    public static void setBsonValue(String targetSelector, BsonValue value, UICommandBuilder builder) {
+        if (value == null) {
+            return;
+        }
+        try {
+            INTERNAL_SETTER.invoke(builder, targetSelector, value);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to apply BSON value to " + targetSelector, e);
+        }
+    }
 }

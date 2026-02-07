@@ -18,13 +18,19 @@
 
 package au.ellie.hyui.html.handlers;
 
+import au.ellie.hyui.builders.HyUIAnchor;
+import au.ellie.hyui.builders.HyUIPatchStyle;
 import au.ellie.hyui.builders.NativeTabNavigationBuilder;
 import au.ellie.hyui.builders.TabNavigationBuilder;
 import au.ellie.hyui.builders.UIElementBuilder;
 import au.ellie.hyui.html.HtmlParser;
 import au.ellie.hyui.html.TagHandler;
+import au.ellie.hyui.types.NativeTab;
+import au.ellie.hyui.types.DefaultStyles;
 import au.ellie.hyui.utils.ParseUtils;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Node;
+import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
 import java.util.List;
@@ -78,12 +84,25 @@ public class TabNavigationHandler implements TagHandler {
                 builder.withAllowUnselection(Boolean.parseBoolean(element.attr("data-allow-unselection")));
             }
 
+            applyNativeTabStyle(builder, element);
             applyCommonAttributes(builder, element);
 
-            // Parse children
-            List<UIElementBuilder<?>> children = parser.parseChildren(element);
-            for (UIElementBuilder<?> child : children) {
-                builder.addChild(child);
+            for (Node childNode : element.childNodes()) {
+                if (childNode instanceof Element childElement) {
+                    if (isNativeTabButtonElement(childElement)) {
+                        builder.addTab(parseNativeTab(childElement));
+                    } else {
+                        UIElementBuilder<?> child = parser.handleElement(childElement);
+                        if (child != null) {
+                            builder.addChild(child);
+                        }
+                    }
+                } else if (childNode instanceof TextNode textNode) {
+                    String text = textNode.text().trim();
+                    if (!text.isEmpty()) {
+                        builder.addChild(new au.ellie.hyui.builders.LabelBuilder().withText(text));
+                    }
+                }
             }
 
             return builder;
@@ -153,6 +172,77 @@ public class TabNavigationHandler implements TagHandler {
         }
 
         return builder;
+    }
+
+    private void applyNativeTabStyle(NativeTabNavigationBuilder builder, Element element) {
+        if (element.hasClass("header-style")) {
+            builder.withStyle(DefaultStyles.headerTabsStyle());
+        } else if (element.hasClass("icon-style")) {
+            builder.withStyle(DefaultStyles.iconOnlyTopTabsStyle());
+        } else {
+            builder.withStyle(DefaultStyles.textTopTabsStyle());
+        }
+    }
+
+    private boolean isNativeTabButtonElement(Element element) {
+        return element.tagName().equalsIgnoreCase("button") && element.hasClass("native-tab-button");
+    }
+
+    private NativeTab parseNativeTab(Element element) {
+        NativeTab tab = new NativeTab();
+        if (element.hasAttr("data-hyui-tab-id")) {
+            tab.withId(element.attr("data-hyui-tab-id"));
+        } else if (element.hasAttr("id")) {
+            tab.withId(element.attr("id"));
+        }
+
+        if (element.hasAttr("data-hyui-text")) {
+            tab.withText(element.attr("data-hyui-text"));
+        } else if (!element.text().isBlank()) {
+            tab.withText(element.text());
+        }
+
+        if (element.hasAttr("data-hyui-tooltiptext")) {
+            tab.withTooltipText(element.attr("data-hyui-tooltiptext"));
+        }
+
+        if (element.hasAttr("data-hyui-icon")) {
+            tab.withIcon(new HyUIPatchStyle().setTexturePath(element.attr("data-hyui-icon")));
+        }
+        if (element.hasAttr("data-hyui-icon-selected")) {
+            tab.withIconSelected(new HyUIPatchStyle().setTexturePath(element.attr("data-hyui-icon-selected")));
+        }
+
+        HyUIAnchor iconAnchor = parseAnchor(element, "data-hyui-icon-anchor-");
+        if (iconAnchor != null) {
+            tab.withIconAnchor(iconAnchor);
+        }
+        return tab;
+    }
+
+    private HyUIAnchor parseAnchor(Element element, String prefix) {
+        HyUIAnchor anchor = new HyUIAnchor();
+        boolean found = false;
+        found |= setAnchorValue(element, prefix + "left", value -> anchor.setLeft(value));
+        found |= setAnchorValue(element, prefix + "right", value -> anchor.setRight(value));
+        found |= setAnchorValue(element, prefix + "top", value -> anchor.setTop(value));
+        found |= setAnchorValue(element, prefix + "bottom", value -> anchor.setBottom(value));
+        found |= setAnchorValue(element, prefix + "width", value -> anchor.setWidth(value));
+        found |= setAnchorValue(element, prefix + "height", value -> anchor.setHeight(value));
+        found |= setAnchorValue(element, prefix + "full", value -> anchor.setFull(value));
+        found |= setAnchorValue(element, prefix + "horizontal", value -> anchor.setHorizontal(value));
+        found |= setAnchorValue(element, prefix + "vertical", value -> anchor.setVertical(value));
+        return found ? anchor : null;
+    }
+
+    private boolean setAnchorValue(Element element, String attr, java.util.function.IntConsumer setter) {
+        if (!element.hasAttr(attr)) {
+            return false;
+        }
+        return ParseUtils.parseInt(element.attr(attr)).map(value -> {
+            setter.accept(value);
+            return true;
+        }).orElse(false);
     }
 
     private void applyTabContentVisibility(Element navElement, List<TabNavigationBuilder.Tab> tabs, String selectedTabId) {

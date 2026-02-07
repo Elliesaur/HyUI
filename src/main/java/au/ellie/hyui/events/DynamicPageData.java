@@ -59,6 +59,8 @@ public class DynamicPageData {
             .addField(new KeyedCodec<>("DragPressedMouseButton", Codec.INTEGER), (data, s) -> data.values.put("DragPressedMouseButton", String.valueOf(s)), data -> Integer.parseInt(data.values.get("DragPressedMouseButton")))
             .addField(new KeyedCodec<>("ClickMouseButton", Codec.INTEGER), (data, s) -> data.values.put("ClickMouseButton", String.valueOf(s)), data -> Integer.parseInt(data.values.get("ClickMouseButton")))
             .addField(new KeyedCodec<>("ClickCount", Codec.INTEGER), (data, s) -> data.values.put("ClickCount", String.valueOf(s)), data -> Integer.parseInt(data.values.get("ClickCount")))
+            // Used for: SelectedTabChanged
+            .addField(new KeyedCodec<>("SelectedTab", Codec.STRING), (data, s) -> data.values.put("SelectedTab", String.valueOf(s)), data -> data.values.get("SelectedTab"))
             .build();
 
     public String action;
