@@ -21,8 +21,16 @@ package au.ellie.hyui.commands;
 import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.HyUIPluginLogger;
 import au.ellie.hyui.builders.*;
+import au.ellie.hyui.elements.LayoutModeSupported;
 import au.ellie.hyui.events.PageRefreshResult;
 import au.ellie.hyui.events.SlotMouseDragCompletedEventData;
+import au.ellie.hyui.types.ButtonSounds;
+import au.ellie.hyui.types.ButtonStyle;
+import au.ellie.hyui.types.CheckBoxStyle;
+import au.ellie.hyui.types.ColorPickerDropdownBoxStyle;
+import au.ellie.hyui.types.ColorPickerStyle;
+import au.ellie.hyui.types.InputFieldStyle;
+import au.ellie.hyui.types.SliderStyle;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.GameMode;
@@ -71,7 +79,7 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                     return CompletableFuture.runAsync(() -> {
                         PlayerRef playerRef = store.getComponent(ref, PlayerRef.getComponentType());
                         if (playerRef != null) {
-                            openHtmlTestGui(playerRef, store);
+                            openTestGui(playerRef, store);
                         }
                     }, world);
                 } else {
@@ -390,6 +398,8 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                                 .withMin(-50)
                                 .withStep(10)
                                 .withValue(51)
+                                .withAnchor(new HyUIAnchor().setHeight(15).setWidth(100))
+                                .withStyle(SliderStyle.defaultStyle())
                                 .addEventListener(CustomUIEventBindingType.ValueChanged, (value, ctx) -> {
                                     HyUIPlugin.getLog().logFinest("Slider value changed to: " + value);
                                     String text = ctx.getValue("MyTextField", String.class).orElse("N/A");
@@ -430,12 +440,14 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                         .addChild(new CheckBoxBuilder()
                                 .withId("MyCheckBox")
                                 .withValue(true)
+                                .withStyle(CheckBoxStyle.defaultStyle())
                                 .addEventListener(CustomUIEventBindingType.ValueChanged, (checked) -> {
                                     playerRef.sendMessage(Message.raw("CheckBox: " + checked));
                                 })
                         )
                         .addChild(new ColorPickerBuilder()
                                 .withValue("#aabbcc")
+                                .withStyle(ColorPickerStyle.defaultStyle())
                                 .addEventListener(CustomUIEventBindingType.ValueChanged, (val) -> {
                                     playerRef.sendMessage(Message.raw("Color Picker changed to: " + val));
                                 })
@@ -466,8 +478,8 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                                 .withOuterAnchor(new HyUIAnchor().setWidth(200).setHeight(12))
                         )
                         .addChild(ButtonBuilder.textButton()
-                                .withText("Button with Icon")
-                                .withItemIcon(ItemIconBuilder.itemIcon().withItemId("Items/IronSword.png")))
+                                .withText("Button with Icon"))
+                                //.withItemIcon(ItemIconBuilder.itemIcon().withItemId("Items/IronSword.png")))
                         .addChild(ContainerBuilder.container()
                                 .withId("MyContainer")
                                 .withTitleText("Custom Title")
@@ -480,6 +492,65 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                         .addChild(LabelBuilder.label()
                                 .withText("Styled via Reference")
                                 .withStyle(new HyUIStyle().withStyleReference("Common.ui", "DefaultLabelStyle")))
+                        .addChild(ActionButtonBuilder.actionButton()
+                                .withId("ActionButtonExample")
+                                .withActionName("ExampleAction")
+                                .withKeyBindingLabel("K")
+                                .withAlignment(Alignment.Right))
+                        .addChild(BlockSelectorBuilder.blockSelector()
+                                .withId("BlockSelectorExample")
+                                .withCapacity(8))
+                        .addChild(ColorPickerDropdownBoxBuilder.colorPickerDropdownBox()
+                                .withId("ColorPickerDropdownExample")
+                                .withFormat(ColorFormat.Rgba)
+                                .withDisplayTextField(true)
+                                .withStyle(ColorPickerDropdownBoxStyle.defaultStyle()))
+                        .addChild(FloatSliderBuilder.floatSlider()
+                                .withId("FloatSliderExample")
+                                .withMin(0)
+                                .withMax(1)
+                                .withStep(0.05f)
+                                .withValue(0.3f)
+                                .withStyle(SliderStyle.defaultStyle()))
+                        .addChild(FloatSliderNumberFieldBuilder.floatSliderNumberField()
+                                .withId("FloatSliderNumberFieldExample")
+                                .withMin(0)
+                                .withMax(10)
+                                .withStep(0.5f)
+                                .withValue(2.5f)
+                                .withSliderStyle(SliderStyle.defaultStyle())
+                                .withNumberFieldStyle(InputFieldStyle.defaultStyle()))
+                        .addChild(HotkeyLabelBuilder.hotkeyLabel()
+                                .withId("HotkeyLabelExample")
+                                .withInputBindingKey("F"))
+                        .addChild(ItemSlotButtonBuilder.itemSlotButton()
+                                .withId("ItemSlotButtonExample")
+                                .withLayoutMode("Left"))
+                        .addChild(LabeledCheckBoxBuilder.labeledCheckBox()
+                                .withId("LabeledCheckBoxExample"))
+                        .addChild(MenuItemBuilder.menuItem()
+                                .withId("MenuItemExample")
+                                .withText("Menu Item"))
+                        .addChild(PanelBuilder.panel()
+                                .withId("PanelExample")
+                                .withBackground(new HyUIPatchStyle().setColor("#00000020"))
+                                .withAnchor(new HyUIAnchor().setWidth(120).setHeight(40)))
+                        .addChild(ReorderableListGripBuilder.reorderableListGrip()
+                                .withId("ReorderableListGripExample"))
+                        .addChild(SceneBlurBuilder.sceneBlur()
+                                .withId("SceneBlurExample"))
+                        .addChild(SliderNumberFieldBuilder.sliderNumberField()
+                                .withId("SliderNumberFieldExample")
+                                .withMin(0)
+                                .withMax(100)
+                                .withStep(5)
+                                .withValue(25)
+                                .withSliderStyle(SliderStyle.defaultStyle())
+                                .withNumberFieldStyle(InputFieldStyle.defaultStyle()))
+                        .addChild(ToggleButtonBuilder.toggleButton()
+                                .withId("ToggleButtonExample")
+                                .withStyle(ButtonStyle.primaryStyle())
+                                .withCheckedStyle(ButtonStyle.primaryStyle()))
                         .addChild(PageOverlayBuilder.pageOverlay()
                                 .withId("MyOverlay")
                                 .addChild(new LabelBuilder()

@@ -373,7 +373,7 @@ public class HyUIShowcaseCommand extends AbstractAsyncCommand {
                                     <p style="color: #888888; font-size: 18; anchor-height: 18;">Color</p>
                                     <input type="color" value="#4CAF50" style="anchor-width: 120; anchor-height: 40;" />
                                     <p style="color: #888888; font-size: 18; anchor-height: 18;">Circular Progress</p>
-                                    <progress class="circular-progress"
+                                    <progress id="circularTest" class="circular-progress"
                                               value="0.65"
                                               data-hyui-mask-texture-path="Assets/FrameAbilityOnUseState.png"
                                               data-hyui-color="#5fd4e5"
@@ -398,6 +398,25 @@ public class HyUIShowcaseCommand extends AbstractAsyncCommand {
                                     <button class="custom-button"
                                             data-hyui-default-bg="@ShowcaseCustomBackground"
                                             style="anchor-width: 44; anchor-height: 44;"></button>
+                                    <p style="color: #888888; font-size: 18; anchor-height: 18;">New Builders</p>
+                                    <button class="action-button" data-hyui-action-name="ShowcaseAction" data-hyui-key-binding-label="K"></button>
+                                    <button class="toggle-button"></button>
+                                    <button class="item-slot-button" style="layout-mode: left;">
+                                        <span class="item-slot" data-hyui-item-id="Tool_Pickaxe_Crude" style="anchor-width: 48; anchor-height: 48;"></span>
+                                    </button>
+                                    <input type="range" class="float-slider" min="0" max="1" step="0.05" value="0.35" style="anchor-height: 30;" />
+                                    <input type="range" class="slider-number-field" min="0" max="100" step="5" value="25" style="anchor-height: 30;" />
+                                    <input type="range" class="float-slider-number-field" min="0" max="10" step="0.5" value="2.5" data-hyui-number-field-max-decimal-places="2" style="anchor-height: 30;" />
+                                    <color-picker-dropdown-box data-hyui-format="rgba" data-hyui-display-text-field="true"></color-picker-dropdown-box>
+                                    <hotkey-label data-hyui-input-binding-key="Jump"></hotkey-label>
+                                    <labeled-checkbox></labeled-checkbox>
+                                    <menu-item data-hyui-text="Menu Item"></menu-item>
+                                    <div class="panel" style="background-color: #000000(0.2); anchor-width: 120; anchor-height: 40;">
+                                        <p>Panel</p>
+                                    </div>
+                                    <reorderable-list-grip></reorderable-list-grip>
+                                    <scene-blur></scene-blur>
+                                    <block-selector data-hyui-capacity="6"></block-selector>
                                 </div>
                             </div>
                         </div>

@@ -23,6 +23,10 @@ import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventActions;
 import au.ellie.hyui.elements.UIElements;
 import au.ellie.hyui.theme.Theme;
+import au.ellie.hyui.types.InputFieldStyle;
+import au.ellie.hyui.types.NumberFieldFormat;
+import au.ellie.hyui.utils.BsonDocumentHelper;
+import au.ellie.hyui.utils.PropertyBatcher;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.ui.Value;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
@@ -44,6 +48,7 @@ import java.util.function.Consumer;
 public class NumberFieldBuilder extends UIElementBuilder<NumberFieldBuilder> {
     private Double value;
     private String format;
+    private NumberFieldFormat formatObject;
     private Double maxDecimalPlaces;
     private Double minValue;
     private Double maxValue;
@@ -88,6 +93,11 @@ public class NumberFieldBuilder extends UIElementBuilder<NumberFieldBuilder> {
      */
     public NumberFieldBuilder withFormat(String format) {
         this.format = format;
+        return this;
+    }
+
+    public NumberFieldBuilder withFormat(NumberFieldFormat format) {
+        this.formatObject = format;
         return this;
     }
 
@@ -141,8 +151,12 @@ public class NumberFieldBuilder extends UIElementBuilder<NumberFieldBuilder> {
      * @param style the style reference for the number field
      * @return the current instance of {@code NumberFieldBuilder} for method chaining
      */
-    public NumberFieldBuilder withNumberFieldStyle(HyUIStyle style) {
+    public NumberFieldBuilder withNumberFieldStyle(InputFieldStyle style) {
         return withSecondaryStyle("NumberFieldStyle", style);
+    }
+
+    public NumberFieldBuilder withPlaceholderStyle(InputFieldStyle style) {
+        return withSecondaryStyle("PlaceholderStyle", style);
     }
 
     /**
@@ -243,11 +257,19 @@ public class NumberFieldBuilder extends UIElementBuilder<NumberFieldBuilder> {
             HyUIPlugin.getLog().logFinest("Setting Value: " + value + " for " + selector);
             commands.set(selector + ".Value", value);
         }
+        if (formatObject != null) {
+            PropertyBatcher.endSet(selector + ".Format", formatObject.toBsonDocument(), commands);
+        } else if (format != null) {
+            HyUIPlugin.getLog().logFinest("Setting Format: " + format + " for " + selector);
+            commands.set(selector + ".Format", format);
+        }
         
-        if (hyUIStyle == null && style != null) {
+        if ( hyUIStyle == null && typedStyle == null  && style != null) {
             HyUIPlugin.getLog().logFinest("Setting Style: " + style + " for " + selector);
             commands.set(selector + ".Style", style);
-        } else if (hyUIStyle == null) {
+        } else if (hyUIStyle == null && typedStyle != null) {
+            PropertyBatcher.endSet(selector + ".Style", typedStyle.toBsonDocument(), commands);
+        } else if ( hyUIStyle == null && typedStyle == null ) {
             commands.set(selector + ".Style", Value.ref("Common.ui", "DefaultInputFieldStyle"));
         }
 
@@ -257,7 +279,7 @@ public class NumberFieldBuilder extends UIElementBuilder<NumberFieldBuilder> {
         
         commands.set(selector + ".Background", Value.ref("Common.ui", "InputBoxBackground"));
 
-        if (anchor == null || anchor.getHeight() < 38) {
+        if (anchor == null || anchor.getHeight() == null || anchor.getHeight() < 38) {
             if (anchor == null) {
                 anchor = new HyUIAnchor();
             }

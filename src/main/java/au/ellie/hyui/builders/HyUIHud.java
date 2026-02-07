@@ -27,6 +27,7 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
+import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
@@ -36,6 +37,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -56,7 +58,7 @@ public class HyUIHud extends CustomUIHud implements UIContext {
     public HyUIHud(String name, PlayerRef playerRef, 
                    String uiFile,
                    List<UIElementBuilder<?>> elements,
-                   List<Consumer<UICommandBuilder>> editCallbacks,
+                   List<BiConsumer<UICommandBuilder, UIEventBuilder>> editCallbacks,
                    String templateHtml,
                    TemplateProcessor templateProcessor,
                    boolean runtimeTemplateUpdatesEnabled) {
@@ -111,7 +113,8 @@ public class HyUIHud extends CustomUIHud implements UIContext {
     
     @Override
     public void build(UICommandBuilder uiCommandBuilder) {
-        delegate.buildFromCommandBuilder(uiCommandBuilder);
+        // We cannot use the UIEventBuilder from the super since this is a HUD.
+        delegate.buildFromCommandBuilder(uiCommandBuilder, new UIEventBuilder());
     }
 
     /**
@@ -272,7 +275,8 @@ public class HyUIHud extends CustomUIHud implements UIContext {
     public void refreshOrRerender(boolean shouldRerender, boolean unsafe) {
         if (!shouldRerender) {
             UICommandBuilder uiCommandBuilder = new UICommandBuilder();
-            delegate.buildFromCommandBuilder(uiCommandBuilder, true);
+            // Same goes for here, we don't actually have events for HUDs.
+            delegate.buildFromCommandBuilder(uiCommandBuilder, true, new UIEventBuilder());
             this.update(false, uiCommandBuilder);
         } else {
             // Re-render completely.

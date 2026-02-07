@@ -19,14 +19,13 @@
 package au.ellie.hyui.builders;
 
 import au.ellie.hyui.utils.ParseUtils;
+import au.ellie.hyui.utils.BsonDocumentHelper;
+import org.bson.BsonDocument;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class HyUIStyle {
-    public enum Alignment {
-        Left, Center, Right, End, Start
-    }
 
     private Float fontSize;
     private Boolean renderBold;
@@ -358,6 +357,31 @@ public class HyUIStyle {
 
     public Map<String, Object> getRawProperties() {
         return rawProperties;
+    }
+
+    public BsonDocument toBsonDocument() {
+        BsonDocumentHelper doc = new BsonDocumentHelper();
+        if (fontSize != null) doc.set("FontSize", fontSize.doubleValue());
+        if (fontName != null) doc.set("FontName", fontName);
+        if (letterSpacing != null) doc.set("LetterSpacing", letterSpacing);
+        if (textColor != null) doc.set("TextColor", textColor);
+        if (renderBold != null) doc.set("RenderBold", renderBold);
+        if (renderUppercase != null) doc.set("RenderUppercase", renderUppercase);
+        if (renderItalics != null) doc.set("RenderItalics", renderItalics);
+        if (alignment != null) doc.set("Alignment", alignment.name());
+        if (horizontalAlignment != null) doc.set("HorizontalAlignment", horizontalAlignment.name());
+        if (verticalAlignment != null) doc.set("VerticalAlignment", verticalAlignment.name());
+        if (outlineColor != null) doc.set("OutlineColor", outlineColor);
+        if (wrap != null) doc.set("Wrap", wrap);
+        rawProperties.forEach((key, value) -> {
+            if (value instanceof String s) doc.set(key, s);
+            else if (value instanceof Boolean b) doc.set(key, b);
+            else if (value instanceof Integer i) doc.set(key, i);
+            else if (value instanceof Double d) doc.set(key, d);
+            else if (value instanceof Float f) doc.set(key, f);
+            else if (value != null) doc.set(key, String.valueOf(value));
+        });
+        return doc.getDocument();
     }
 
     private String normalizeFontName(String fontName) {

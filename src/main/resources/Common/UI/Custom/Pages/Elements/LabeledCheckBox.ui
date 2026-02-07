@@ -1,0 +1,26 @@
+$Sounds = "../../Sounds.ui";
+LabeledCheckBox #HyUILabeledCheckBox {
+    Anchor: (Width: 330);
+    Style: (
+      Checked: (
+        DefaultBackground: "SET_ME.png",
+        HoveredBackground: "SET_ME.png",
+        PressedBackground: "SET_ME.png",
+        Text: %client.general.checkbox.on,
+        DefaultLabelStyle: (VerticalAlignment: Center, HorizontalAlignment: Center, TextColor: #96a9be, RenderUppercase: true, FontSize: 18, RenderBold: true),
+        HoveredLabelStyle: (VerticalAlignment: Center, HorizontalAlignment: Center, TextColor: #96a9be, RenderUppercase: true, FontSize: 18, RenderBold: true),
+        PressedLabelStyle: (VerticalAlignment: Center, HorizontalAlignment: Center, TextColor: #96a9be, RenderUppercase: true, FontSize: 18, RenderBold: true),
+        ChangedSound: (SoundPath: $Sounds.@Tick, Volume: 6)
+      ),
+      Unchecked: (
+        DefaultBackground: "SET_ME.png",
+        HoveredBackground: "SET_ME.png",
+        PressedBackground: "SET_ME.png",
+        Text: %client.general.checkbox.off,
+        DefaultLabelStyle: (VerticalAlignment: Center, HorizontalAlignment: Center, TextColor: #495972, RenderUppercase: true, FontSize: 18, RenderBold: false),
+        HoveredLabelStyle: (VerticalAlignment: Center, HorizontalAlignment: Center, TextColor: #495972, RenderUppercase: true, FontSize: 18, RenderBold: false),
+        PressedLabelStyle: (VerticalAlignment: Center, HorizontalAlignment: Center, TextColor: #495972, RenderUppercase: true, FontSize: 18, RenderBold: false),
+        ChangedSound: (SoundPath: $Sounds.@Untick, Volume: 6)
+      )
+    );
+}

@@ -1,0 +1,6 @@
+$C = "../../Common.ui";
+SliderNumberField #HyUISliderNumberField {
+    Anchor: (Width: 270, Height: 5);
+    SliderStyle: $C.@DefaultSliderStyle;
+    NumberFieldStyle: $C.@DefaultInputFieldStyle;
+}

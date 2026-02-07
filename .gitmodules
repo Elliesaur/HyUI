@@ -1,0 +1,3 @@
+[submodule "HyUI-Docs"]
+	path = HyUI-Docs
+	url = https://github.com/Elliesaur/HyUI-Docs.git

@@ -53,10 +53,17 @@ public class HtmlParser {
         registerHandler(new ProgressBarHandler());
         registerHandler(new ItemIconHandler());
         registerHandler(new ItemSlotHandler());
+        registerHandler(new LabeledCheckBoxHandler());
         registerHandler(new SelectHandler());
         registerHandler(new SpriteHandler());
         registerHandler(new TimerHandler());
         registerHandler(new TabNavigationHandler());
+        registerHandler(new BlockSelectorHandler());
+        registerHandler(new ColorPickerDropdownBoxHandler());
+        registerHandler(new HotkeyLabelHandler());
+        registerHandler(new MenuItemHandler());
+        registerHandler(new ReorderableListGripHandler());
+        registerHandler(new SceneBlurHandler());
     }
 
     /**

@@ -19,6 +19,7 @@
 package au.ellie.hyui.utils;
 
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
+import org.bson.BsonDocument;
 import org.bson.BsonValue;
 
 import java.lang.reflect.Method;
@@ -55,12 +56,16 @@ public final class PropertyBatcher {
         if (helper.getDocument().isEmpty()) {
             return;
         }
+        endSet(targetSelector, helper.getDocument(), builder);
+    }
+
+    private PropertyBatcher() {}
+
+    public static void endSet(String targetSelector, BsonDocument bsonDocument, UICommandBuilder builder) {
         try {
-            INTERNAL_SETTER.invoke(builder, targetSelector, helper.getDocument());
+            INTERNAL_SETTER.invoke(builder, targetSelector, bsonDocument);
         } catch (Exception e) {
             throw new RuntimeException("Failed to apply BSON styles to " + targetSelector, e);
         }
     }
-
-    private PropertyBatcher() {}
 }

@@ -22,6 +22,7 @@ import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventActions;
 import au.ellie.hyui.elements.UIElements;
+import au.ellie.hyui.utils.PropertyBatcher;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
@@ -36,6 +37,7 @@ import java.util.function.Consumer;
  */
 public class ColorPickerBuilder extends UIElementBuilder<ColorPickerBuilder> {
     private String value;
+    private ColorFormat format;
 
     /**
      * Constructs a new instance of {@code ColorPickerBuilder}, initializing it with
@@ -64,6 +66,17 @@ public class ColorPickerBuilder extends UIElementBuilder<ColorPickerBuilder> {
     public ColorPickerBuilder withValue(String hexColor) {
         this.value = hexColor;
         this.initialValue = hexColor;
+        return this;
+    }
+
+    /**
+     * Sets the color picker format.
+     *
+     * @param format the format (e.g. Rgb)
+     * @return the {@code ColorPickerBuilder} instance for method chaining.
+     */
+    public ColorPickerBuilder withFormat(ColorFormat format) {
+        this.format = format;
         return this;
     }
 
@@ -113,8 +126,20 @@ public class ColorPickerBuilder extends UIElementBuilder<ColorPickerBuilder> {
     }
 
     @Override
-    protected Set<String> getUnsupportedStyleProperties() {
-        return Set.of("TextColor");
+    protected boolean isStyleWhitelist() {
+        return true;
+    }
+
+    @Override
+    protected Set<String> getSupportedStyleProperties() {
+        return Set.of(
+                "OpacitySelectorBackground",
+                "ButtonBackground",
+                "ButtonFill",
+                "TextFieldDecoration",
+                "TextFieldPadding",
+                "TextFieldHeight"
+        );
     }
 
     @Override
@@ -126,10 +151,16 @@ public class ColorPickerBuilder extends UIElementBuilder<ColorPickerBuilder> {
             HyUIPlugin.getLog().logFinest("Setting Value: " + value + " for " + selector);
             commands.set(selector + ".Value", value);
         }
+        if (format != null) {
+            HyUIPlugin.getLog().logFinest("Setting Format: " + format + " for " + selector);
+            commands.set(selector + ".Format", format.name());
+        }
 
-        if (hyUIStyle == null && style != null) {
+        if ( hyUIStyle == null && typedStyle == null  && style != null) {
             HyUIPlugin.getLog().logFinest("Setting Style: " + style + " for " + selector);
             commands.set(selector + ".Style", style);
+        } else if (hyUIStyle == null && typedStyle != null) {
+            PropertyBatcher.endSet(selector + ".Style", typedStyle.toBsonDocument(), commands);
         }
         if (listeners.isEmpty()) {
             // To handle data back to the .getValue, we need to add at least one listener.

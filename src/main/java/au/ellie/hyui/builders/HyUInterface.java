@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.UUID;
 
@@ -57,7 +58,7 @@ public abstract class HyUInterface implements UIContext {
 
     protected String uiFile;
     protected List<UIElementBuilder<?>> elements;
-    protected List<Consumer<UICommandBuilder>> editCallbacks;
+    protected List<BiConsumer<UICommandBuilder, UIEventBuilder>> editCallbacks;
     protected Map<String, Object> elementValues = new HashMap<>();
     protected List<String> commandLog = new ArrayList<>();
     protected String templateHtml;
@@ -68,7 +69,7 @@ public abstract class HyUInterface implements UIContext {
 
     public HyUInterface(String uiFile,
                         List<UIElementBuilder<?>> elements,
-                        List<Consumer<UICommandBuilder>> editCallbacks,
+                        List<BiConsumer<UICommandBuilder, UIEventBuilder>> editCallbacks,
                         String templateHtml,
                         TemplateProcessor templateProcessor,
                         boolean runtimeTemplateUpdatesEnabled) {
@@ -131,10 +132,10 @@ public abstract class HyUInterface implements UIContext {
         }
 
         if (editCallbacks != null) {
-            for (Consumer<UICommandBuilder> callback : editCallbacks) {
+            for (BiConsumer<UICommandBuilder, UIEventBuilder> callback : editCallbacks) {
                 //if (HyUIPluginLogger.IS_DEV)
                 //    callback.accept(loggingBuilder);
-                callback.accept(uiCommandBuilder);
+                callback.accept(uiCommandBuilder, uiEventBuilder);
             }
         }
 
@@ -177,11 +178,11 @@ public abstract class HyUInterface implements UIContext {
         this.hasBuilt = true;
     }
 
-    public void buildFromCommandBuilder(@Nonnull UICommandBuilder uiCommandBuilder) {
-        buildFromCommandBuilder(uiCommandBuilder, false);
+    public void buildFromCommandBuilder(@Nonnull UICommandBuilder uiCommandBuilder, @Nonnull UIEventBuilder uiEventBuilder) {
+        buildFromCommandBuilder(uiCommandBuilder, false, uiEventBuilder);
     }
 
-    public void buildFromCommandBuilder(@Nonnull UICommandBuilder uiCommandBuilder, boolean updateOnly) {
+    public void buildFromCommandBuilder(@Nonnull UICommandBuilder uiCommandBuilder, boolean updateOnly, @Nonnull UIEventBuilder uiEventBuilder) {
         HyUIPlugin.getLog().logFinest("REBUILD: HyUInterface buildFromCommandBuilder updateOnly=" + updateOnly);
         HyUIPlugin.getLog().logFinest("Building HyUInterface " + (uiFile != null ? " from file: " + uiFile : ""));
 
@@ -196,10 +197,10 @@ public abstract class HyUInterface implements UIContext {
         }
 
         if (editCallbacks != null) {
-            for (Consumer<UICommandBuilder> callback : editCallbacks) {
+            for (BiConsumer<UICommandBuilder, UIEventBuilder> callback : editCallbacks) {
                /* if (HyUIPluginLogger.IS_DEV)
                     callback.accept(loggingBuilder);*/
-                callback.accept(uiCommandBuilder);
+                callback.accept(uiCommandBuilder, uiEventBuilder);
             }
         }
 
@@ -402,11 +403,11 @@ public abstract class HyUInterface implements UIContext {
         this.elements = elements;
     }
 
-    public List<Consumer<UICommandBuilder>> getEditCallbacks() {
+    public List<BiConsumer<UICommandBuilder, UIEventBuilder>> getEditCallbacks() {
         return editCallbacks;
     }
 
-    protected void setEditCallbacks(List<Consumer<UICommandBuilder>> editCallbacks) {
+    protected void setEditCallbacks(List<BiConsumer<UICommandBuilder, UIEventBuilder>> editCallbacks) {
         this.editCallbacks = editCallbacks;
     }
 

@@ -22,10 +22,12 @@ import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.theme.Theme;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventListener;
+import au.ellie.hyui.types.HyUIBsonSerializable;
 import au.ellie.hyui.utils.BsonDocumentHelper;
 import au.ellie.hyui.utils.PropertyBatcher;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.ui.Value;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import java.util.ArrayList;
@@ -52,6 +54,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
     protected String userId;
     protected String style;
     protected HyUIStyle hyUIStyle;
+    protected HyUIBsonSerializable typedStyle;
     protected final List<UIEventListener<?>> listeners = new ArrayList<>();
     protected final List<UIElementBuilder<?>> children = new ArrayList<>();
     protected Object initialValue;
@@ -67,6 +70,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
     protected final List<BiConsumer<UICommandBuilder, String>> editAfterCallbacks = new ArrayList<>();
     protected final List<BiConsumer<UICommandBuilder, String>> editBeforeCallbacks = new ArrayList<>();
     protected final Map<String, HyUIStyle> secondaryStyles = new HashMap<>();
+    protected final Map<String, HyUIBsonSerializable> secondaryTypedStyles = new HashMap<>();
     private static final Set<String> TEMPLATE_FIELD_EXCLUSIONS = Set.of(
             "listeners",
             "children",
@@ -78,7 +82,9 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
             "editBeforeCallbacks",
             "lastBuiltTabsVersion",
             "tabsVersion",
-            "selectedTabId"
+            "selectedTabId",
+            "typedStyle",
+            "secondaryTypedStyles"
     );
 
     private static int idCounter = 0;
@@ -204,6 +210,14 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
         return (T) this;
     }
 
+    @SuppressWarnings("unchecked")
+    public T withSecondaryStyle(String property, HyUIBsonSerializable style) {
+        if (style != null) {
+            this.secondaryTypedStyles.put(property, style);
+        }
+        return (T) this;
+    }
+
     /**
      * @param id the id to set for the element, without leading #.
      * @return the builder instance for method chaining
@@ -253,6 +267,20 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
     public T withStyle(HyUIStyle style) {
         if (supportsStyling()) {
             this.hyUIStyle = style;
+        }
+        return (T) this;
+    }
+
+    /**
+     * Applies the specified typed style to the current UI element if styling is supported.
+     *
+     * @param style the {@code HyUIBsonSerializable} instance to be applied to the UI element
+     * @return the builder instance of type {@code T} for method chaining
+     */
+    @SuppressWarnings("unchecked")
+    public T withStyle(HyUIBsonSerializable style) {
+        if (supportsStyling()) {
+            this.typedStyle = style;
         }
         return (T) this;
     }
@@ -550,21 +578,42 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
                 HyUIPlugin.getLog().logFinest("Setting FlexWeight: " + flexWeight + " for " + flexSelector);
                 commands.set(flexSelector + ".FlexWeight", flexWeight);
             }
-
-            if (hyUIStyle != null) {
+            
+            // Cannot set for checkbox builder.
+            if (typedStyle != null && !(this instanceof CheckBoxBuilder) && !(hyUIStyle != null && hyUIStyle.getStyleReference() != null)) {
                 BsonDocumentHelper doc = PropertyBatcher.beginSet();
-                applyStyle(commands, selector + ".Style", hyUIStyle, doc);
+                typedStyle.applyTo(doc);
                 PropertyBatcher.endSet(selector + ".Style", doc, commands);
-                applyRawStyleProperties(commands, selector + ".Style", hyUIStyle);
-                hyUIStyle.getStates().forEach((state, nestedStyle) -> {
-                    BsonDocumentHelper innerDoc = PropertyBatcher.beginSet();
-                    applyStyle(commands, selector + ".Style." + state, nestedStyle, innerDoc);
-                    PropertyBatcher.endSet(selector + ".Style." + state, doc, commands);
-                    applyRawStyleProperties(commands, selector + ".Style." + state, nestedStyle);
-                });
+            } else if (hyUIStyle != null) {
+                if (hyUIStyle.getStyleReference() != null) {
+                    commands.set(selector + ".Style",
+                            Value.ref(hyUIStyle.getStyleDocument(), hyUIStyle.getStyleReference()));
+                } else {
+                    BsonDocumentHelper doc = PropertyBatcher.beginSet();
+                    applyStyle(commands, selector + ".Style", hyUIStyle, doc);
+                    PropertyBatcher.endSet(selector + ".Style", doc, commands);
+                    applyRawStyleProperties(commands, selector + ".Style", hyUIStyle);
+                    hyUIStyle.getStates().forEach((state, nestedStyle) -> {
+                        BsonDocumentHelper innerDoc = PropertyBatcher.beginSet();
+                        applyStyle(commands, selector + ".Style." + state, nestedStyle, innerDoc);
+                        PropertyBatcher.endSet(selector + ".Style." + state, innerDoc, commands);
+                        applyRawStyleProperties(commands, selector + ".Style." + state, nestedStyle);
+                    });
+                }
             }
 
+            secondaryTypedStyles.forEach((property, style) -> {
+                BsonDocumentHelper doc = PropertyBatcher.beginSet();
+                style.applyTo(doc);
+                PropertyBatcher.endSet(selector + "." + property, doc, commands);
+            });
+
             secondaryStyles.forEach((property, style) -> {
+                if (style.getStyleReference() != null) {
+                    commands.set(selector + "." + property,
+                            Value.ref(style.getStyleDocument(), style.getStyleReference()));
+                    return;
+                }
                 BsonDocumentHelper doc = PropertyBatcher.beginSet();
                 applyStyle(commands, selector + "." + property, style, doc);
                 PropertyBatcher.endSet(selector + "." + property, doc, commands);
@@ -572,7 +621,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
                 style.getStates().forEach((state, nestedStyle) -> {
                     BsonDocumentHelper innerDoc = PropertyBatcher.beginSet();
                     applyStyle(commands, selector + "." + property + "." + state, nestedStyle, innerDoc);
-                    PropertyBatcher.endSet(selector + "." + property + "." + state, doc, commands);
+                    PropertyBatcher.endSet(selector + "." + property + "." + state, innerDoc, commands);
                     applyRawStyleProperties(commands, selector + "." + property + "." + state, nestedStyle);
                 });
             });
@@ -650,7 +699,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> {
     protected void applyStyle(UICommandBuilder commands, String prefix, HyUIStyle style, BsonDocumentHelper doc) {
         if (style.getStyleReference() != null) {
             HyUIPlugin.getLog().logFinest("Applying style reference: " + style.getStyleDocument() + " -> " + style.getStyleReference() + " to " + prefix);
-            commands.set(prefix, com.hypixel.hytale.server.core.ui.Value.ref(style.getStyleDocument(), style.getStyleReference()));
+            commands.set(prefix, Value.ref(style.getStyleDocument(), style.getStyleReference()));
             return;
         }
 

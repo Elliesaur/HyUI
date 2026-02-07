@@ -48,7 +48,10 @@ public final class BsonDocumentHelper {
         document.put(key, new BsonInt32(value));
         return this;
     }
-
+    public BsonDocumentHelper set(String key, float value) {
+        document.put(key, new BsonDouble(value));
+        return this;
+    }
     public BsonDocumentHelper set(String key, double value) {
         document.put(key, new BsonDouble(value));
         return this;

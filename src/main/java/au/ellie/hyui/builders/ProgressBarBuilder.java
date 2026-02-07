@@ -196,7 +196,7 @@ public class ProgressBarBuilder extends UIElementBuilder<ProgressBarBuilder> imp
                 sb.append("MaskTexturePath: \"").append(maskTexturePath).append("\"; ");
             }
             if (color != null)
-                sb.append("Color: \"").append(color).append("\"; ");
+                sb.append("Color: ").append(color).append("; ");
             sb.append("Value: 0.0; ");
             sb.append("} ");
         } else {

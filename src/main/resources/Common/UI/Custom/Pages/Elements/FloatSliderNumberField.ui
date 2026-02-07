@@ -1,0 +1,5 @@
+$C = "../../Common.ui";
+FloatSliderNumberField #HyUIFloatSliderNumberField {
+    SliderStyle: $C.@DefaultSliderStyle;
+    NumberFieldStyle: $C.@DefaultInputFieldStyle;
+}

@@ -20,6 +20,8 @@ package au.ellie.hyui.builders;
 
 import com.hypixel.hytale.server.core.ui.Anchor;
 import com.hypixel.hytale.server.core.ui.Value;
+import au.ellie.hyui.utils.BsonDocumentHelper;
+import org.bson.BsonDocument;
 
 public class HyUIAnchor {
     private Integer left = null;
@@ -123,5 +125,21 @@ public class HyUIAnchor {
         if (minWidth != null) anchor.setMinWidth(Value.of(minWidth));
         if (maxWidth != null) anchor.setMaxWidth(Value.of(maxWidth));
         return anchor;
+    }
+
+    public BsonDocument toBsonDocument() {
+        BsonDocumentHelper doc = new BsonDocumentHelper();
+        if (left != null) doc.set("Left", left);
+        if (right != null) doc.set("Right", right);
+        if (top != null) doc.set("Top", top);
+        if (bottom != null) doc.set("Bottom", bottom);
+        if (width != null) doc.set("Width", width);
+        if (height != null) doc.set("Height", height);
+        if (minWidth != null) doc.set("MinWidth", minWidth);
+        if (maxWidth != null) doc.set("MaxWidth", maxWidth);
+        if (full != null) doc.set("Full", full);
+        if (horizontal != null) doc.set("Horizontal", horizontal);
+        if (vertical != null) doc.set("Vertical", vertical);
+        return doc.getDocument();
     }
 }

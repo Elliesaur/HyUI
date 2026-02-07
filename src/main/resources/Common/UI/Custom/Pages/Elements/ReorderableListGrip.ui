@@ -1,0 +1,33 @@
+$C = "../../Common.ui";
+
+ReorderableListGrip #HyUIReorderableListGrip {
+    Anchor: (Width: 28, Height: 28);
+    TooltipText: %client.settings.dragToReorder;
+    //TextTooltipStyle: $C.@ButtonTextTooltipStyle;
+    Group {
+      LayoutMode: Middle;
+      Anchor: (Full: 0);
+
+      // Hamburger lines container
+      Group {
+        LayoutMode: Top;
+        Anchor: (Width: 14, Height: 10);
+
+        // Top line
+        Group {
+          Anchor: (Height: 2, Bottom: 2);
+          Background: #7a8599;
+        }
+        // Middle line
+        Group {
+          Anchor: (Height: 2, Bottom: 2);
+          Background: #7a8599;
+        }
+        // Bottom line
+        Group {
+          Anchor: (Height: 2);
+          Background: #7a8599;
+        }
+      }
+    }
+}

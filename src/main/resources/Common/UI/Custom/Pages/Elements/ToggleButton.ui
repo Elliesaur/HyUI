@@ -1,0 +1,4 @@
+ToggleButton #HyUIToggleButton {
+    // I mean... defaults.
+    Anchor: (Width: 24, Height: 24);
+}

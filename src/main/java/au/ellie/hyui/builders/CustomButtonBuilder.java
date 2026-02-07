@@ -283,8 +283,8 @@ public class CustomButtonBuilder extends UIElementBuilder<CustomButtonBuilder>
                 .setTextColor("#bfcdd5")
                 .setRenderBold(true)
                 .setRenderUppercase(true)
-                .setHorizontalAlignment(HyUIStyle.Alignment.Center)
-                .setVerticalAlignment(HyUIStyle.Alignment.Center);
+                .setHorizontalAlignment(Alignment.Center)
+                .setVerticalAlignment(Alignment.Center);
     }
 
     private void appendTextButtonState(StringBuilder sb, String stateName, HyUIPatchStyle background, HyUIStyle labelStyle,

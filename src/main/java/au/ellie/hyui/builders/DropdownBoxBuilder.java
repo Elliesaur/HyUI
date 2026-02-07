@@ -44,6 +44,8 @@ public class DropdownBoxBuilder extends UIElementBuilder<DropdownBoxBuilder> {
     private Integer maxSelection;
     private Integer entryHeight;
     private Boolean showLabel;
+    private String noItemsText;
+    private String panelTitleText;
     private List<DropdownEntryInfo> entries = new ArrayList<>();
 
     public DropdownBoxBuilder() {
@@ -97,6 +99,28 @@ public class DropdownBoxBuilder extends UIElementBuilder<DropdownBoxBuilder> {
         return this;
     }
 
+    public DropdownBoxBuilder withNoItemsText(String noItemsText) {
+        this.noItemsText = noItemsText;
+        return this;
+    }
+
+    public DropdownBoxBuilder withPanelTitleText(String panelTitleText) {
+        this.panelTitleText = panelTitleText;
+        return this;
+    }
+
+    public DropdownBoxBuilder withEntryLabelStyle(HyUIStyle style) {
+        return withSecondaryStyle("EntryLabelStyle", style);
+    }
+
+    public DropdownBoxBuilder withSelectedEntryLabelStyle(HyUIStyle style) {
+        return withSecondaryStyle("SelectedEntryLabelStyle", style);
+    }
+
+    public DropdownBoxBuilder withPopupStyle(HyUIStyle style) {
+        return withSecondaryStyle("PopupStyle", style);
+    }
+
     public DropdownBoxBuilder withEntries(java.util.List<DropdownEntryInfo> entries) {
         this.entries = new java.util.ArrayList<>(entries);
         return this;
@@ -140,6 +164,52 @@ public class DropdownBoxBuilder extends UIElementBuilder<DropdownBoxBuilder> {
     }
 
     @Override
+    protected boolean isStyleWhitelist() {
+        return true;
+    }
+
+    @Override
+    protected java.util.Set<String> getSupportedStyleProperties() {
+        return java.util.Set.of(
+                "DefaultBackground",
+                "HoveredBackground",
+                "PressedBackground",
+                "DefaultArrowTexturePath",
+                "HoveredArrowTexturePath",
+                "PressedArrowTexturePath",
+                "ArrowWidth",
+                "ArrowHeight",
+                "LabelStyle",
+                "EntryLabelStyle",
+                "NoItemsLabelStyle",
+                "SelectedEntryLabelStyle",
+                "HorizontalPadding",
+                "PanelScrollbarStyle",
+                "PanelBackground",
+                "PanelPadding",
+                "PanelWidth",
+                "PanelAlign",
+                "PanelOffset",
+                "EntryHeight",
+                "EntryIconWidth",
+                "EntryIconHeight",
+                "EntriesInViewport",
+                "HorizontalEntryPadding",
+                "HoveredEntryBackground",
+                "PressedEntryBackground",
+                "Sounds",
+                "EntrySounds",
+                "FocusOutlineSize",
+                "FocusOutlineColor",
+                "PanelTitleLabelStyle",
+                "SelectedEntryIconBackground",
+                "IconTexturePath",
+                "IconWidth",
+                "IconHeight"
+        );
+    }
+
+    @Override
     protected void onBuild(UICommandBuilder commands, UIEventBuilder events) {
         String selector = getSelector();
         if (selector == null) return;
@@ -163,6 +233,14 @@ public class DropdownBoxBuilder extends UIElementBuilder<DropdownBoxBuilder> {
         if (showLabel != null) {
             HyUIPlugin.getLog().logFinest("Setting ShowLabel: " + showLabel + " for " + selector);
             commands.set(selector + ".ShowLabel", showLabel);
+        }
+        if (noItemsText != null) {
+            HyUIPlugin.getLog().logFinest("Setting NoItemsText: " + noItemsText + " for " + selector);
+            commands.set(selector + ".NoItemsText", noItemsText);
+        }
+        if (panelTitleText != null) {
+            HyUIPlugin.getLog().logFinest("Setting PanelTitleText: " + panelTitleText + " for " + selector);
+            commands.set(selector + ".PanelTitleText", panelTitleText);
         }
         if (!entries.isEmpty()) {
             HyUIPlugin.getLog().logFinest("Setting Entries for " + selector);
