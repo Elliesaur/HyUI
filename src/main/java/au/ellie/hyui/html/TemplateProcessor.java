@@ -32,10 +32,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -77,13 +75,15 @@ public class TemplateProcessor {
     private static final Pattern VARIABLE_PATTERN = Pattern.compile(
             "\\{\\{\\$([a-zA-Z_][a-zA-Z0-9_]*(?:\\.[a-zA-Z_][a-zA-Z0-9_]*)*)(?:\\|([^}]*))?\\}\\}"
     );
+    // Allow optional leading '$' before the mustache, e.g. '${{$id}}' -> 'id'
+    private static final Pattern IF_VAR_PATTERN = Pattern.compile("\\$?\\{\\{\\$([a-zA-Z_][a-zA-Z0-9_]*(?:\\.[a-zA-Z_][a-zA-Z0-9_]*)*)\\}\\}");
 
     private static final String EACH_START = "{{#each";
     private static final String EACH_END = "{{/each}}";
     private static final String IF_START = "{{#if";
     private static final String IF_END = "{{/if}}";
     private static final String ELSE_TAG = "{{else}}";
-    private static final int MAX_COMPONENT_DEPTH = 20;
+    private static final int MAX_COMPONENT_DEPTH = 50;
 
     private final Map<String, Object> variables = new HashMap<>();
     private final Map<String, String> components = new HashMap<>();
@@ -257,11 +257,16 @@ public class TemplateProcessor {
     }
 
     private String processTemplate(String template, Map<String, Object> scope, int componentDepth) {
-        String result = template;
+        // First, transform any element-level if/else-if/else attributes into template if-blocks (<div if="abc">)
+        String result = processIfAttributes(template, scope, componentDepth);
 
         // Process control structures first so false branches aren't expanded.
         result = processEachBlocks(result, scope, componentDepth);
         result = processIfBlocks(result, scope, componentDepth);
+
+        // Process tag-style components (e.g., <MyComp ...>) before token components.
+        // allow plain-tag components only at the top-level to avoid recursively re-expanding tags inside component templates
+        result = processTagComponents(result, scope, componentDepth, componentDepth == 0);
 
         // Expand components with the current scope.
         result = processComponents(result, scope, componentDepth);
@@ -275,6 +280,370 @@ public class TemplateProcessor {
 
         return result;
     }
+
+    // Transform element-level if / else-if / else / for attributes into nested {{#if}} blocks or expanded content.
+    // Supports native HTML tags, <template>, and tag-style components (<@...>).
+    private String processIfAttributes(String template, Map<String, Object> scope, int componentDepth) {
+        StringBuilder out = new StringBuilder();
+        int idx = 0;
+        int len = template.length();
+
+        while (idx < len) {
+            int nextTag = template.indexOf('<', idx);
+            if (nextTag < 0) {
+                out.append(template.substring(idx));
+                break;
+            }
+
+            // Append everything before the tag
+            out.append(template, idx, nextTag);
+
+            // If it's a comment or a mustache token or a closing tag, just copy '<' and continue
+            if (template.startsWith("<!--", nextTag) || template.startsWith("{{", nextTag) || template.startsWith("</", nextTag)) {
+                out.append(template.charAt(nextTag));
+                idx = nextTag + 1;
+                continue;
+            }
+
+            // Parse tag name
+            int nameStart = nextTag + 1;
+            int cursor = nameStart;
+            while (cursor < len) {
+                char c = template.charAt(cursor);
+                if (Character.isWhitespace(c) || c == '>' || c == '/') break;
+                cursor++;
+            }
+            if (cursor <= nameStart) {
+                out.append(template.charAt(nextTag));
+                idx = nextTag + 1;
+                continue;
+            }
+
+            String tagName = template.substring(nameStart, cursor);
+            String rawTagName = tagName;
+            String normalizedName = rawTagName.startsWith("@") ? rawTagName.substring(1) : rawTagName;
+
+            int tagEnd = findTagEnd(template, cursor);
+            if (tagEnd < 0) {
+                out.append(template.substring(nextTag));
+                break;
+            }
+            boolean selfClosing = tagEnd - 1 >= 0 && template.charAt(tagEnd - 1) == '/';
+            String attrsStr = template.substring(cursor, tagEnd + 1);
+            Map<String, String> attrs = parseTagAttributes(attrsStr);
+
+            // Extract full element (or inner for template)
+            int elemEnd;
+            String fullElem;
+            if (selfClosing) {
+                elemEnd = tagEnd + 1;
+                if ("template".equalsIgnoreCase(tagName)) {
+                    fullElem = "";
+                } else {
+                    fullElem = template.substring(nextTag, elemEnd);
+                }
+            } else {
+                int match = findMatchingEnd(template, tagEnd + 1, "<" + rawTagName, "</" + rawTagName + ">");
+                if (match < 0) {
+                    out.append(template, nextTag, tagEnd + 1);
+                    idx = tagEnd + 1;
+                    continue;
+                }
+                int closeLen = ("</" + rawTagName + ">").length();
+                elemEnd = match + closeLen;
+                if ("template".equalsIgnoreCase(normalizedName)) {
+                    fullElem = template.substring(tagEnd + 1, match);
+                } else {
+                    fullElem = template.substring(nextTag, elemEnd);
+                }
+            }
+
+            // Handle `for` attribute: repeat the cleaned element per item
+            if (attrs.containsKey("for")) {
+                String forRaw = attrs.get("for");
+                if (forRaw == null) forRaw = "";
+                String f = forRaw.trim();
+                if ((f.startsWith("\"") && f.endsWith("\"")) || (f.startsWith("'") && f.endsWith("'"))) {
+                    f = f.substring(1, f.length() - 1).trim();
+                }
+                Matcher fm = Pattern.compile("\\s*([a-zA-Z_][a-zA-Z0-9_]*)(?:\\s*,\\s*([a-zA-Z_][a-zA-Z0-9_]*))?\\s+in\\s+(.+)").matcher(f);
+                if (fm.matches()) {
+                    String itemVar = fm.group(1);
+                    String indexVar = fm.group(2);
+                    String listExpr = fm.group(3).trim();
+
+                    Object listObj = resolveOperand(listExpr, scope);
+                    Iterable<?> items = toIterable(listObj);
+
+                    String startTag = template.substring(nextTag, tagEnd + 1);
+                    String cleanedStart = startTag.replaceAll("\\s*for\\s*=\\s*(?:\"[^\"]*\"|'[^']*'|[^\\s>]+)", "");
+                    String closeTag = "";
+                    if (!selfClosing) closeTag = "</" + rawTagName + ">";
+
+                    String cleanedFull;
+                    if (selfClosing) {
+                        cleanedFull = cleanedStart;
+                    } else if ("template".equalsIgnoreCase(normalizedName)) {
+                        cleanedFull = fullElem;
+                    } else {
+                        // rebuild to ensure cleaned start tag
+                        String innerPortion = fullElem.substring(startTag.length(), fullElem.length() - closeTag.length());
+                        cleanedFull = cleanedStart + innerPortion + closeTag;
+                    }
+
+                    int loopIndex = 0;
+                    for (Object it : items) {
+                        Map<String, Object> childScope = new HashMap<>(scope);
+                        if (it != null && !it.getClass().isPrimitive()) childScope.putAll(extractModelVariables(it));
+                        childScope.put(itemVar, it);
+                        if (indexVar != null && !indexVar.isBlank()) childScope.put(indexVar, loopIndex);
+
+                        out.append(processTemplate(cleanedFull, childScope, componentDepth));
+                        // when the element is a utility <template>, keep a separating space between iterations
+                        if ("template".equalsIgnoreCase(normalizedName)) {
+                            out.append(" ");
+                        }
+                        loopIndex++;
+                    }
+
+                    idx = elemEnd;
+                    continue;
+                }
+            }
+
+            // If no conditional attributes, copy start tag only
+            if (!attrs.containsKey("if") && !attrs.containsKey("else-if") && !attrs.containsKey("else")) {
+                out.append(template, nextTag, tagEnd + 1);
+                idx = tagEnd + 1;
+                continue;
+            }
+
+            // Build if/else-if/else chain, convert to template if-blocks
+            StringBuilder block = new StringBuilder();
+
+            Function<String, String> normalizeCond = (raw) -> {
+                if (raw == null) return "";
+                String t = raw.trim();
+                if ((t.startsWith("\"") && t.endsWith("\"")) || (t.startsWith("'") && t.endsWith("'"))) {
+                    t = t.substring(1, t.length() - 1).trim();
+                }
+                Matcher m = IF_VAR_PATTERN.matcher(t);
+                StringBuffer sb = new StringBuffer();
+                while (m.find()) m.appendReplacement(sb, m.group(1));
+                m.appendTail(sb);
+                return sb.toString();
+            };
+
+            // Helper: build cleaned start tag from parsed attrs excluding conditional attributes
+            BiFunction<String, Map<String, String>, String> buildCleanedStart = (name, attributes) -> {
+                StringBuilder s = new StringBuilder();
+                s.append("<").append(name);
+                if (attributes != null) {
+                    for (Map.Entry<String, String> e : attributes.entrySet()) {
+                        String k = e.getKey();
+                        if ("if".equals(k) || "else-if".equals(k) || "else".equals(k) || "for".equals(k)) continue;
+                        String v = e.getValue();
+                        s.append(' ').append(k);
+                        if (v != null && !v.isEmpty()) {
+                            s.append("=\"").append(v.replace("\"", "\\\"")).append("\"");
+                        }
+                    }
+                }
+                s.append(selfClosing ? " />" : ">");
+                return s.toString();
+            };
+
+            // Build cleanedFull for the current element so the conditional attribute isn't reprocessed later
+            String startTag = template.substring(nextTag, tagEnd + 1);
+            String cleanedStart = buildCleanedStart.apply(rawTagName, attrs);
+             String closeTag = "";
+             if (!selfClosing) closeTag = "</" + rawTagName + ">";
+             String cleanedFull;
+             if (selfClosing) {
+                 cleanedFull = cleanedStart;
+             } else if ("template".equalsIgnoreCase(normalizedName)) {
+                 // For <template>, the fullElem is only the inner content
+                 cleanedFull = fullElem;
+             } else {
+                 String innerPortion = fullElem.substring(startTag.length(), fullElem.length() - closeTag.length());
+                 cleanedFull = cleanedStart + innerPortion + closeTag;
+             }
+
+            // Handle `if` attribute: convert to template if-block
+            if (attrs.containsKey("if")) {
+                String cond = normalizeCond.apply(attrs.get("if"));
+                block.append("{{#if ").append(cond).append("}}");
+                block.append(cleanedFull);
+            } else if (attrs.containsKey("else")) {
+                block.append("{{else}}").append(cleanedFull);
+            } else if (attrs.containsKey("else-if")) {
+                String cond = normalizeCond.apply(attrs.get("else-if"));
+                block.append("{{else}}{{#if ").append(cond).append("}}");
+                block.append(cleanedFull);
+            }
+
+            // Evaluate element-level conditional chain immediately (if / else-if / else)
+            // Build a list of siblings (current + following else-if/else siblings), then evaluate sequentially
+            List<String> siblingContents = new ArrayList<>();
+            List<Map<String, String>> siblingAttrs = new ArrayList<>();
+            List<Integer> siblingEnds = new ArrayList<>();
+
+            // add current element
+            siblingContents.add(cleanedFull);
+            siblingAttrs.add(attrs);
+            siblingEnds.add(elemEnd);
+
+            // look ahead for sibling else-if/else elements
+            int look2 = elemEnd;
+            while (true) {
+                while (look2 < len && Character.isWhitespace(template.charAt(look2))) look2++;
+                if (look2 >= len || template.charAt(look2) != '<') break;
+
+                int next = look2;
+                int ns = next + 1;
+                int nc = ns;
+                while (nc < len) {
+                    char c = template.charAt(nc);
+                    if (Character.isWhitespace(c) || c == '>' || c == '/') break;
+                    nc++;
+                }
+                if (nc <= ns) break;
+                String nextTagName = template.substring(ns, nc);
+                String nextRawTagName = nextTagName;
+                String nextNormalizedName = nextRawTagName.startsWith("@") ? nextRawTagName.substring(1) : nextRawTagName;
+                int nextTagEnd = findTagEnd(template, nc);
+                if (nextTagEnd < 0) break;
+                boolean nextSelfClosing = nextTagEnd - 1 >= 0 && template.charAt(nextTagEnd - 1) == '/';
+                String nextAttrsStr = template.substring(nc, nextTagEnd + 1);
+                Map<String, String> nextAttrs = parseTagAttributes(nextAttrsStr);
+
+                if (nextAttrs.containsKey("else-if") || nextAttrs.containsKey("else")) {
+                    int nextElemEnd;
+                    String nextFullElem;
+                    if (nextSelfClosing) {
+                        nextElemEnd = nextTagEnd + 1;
+                        if ("template".equalsIgnoreCase(nextNormalizedName)) {
+                            nextFullElem = "";
+                        } else {
+                            nextFullElem = template.substring(next, nextElemEnd);
+                        }
+                    } else {
+                        int match2 = findMatchingEnd(template, nextTagEnd + 1, "<" + nextRawTagName, "</" + nextRawTagName + ">");
+                        if (match2 < 0) break;
+                        int closeLen2 = ("</" + nextRawTagName + ">").length();
+                        nextElemEnd = match2 + closeLen2;
+                        if ("template".equalsIgnoreCase(nextNormalizedName)) {
+                            nextFullElem = template.substring(nextTagEnd + 1, match2);
+                        } else {
+                            nextFullElem = template.substring(next, nextElemEnd);
+                        }
+                    }
+
+                    // Clean sibling start tag too
+                    String nextStartTag = template.substring(next, nextTagEnd + 1);
+                    String nextCleanedStart = buildCleanedStart.apply(nextRawTagName, nextAttrs);
+                     String nextCloseTag = nextSelfClosing ? "" : "</" + nextRawTagName + ">";
+                     String nextCleanedFull;
+                     if (nextSelfClosing) {
+                         nextCleanedFull = nextCleanedStart;
+                     } else if ("template".equalsIgnoreCase(nextNormalizedName)) {
+                         nextCleanedFull = nextFullElem;
+                     } else {
+                         String nextInnerPortion = nextFullElem.substring(nextStartTag.length(), nextFullElem.length() - nextCloseTag.length());
+                         nextCleanedFull = nextCleanedStart + nextInnerPortion + nextCloseTag;
+                     }
+
+                    siblingContents.add(nextCleanedFull);
+                    siblingAttrs.add(nextAttrs);
+                    siblingEnds.add(nextElemEnd);
+
+                    look2 = nextElemEnd;
+                    continue;
+                }
+
+                break;
+            }
+
+            // Evaluate siblings sequentially and append the first matching branch (or else)
+            if ("template".equalsIgnoreCase(normalizedName)) {
+                // For <template> utility tags, evaluate siblings immediately and append the first matching processed branch.
+                boolean branchAppended = false;
+                for (int s = 0; s < siblingContents.size(); s++) {
+                    Map<String, String> a = siblingAttrs.get(s);
+                    String contentToUse = siblingContents.get(s);
+                    if (a.containsKey("if")) {
+                        String cond = normalizeCond.apply(a.get("if"));
+                        if (evaluateCondition(cond, scope)) {
+                            out.append(processTemplate(contentToUse, scope, componentDepth));
+                            branchAppended = true;
+                            // consume the entire chain so we don't process sibling else/else-if elements again
+                            idx = siblingEnds.get(siblingEnds.size() - 1);
+                            break;
+                        }
+                    } else if (a.containsKey("else-if")) {
+                        String cond = normalizeCond.apply(a.get("else-if"));
+                        if (evaluateCondition(cond, scope)) {
+                            out.append(processTemplate(contentToUse, scope, componentDepth));
+                            branchAppended = true;
+                            // consume the entire chain so we don't process sibling else/else-if elements again
+                            idx = siblingEnds.get(siblingEnds.size() - 1);
+                            break;
+                        }
+                    } else if (a.containsKey("else")) {
+                        out.append(processTemplate(contentToUse, scope, componentDepth));
+                        branchAppended = true;
+                        // consume the entire chain so we don't process sibling else/else-if elements again
+                        idx = siblingEnds.get(siblingEnds.size() - 1);
+                        break;
+                    }
+                }
+
+                if (!branchAppended) {
+                    idx = siblingEnds.get(siblingEnds.size() - 1);
+                }
+            } else {
+                 boolean branchAppended = false;
+                 for (int s = 0; s < siblingContents.size(); s++) {
+                     Map<String, String> a = siblingAttrs.get(s);
+                     String contentToUse = siblingContents.get(s);
+                     if (a.containsKey("if")) {
+                         String cond = normalizeCond.apply(a.get("if"));
+                         if (evaluateCondition(cond, scope)) {
+                             // Append the raw cleaned HTML here; allow the main pipeline to process it further
+                             out.append(contentToUse);
+                             branchAppended = true;
+                             // consume the entire chain
+                             idx = siblingEnds.get(siblingEnds.size() - 1);
+                             break;
+                         }
+                     } else if (a.containsKey("else-if")) {
+                         String cond = normalizeCond.apply(a.get("else-if"));
+                         if (evaluateCondition(cond, scope)) {
+                             out.append(contentToUse);
+                             branchAppended = true;
+                             // consume the entire chain
+                             idx = siblingEnds.get(siblingEnds.size() - 1);
+                             break;
+                         }
+                     } else if (a.containsKey("else")) {
+                         out.append(contentToUse);
+                         branchAppended = true;
+                         // consume the entire chain
+                         idx = siblingEnds.get(siblingEnds.size() - 1);
+                         break;
+                     }
+                 }
+
+                 if (!branchAppended) {
+                     // No branch matched; advance idx to consume all siblings
+                     idx = siblingEnds.get(siblingEnds.size() - 1);
+                 }
+             }
+             continue;
+         }
+
+         return out.toString();
+     }
 
     private String processVariables(String template, Map<String, Object> scope) {
         Matcher matcher = VARIABLE_PATTERN.matcher(template);
@@ -401,6 +770,370 @@ public class TemplateProcessor {
         return result.toString();
     }
 
+    private String processTagComponents(String template, Map<String, Object> scope, int componentDepth, boolean allowPlainTagComponents) {
+       /*
+       Parse tags for more readability
+       <@ComponentName param="value" other={{$withVar}}> Default Slot content, maybe with same component <@ComponentName> recursion </@ComponentName>
+       Also support using plain tags <ComponentName> when a component is registered, otherwise treat as native HTML.
+        */
+
+        StringBuilder result = new StringBuilder();
+        int index = 0;
+        int length = template.length();
+
+        while (true) {
+            int start = template.indexOf('<', index);
+            if (start < 0) {
+                result.append(template.substring(index));
+                break;
+            }
+
+            result.append(template, index, start);
+
+            // Skip comments, mustache tokens, closing tags
+            if (template.startsWith("<!--", start) || template.startsWith("{{", start) || template.startsWith("</", start)) {
+                result.append(template.charAt(start));
+                index = start + 1;
+                continue;
+            }
+
+            int cursor = start + 1;
+            boolean hasAt = false;
+            if (cursor < length && template.charAt(cursor) == '@') {
+                hasAt = true;
+                cursor++;
+            }
+
+            // Parse tag/component name
+            int nameStart = cursor;
+            while (cursor < length) {
+                char c = template.charAt(cursor);
+                if (Character.isWhitespace(c) || c == '>' || c == '/') break;
+                cursor++;
+            }
+
+            if (cursor <= nameStart) {
+                // malformed, just copy '<' and continue
+                result.append(template.charAt(start));
+                index = start + 1;
+                continue;
+            }
+
+            String rawName = template.substring(nameStart, cursor).trim();
+            String componentName = rawName;
+
+            // If not a registered component and no explicit '@', treat as native HTML — leave untouched
+            if (!components.containsKey(componentName)) {
+                if (hasAt) {
+                    // explicit component prefix but unknown component: keep previous behavior and emit comment
+                    HyUIPlugin.getLog().logFinest("Unknown component (tag): @" + componentName);
+                    result.append("<!-- Unknown component: ").append(componentName).append(" -->");
+                    index = cursor;
+                    continue;
+                } else {
+                    // native element — copy '<' and continue scanning after it
+                    result.append(template.charAt(start));
+                    index = start + 1;
+                    continue;
+                }
+            }
+
+            // If component exists but plain tags are not permitted in this context and the tag didn't explicitly use '@', treat as native HTML
+            if (!hasAt && !allowPlainTagComponents) {
+                result.append(template.charAt(start));
+                index = start + 1;
+                continue;
+            }
+
+            // At this point we have a registered component to expand
+            int tagEnd = findTagEnd(template, cursor);
+            if (tagEnd < 0) {
+                // malformed
+                result.append(template.substring(start));
+                break;
+            }
+
+            boolean selfClosing = tagEnd - 1 >= 0 && template.charAt(tagEnd - 1) == '/';
+            String attrsStr = template.substring(cursor, tagEnd + 1);
+            Map<String, String> attrs = parseTagAttributes(attrsStr);
+
+            String inner = "";
+            int endIndex = tagEnd + 1;
+
+            if (!selfClosing) {
+                // find matching closing tag, accounting for nested tags with same name
+                int depth = 1;
+                int searchFrom = endIndex;
+                String openToken = (hasAt ? "<@" : "<") + componentName;
+                String closeToken = (hasAt ? "</@" : "</") + componentName + ">";
+
+                while (searchFrom < length) {
+                    int nextOpen = template.indexOf(openToken, searchFrom);
+                    int nextClose = template.indexOf(closeToken, searchFrom);
+                    if (nextClose < 0) {
+                        // no close found, malformed
+                        endIndex = -1;
+                        break;
+                    }
+
+                    if (nextOpen != -1 && nextOpen < nextClose) {
+                        depth++;
+                        searchFrom = nextOpen + openToken.length();
+                    } else {
+                        depth--;
+                        if (depth == 0) {
+                            inner = template.substring(endIndex, nextClose);
+                            endIndex = nextClose + closeToken.length();
+                            break;
+                        }
+                        searchFrom = nextClose + closeToken.length();
+                    }
+                }
+
+                if (endIndex == -1) {
+                    // malformed: no close
+                    result.append(template.substring(start));
+                    break;
+                }
+            }
+
+            // parse named slots inside inner content
+            Map<String, String> slots = new HashMap<>();
+            String defaultSlot = "";
+            if (inner != null && !inner.isEmpty()) {
+                int innerIndex = 0;
+                StringBuilder defaultBuilder = new StringBuilder();
+                while (innerIndex < inner.length()) {
+                    int slotStart = inner.indexOf("<:", innerIndex);
+                    if (slotStart < 0) {
+                        defaultBuilder.append(inner.substring(innerIndex));
+                        break;
+                    }
+                    // append content before slot to default
+                    defaultBuilder.append(inner, innerIndex, slotStart);
+                    int nameStart2 = slotStart + 2;
+                    int nameEnd = nameStart2;
+                    while (nameEnd < inner.length() && Character.isLetterOrDigit(inner.charAt(nameEnd)) || (nameEnd < inner.length() && inner.charAt(nameEnd)=='-' ) || (nameEnd < inner.length() && inner.charAt(nameEnd)=='_')) {
+                        nameEnd++;
+                    }
+                    String slotName = inner.substring(nameStart2, nameEnd);
+                    int slotOpenEnd = inner.indexOf('>', nameEnd);
+                    if (slotOpenEnd < 0) {
+                        // malformed, treat as text
+                        defaultBuilder.append(inner.substring(slotStart, nameEnd));
+                        innerIndex = nameEnd;
+                        continue;
+                    }
+                    String slotClose = "</:" + slotName + ">";
+                    int slotCloseIndex = inner.indexOf(slotClose, slotOpenEnd + 1);
+                    if (slotCloseIndex < 0) {
+                        // malformed, treat as text
+                        defaultBuilder.append(inner.substring(slotStart, slotOpenEnd + 1));
+                        innerIndex = slotOpenEnd + 1;
+                        continue;
+                    }
+                    String slotContent = inner.substring(slotOpenEnd + 1, slotCloseIndex);
+                    slots.put(slotName, slotContent);
+                    innerIndex = slotCloseIndex + slotClose.length();
+                }
+                defaultSlot = defaultBuilder.toString();
+            }
+
+            // Prepare component HTML
+            String componentHtml = components.get(componentName);
+            if (componentHtml == null) {
+                HyUIPlugin.getLog().logFinest("Unknown component (tag): " + componentName);
+                result.append("<!-- Unknown component: ").append(componentName).append(" -->");
+                index = endIndex < 0 ? start + 1 : endIndex;
+                continue;
+            }
+
+            // Extract slot defaults defined in the component template (double-colon syntax)
+            SlotParseResult slotParse = parseComponentSlotDefinitions(componentHtml);
+            componentHtml = slotParse.html();
+            Map<String, String> componentSlotDefaults = slotParse.defaults();
+
+            // Merge attributes into component template.
+            Map<String, Object> attrObjects = new HashMap<>();
+            for (Map.Entry<String, String> attr : attrs.entrySet()) {
+                String raw = attr.getValue();
+                Matcher varMatcher = VARIABLE_PATTERN.matcher(raw == null ? "" : raw.trim());
+                if (varMatcher.matches() && (varMatcher.group(2) == null || varMatcher.group(2).isEmpty())) {
+                    String varName = varMatcher.group(1);
+                    Object obj = resolveVariable(scope, varName);
+                    if (obj != null) {
+                        attrObjects.put(attr.getKey(), obj);
+                        HyUIPlugin.getLog().logFinest("Tag component attr passes object " + componentName + " " + attr.getKey()
+                                + " -> (object) " + obj.getClass().getName());
+                        continue;
+                    }
+                }
+
+                String value = processVariables(raw, scope);
+                HyUIPlugin.getLog().logFinest("Tag component attr " + componentName + " " + attr.getKey()
+                        + " raw=" + raw + " -> " + value + " scope=" + scope.keySet());
+                componentHtml = componentHtml.replace("{{$" + attr.getKey() + "}}", value);
+            }
+
+            // Merge slots: caller-provided slots override component defaults.
+            for (Map.Entry<String, String> slot : slots.entrySet()) {
+                String processedSlot = processTemplate(slot.getValue(), scope, componentDepth);
+                componentHtml = componentHtml.replace("{{$" + slot.getKey() + "}}", " " + processedSlot + " ");
+            }
+
+            // If the caller provided unnamed content (defaultSlot) and didn't provide a <:default> slot,
+            // inject it into the component's {{$default}} placeholder.
+            if ((defaultSlot != null && !defaultSlot.isBlank()) && !slots.containsKey("default")) {
+                String processedDefault = processTemplate(defaultSlot, scope, componentDepth);
+                componentHtml = componentHtml.replace("{{$default}}", " " + processedDefault + " ");
+            }
+
+            // Apply component-defined slot defaults for tag-style components when caller didn't provide them
+            for (Map.Entry<String, String> def : componentSlotDefaults.entrySet()) {
+                String placeholder = "{{$" + def.getKey() + "}}";
+                if (componentHtml.contains(placeholder)) {
+                    String processed = processTemplate(def.getValue(), scope, componentDepth);
+                    componentHtml = componentHtml.replace(placeholder, " " + processed + " ");
+                }
+            }
+
+            HyUIPlugin.getLog().logFinest("Including tag component: " + componentName);
+            if (componentDepth >= MAX_COMPONENT_DEPTH) {
+                throw new IllegalStateException("Component recursion limit exceeded for component: " + componentName);
+            } else {
+                // If any attributes were passed as objects, create a child scope that includes them
+                if (!attrObjects.isEmpty()) {
+                    Map<String, Object> childScope = new HashMap<>(scope);
+                    childScope.putAll(attrObjects);
+                    // When processing the component template, disallow plain-tag component expansion to avoid accidental recursion
+                    result.append(processTemplate(componentHtml, childScope, componentDepth + 1));
+                } else {
+                    // same here
+                    result.append(processTemplate(componentHtml, scope, componentDepth + 1));
+                }
+            }
+
+            index = Math.max(start + 1, endIndex);
+        }
+
+        return result.toString();
+    }
+
+    /**
+     * Transform element-level if / else-if / else attributes into nested {{#if}} blocks.
+     * Supports HTML tags and tag-style components (<@...>) and plain registered component tags (<comp>).
+     */
+    private String processIfAttributes(String template) {
+        // Delegate to the main implementation with an empty scope and top-level depth so behaviour is consistent
+        return processIfAttributes(template, new HashMap<>(), 0);
+    }
+
+    private Map<String, String> parseTagAttributes(String attrsStr) {
+        Map<String, String> attrs = new HashMap<>();
+        if (attrsStr == null || attrsStr.isBlank()) return attrs;
+
+        int i = 0;
+        int len = attrsStr.length();
+        while (i < len) {
+            // skip whitespace
+            while (i < len && Character.isWhitespace(attrsStr.charAt(i))) i++;
+            if (i >= len) break;
+            // check for end of tag
+            char ch = attrsStr.charAt(i);
+            if (ch == '>' || ch == '/') break;
+
+            // read key
+            int keyStart = i;
+            while (i < len && (Character.isLetterOrDigit(attrsStr.charAt(i)) || attrsStr.charAt(i) == '-' || attrsStr.charAt(i) == '_' )) i++;
+            String key = attrsStr.substring(keyStart, i);
+            // skip whitespace
+            while (i < len && Character.isWhitespace(attrsStr.charAt(i))) i++;
+            String value = "";
+            if (i < len && attrsStr.charAt(i) == '=') {
+                i++; // skip =
+                while (i < len && Character.isWhitespace(attrsStr.charAt(i))) i++;
+                if (i < len && (attrsStr.charAt(i) == '"' || attrsStr.charAt(i) == '\'')) {
+                    char quote = attrsStr.charAt(i);
+                    i++;
+                    int valStart = i;
+                    while (i < len && attrsStr.charAt(i) != quote) i++;
+                    value = attrsStr.substring(valStart, Math.min(i, len));
+                    if (i < len && attrsStr.charAt(i) == quote) i++;
+                } else {
+                    int valStart = i;
+                    while (i < len && !Character.isWhitespace(attrsStr.charAt(i)) && attrsStr.charAt(i) != '>') i++;
+                    value = attrsStr.substring(valStart, i);
+                }
+            }
+            if (!key.isBlank()) attrs.put(key, value);
+        }
+
+        return attrs;
+    }
+
+    private static record SlotParseResult(String html, Map<String, String> defaults) {}
+
+    private SlotParseResult parseComponentSlotDefinitions(String html) {
+        if (html == null || html.isEmpty()) {
+            return new SlotParseResult(html, Map.of());
+        }
+
+        StringBuilder out = new StringBuilder();
+        Map<String, String> defaults = new HashMap<>();
+        int idx = 0;
+        int len = html.length();
+
+        while (idx < len) {
+            int start = html.indexOf("<::", idx);
+            if (start < 0) {
+                out.append(html.substring(idx));
+                break;
+            }
+            out.append(html, idx, start);
+            int nameStart = start + 3;
+            int nameEnd = nameStart;
+            while (nameEnd < len && (Character.isLetterOrDigit(html.charAt(nameEnd)) || html.charAt(nameEnd) == '-' || html.charAt(nameEnd) == '_')) nameEnd++;
+            if (nameEnd <= nameStart) {
+                // malformed, append and move on
+                out.append(html.charAt(start));
+                idx = start + 1;
+                continue;
+            }
+            String slotName = html.substring(nameStart, nameEnd);
+            int tagEnd = html.indexOf('>', nameEnd);
+            if (tagEnd < 0) {
+                // malformed, append rest
+                out.append(html.substring(start));
+                break;
+            }
+            boolean selfClosing = tagEnd - 1 >= 0 && html.charAt(tagEnd - 1) == '/';
+            if (selfClosing) {
+                defaults.put(slotName, "");
+                out.append(' ');
+                out.append("{{$" + slotName + "}}");
+                out.append(' ');
+                idx = tagEnd + 1;
+                continue;
+            }
+            String closeTag = "</::" + slotName + ">";
+            int closeIdx = html.indexOf(closeTag, tagEnd + 1);
+            if (closeIdx < 0) {
+                // malformed, treat as text
+                out.append(html.substring(start, tagEnd + 1));
+                idx = tagEnd + 1;
+                continue;
+            }
+            String defaultContent = html.substring(tagEnd + 1, closeIdx);
+            defaults.put(slotName, defaultContent);
+            out.append(' ');
+            out.append("{{$" + slotName + "}}");
+            out.append(' ');
+             idx = closeIdx + closeTag.length();
+        }
+
+        return new SlotParseResult(out.toString(), defaults);
+    }
+
     private String processComponents(String template, Map<String, Object> scope, int componentDepth) {
         StringBuilder result = new StringBuilder();
         int index = 0;
@@ -457,23 +1190,75 @@ public class TemplateProcessor {
                 continue;
             }
 
+            // Extract slot defaults defined in the component template (double-colon syntax)
+            SlotParseResult slotParse = parseComponentSlotDefinitions(componentHtml);
+            componentHtml = slotParse.html();
+            Map<String, String> componentSlotDefaults = slotParse.defaults();
+
             if (paramsStr != null && !paramsStr.isEmpty()) {
                 Map<String, String> params = parseParams(paramsStr);
+                // Support passing objects as params when the value is exactly a variable token ({{$name}})
+                Map<String, Object> attrObjects = new HashMap<>();
                 for (Map.Entry<String, String> param : params.entrySet()) {
                     String rawValue = param.getValue();
+                    String trimmed = rawValue == null ? "" : rawValue.trim();
+                    // strip surrounding quotes for the check
+                    if ((trimmed.startsWith("\"") && trimmed.endsWith("\"")) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+                        trimmed = trimmed.substring(1, trimmed.length() - 1).trim();
+                    }
+                    Matcher varMatcher = VARIABLE_PATTERN.matcher(trimmed);
+                    if (varMatcher.matches() && (varMatcher.group(2) == null || varMatcher.group(2).isEmpty())) {
+                        String varName = varMatcher.group(1);
+                        Object obj = resolveVariable(scope, varName);
+                        if (obj != null) {
+                            attrObjects.put(param.getKey(), obj);
+                            HyUIPlugin.getLog().logFinest("Component param passes object @" + componentName + " " + param.getKey()
+                                    + " -> (object) " + obj.getClass().getName());
+                            continue;
+                        }
+                    }
+
                     String value = processVariables(rawValue, scope);
                     HyUIPlugin.getLog().logFinest("Component param @" + componentName + " " + param.getKey()
                             + " raw=" + rawValue + " -> " + value + " scope=" + scope.keySet());
                     componentHtml = componentHtml.replace("{{$" + param.getKey() + "}}", value);
                 }
+                // If we captured any object params, stash them on the scope when processing below
             }
 
             HyUIPlugin.getLog().logFinest("Including component: @" + componentName);
             if (componentDepth >= MAX_COMPONENT_DEPTH) {
-                HyUIPlugin.getLog().logFinest("Component recursion limit hit for @" + componentName);
-                result.append("<!-- Component recursion limit hit for: ").append(componentName).append(" -->");
+                throw new IllegalStateException("Component recursion limit exceeded for component: " + componentName);
             } else {
-                result.append(processTemplate(componentHtml, scope, componentDepth + 1));
+                // If we detected object parameters, they were collected in attrObjects above; recreate them here
+                Map<String, Object> paramsObjects = new HashMap<>();
+                // Re-parse params to rebuild objects (cheap, only when necessary)
+                if (paramsStr != null && !paramsStr.isEmpty()) {
+                    Map<String, String> params = parseParams(paramsStr);
+                    for (Map.Entry<String, String> param : params.entrySet()) {
+                        String rawValue = param.getValue();
+                        String trimmed = rawValue == null ? "" : rawValue.trim();
+                        if ((trimmed.startsWith("\"") && trimmed.endsWith("\"")) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+                            trimmed = trimmed.substring(1, trimmed.length() - 1).trim();
+                        }
+                        Matcher varMatcher = VARIABLE_PATTERN.matcher(trimmed);
+                        if (varMatcher.matches() && (varMatcher.group(2) == null || varMatcher.group(2).isEmpty())) {
+                            String varName = varMatcher.group(1);
+                            Object obj = resolveVariable(scope, varName);
+                            if (obj != null) {
+                                paramsObjects.put(param.getKey(), obj);
+                            }
+                        }
+                    }
+                }
+
+                if (!paramsObjects.isEmpty()) {
+                    Map<String, Object> childScope = new HashMap<>(scope);
+                    childScope.putAll(paramsObjects);
+                    result.append(processTemplate(componentHtml, childScope, componentDepth + 1));
+                } else {
+                    result.append(processTemplate(componentHtml, scope, componentDepth + 1));
+                }
             }
             index = cursor + 2;
         }
@@ -741,7 +1526,7 @@ public class TemplateProcessor {
 
         if (preferDynamicValues) {
             Optional<Object> resolved = resolveDynamicValue(name);
-            if (resolved.isPresent() && resolved.get() != NULL_SENTINEL) {
+            if (resolved.isPresent()) {
                 return resolved.get();
             }
         }
@@ -835,6 +1620,30 @@ public class TemplateProcessor {
             }
         }
 
+        return -1;
+    }
+
+    /**
+     * Find the end of a tag (the closing '>') starting from an index, but ignore '>' characters inside single or double quotes.
+     * Returns the index of the '>' or -1 if not found.
+     */
+    private int findTagEnd(String template, int startIndex) {
+        boolean inSingle = false;
+        boolean inDouble = false;
+        for (int i = startIndex; i < template.length(); i++) {
+            char c = template.charAt(i);
+            if (c == '"' && !inSingle) {
+                inDouble = !inDouble;
+                continue;
+            }
+            if (c == '\'' && !inDouble) {
+                inSingle = !inSingle;
+                continue;
+            }
+            if (c == '>' && !inSingle && !inDouble) {
+                return i;
+            }
+        }
         return -1;
     }
 
@@ -1109,9 +1918,9 @@ public class TemplateProcessor {
         try {
             double num = Double.parseDouble(value);
             if (num == (long) num) {
-                return String.format("%,d", (long) num);
+                return String.format(java.util.Locale.US, "%,d", (long) num);
             }
-            return String.format("%,.2f", num);
+            return String.format(java.util.Locale.US, "%,.2f", num);
         } catch (NumberFormatException e) {
             return value;
         }
@@ -1135,4 +1944,5 @@ public class TemplateProcessor {
     public static TemplateProcessor forPlayer(String playerName) {
         return new TemplateProcessor().setVariable("playerName", playerName);
     }
+
 }

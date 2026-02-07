@@ -184,7 +184,7 @@ public class CustomButtonBuilder extends UIElementBuilder<CustomButtonBuilder>
             sb.append("); ");
             sb.append("Anchor: (Height: 44); ");
             sb.append("Padding: (Horizontal: 24); ");
-            String inlineText = text != null ? text : "TEXT_VALUE_HERE";
+            String inlineText = text != null ? text : "";
             sb.append("Text: \"").append(escapeText(inlineText)).append("\"; ");
             sb.append("}");
         } else {
