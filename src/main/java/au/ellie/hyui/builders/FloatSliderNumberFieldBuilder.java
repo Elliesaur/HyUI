@@ -126,7 +126,7 @@ public class FloatSliderNumberFieldBuilder extends UIElementBuilder<FloatSliderN
 
     @Override
     protected boolean supportsStyling() {
-        return true;
+        return false;
     }
 
     @Override
@@ -136,12 +136,19 @@ public class FloatSliderNumberFieldBuilder extends UIElementBuilder<FloatSliderN
 
     @Override
     protected Set<String> getSupportedStyleProperties() {
-        return Set.of(
-                "TextColor",
-                "FontSize",
-                "RenderBold",
-                "RenderItalics",
-                "RenderUppercase"
+        return StylePropertySets.merge(
+                StylePropertySets.ANCHOR,
+                StylePropertySets.PADDING,
+                StylePropertySets.PATCH_STYLE,
+                StylePropertySets.SOUND_STYLE,
+                StylePropertySets.INPUT_FIELD_STYLE,
+                Set.of(
+                        "Background",
+                        "Fill",
+                        "Handle",
+                        "HandleWidth",
+                        "HandleHeight"
+                )
         );
     }
 

@@ -28,6 +28,7 @@ import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public class DynamicImageBuilder extends UIElementBuilder<DynamicImageBuilder> 
@@ -165,6 +166,16 @@ public class DynamicImageBuilder extends UIElementBuilder<DynamicImageBuilder>
     @Override
     protected boolean supportsStyling() {
         return false;
+    }
+
+    @Override
+    protected boolean isStyleWhitelist() {
+        return true;
+    }
+
+    @Override
+    protected Set<String> getSupportedStyleProperties() {
+        return Set.of();
     }
 
     private static UUID normalizePlayerUuid(UUID playerUuid) {

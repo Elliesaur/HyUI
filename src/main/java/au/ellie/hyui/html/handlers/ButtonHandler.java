@@ -22,6 +22,8 @@ import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.builders.*;
 import au.ellie.hyui.html.HtmlParser;
 import au.ellie.hyui.html.TagHandler;
+import au.ellie.hyui.types.ActionButtonAlignment;
+import au.ellie.hyui.types.LayoutMode;
 import au.ellie.hyui.utils.ParseUtils;
 import au.ellie.hyui.utils.StyleUtils;
 import org.jsoup.nodes.Element;
@@ -56,6 +58,7 @@ public class ButtonHandler implements TagHandler {
         boolean isActionButton = element.hasClass("action-button");
         boolean isToggleButton = element.hasClass("toggle-button");
         boolean isItemSlotButton = element.hasClass("item-slot-button");
+        boolean isNativeTabButton = element.hasClass("native-tab-button");
 
         if (isCustomTextButton || isCustomButton) {
             builder = isCustomTextButton
@@ -67,6 +70,8 @@ public class ButtonHandler implements TagHandler {
             builder = ToggleButtonBuilder.toggleButton();
         } else if (isItemSlotButton) {
             builder = ItemSlotButtonBuilder.itemSlotButton();
+        } else if (isNativeTabButton) {
+            builder = NativeTabButtonBuilder.nativeTabButton();
         } else {
             if (tag.equals("input") && element.attr("type").equalsIgnoreCase("reset")) {
                 builder = ButtonBuilder.cancelTextButton();
@@ -172,8 +177,33 @@ public class ButtonHandler implements TagHandler {
         if (element.hasAttr("data-hyui-key-binding-label")) {
             builder.withKeyBindingLabel(element.attr("data-hyui-key-binding-label"));
         }
+        if (element.hasAttr("data-hyui-binding-modifier1-label")) {
+            builder.withBindingModifier1Label(element.attr("data-hyui-binding-modifier1-label"));
+        }
+        if (element.hasAttr("data-hyui-binding-modifier2-label")) {
+            builder.withBindingModifier2Label(element.attr("data-hyui-binding-modifier2-label"));
+        }
+        if (element.hasAttr("data-hyui-is-available")) {
+            builder.withIsAvailable(Boolean.parseBoolean(element.attr("data-hyui-is-available")));
+        }
+        if (element.hasAttr("data-hyui-is-hold-binding")) {
+            builder.withIsHoldBinding(Boolean.parseBoolean(element.attr("data-hyui-is-hold-binding")));
+        }
         if (element.hasAttr("data-hyui-action-button-alignment")) {
-            builder.withAlignment(Alignment.valueOf(element.attr("data-hyui-action-button-alignment")));
+            String alignmentValue = element.attr("data-hyui-action-button-alignment");
+            try {
+                builder.withAlignment(ActionButtonAlignment.valueOf(alignmentValue));
+            } catch (IllegalArgumentException e) {
+                HyUIPlugin.getLog().logFinest("Invalid ActionButtonAlignment: " + alignmentValue);
+            }
+        }
+        if (element.hasAttr("data-hyui-layout-mode")) {
+            String layoutModeValue = element.attr("data-hyui-layout-mode");
+            try {
+                builder.withLayoutMode(LayoutMode.valueOf(layoutModeValue));
+            } catch (IllegalArgumentException e) {
+                HyUIPlugin.getLog().logFinest("Invalid LayoutMode: " + layoutModeValue);
+            }
         }
         return actionNameSet;
     }

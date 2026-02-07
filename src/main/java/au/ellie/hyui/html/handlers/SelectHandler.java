@@ -38,23 +38,43 @@ public class SelectHandler implements TagHandler {
         if (element.hasAttr("value")) {
             builder.withValue(element.attr("value"));
         }
-        
+
         if (element.hasAttr("data-hyui-allowunselection")) {
             builder.withAllowUnselection(Boolean.parseBoolean(element.attr("data-hyui-allowunselection")));
         }
-        
+
         if (element.hasAttr("data-hyui-maxselection")) {
             ParseUtils.parseInt(element.attr("data-hyui-maxselection"))
                     .ifPresent(builder::withMaxSelection);
         }
-        
+
         if (element.hasAttr("data-hyui-entryheight")) {
             ParseUtils.parseInt(element.attr("data-hyui-entryheight"))
                     .ifPresent(builder::withEntryHeight);
         }
-        
+
         if (element.hasAttr("data-hyui-showlabel")) {
             builder.withShowLabel(Boolean.parseBoolean(element.attr("data-hyui-showlabel")));
+        }
+
+        if (element.hasAttr("disabled") || element.hasAttr("data-hyui-disabled")) {
+            builder.withDisabled(true);
+        }
+
+        if (element.hasAttr("data-hyui-is-read-only")) {
+            builder.withIsReadOnly(Boolean.parseBoolean(element.attr("data-hyui-is-read-only")));
+        }
+
+        if (element.hasAttr("data-hyui-show-search-input")) {
+            builder.withShowSearchInput(Boolean.parseBoolean(element.attr("data-hyui-show-search-input")));
+        }
+
+        if (element.hasAttr("data-hyui-forced-label")) {
+            builder.withForcedLabel(element.attr("data-hyui-forced-label"));
+        }
+
+        if (element.hasAttr("data-hyui-display-non-existing-value")) {
+            builder.withDisplayNonExistingValue(Boolean.parseBoolean(element.attr("data-hyui-display-non-existing-value")));
         }
 
         for (Element option : element.select("option")) {

@@ -27,6 +27,7 @@ import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
+import java.util.Set;
 
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -80,7 +81,14 @@ public class ItemSlotButtonBuilder extends UIElementBuilder<ItemSlotButtonBuilde
 
     @Override
     protected Set<String> getSupportedStyleProperties() {
-        return Set.of();
+        return StylePropertySets.merge(
+                StylePropertySets.ANCHOR,
+                StylePropertySets.PADDING,
+                StylePropertySets.PATCH_STYLE,
+                StylePropertySets.SOUND_STYLE,
+                StylePropertySets.LABEL_STYLE,
+                Set.of("Background")
+        );
     }
 
     @Override

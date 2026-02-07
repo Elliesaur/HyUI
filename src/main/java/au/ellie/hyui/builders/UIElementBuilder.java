@@ -43,6 +43,9 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 
 /**
  * A builder class for constructing UI elements with a hierarchical structure and configurable 
@@ -838,8 +841,11 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
             
             // Cannot set for checkbox builder.
             if (typedStyle != null && !(this instanceof CheckBoxBuilder) && !(hyUIStyle != null && hyUIStyle.getStyleReference() != null)) {
+                // TODO: URGENT!!! VALIDATE ALL PROPERTIES ALIGN TO THE ELEMENT' STYLE WHITELIST
+                //  MAKE SURE TO UPDATE THE ELEMENT'S STYLE WHITELIST TO MAKE SURE NO CRASHES HAPPEN.
                 BsonDocumentHelper doc = PropertyBatcher.beginSet();
                 typedStyle.applyTo(doc);
+                filterStyleDocument(doc.getDocument());
                 PropertyBatcher.endSet(selector + ".Style", doc, commands);
             } else if (hyUIStyle != null) {
                 if (hyUIStyle.getStyleReference() != null) {
@@ -862,6 +868,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
             secondaryTypedStyles.forEach((property, style) -> {
                 BsonDocumentHelper doc = PropertyBatcher.beginSet();
                 style.applyTo(doc);
+                filterStyleDocument(doc.getDocument());
                 PropertyBatcher.endSet(selector + "." + property, doc, commands);
             });
 
@@ -885,16 +892,78 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
         }
     }
 
-    protected Set<String> getUnsupportedStyleProperties() {
-        return Set.of();
-    }
-
     protected boolean isStyleWhitelist() {
         return false;
     }
 
     protected Set<String> getSupportedStyleProperties() {
         return Set.of();
+    }
+
+    protected BsonDocument filterStyleDocument(BsonDocument document) {
+        if (document == null) {
+            return null;
+        }
+        if (!isStyleWhitelist()) {
+            return document;
+        }
+        Set<String> supported = getSupportedStyleProperties();
+        if (supported == null || supported.isEmpty()) {
+            document.clear();
+            return document;
+        }
+        filterBsonDocument(document, supported);
+        return document;
+    }
+
+    private static void filterBsonDocument(BsonDocument document, Set<String> supported) {
+        for (String key : new ArrayList<>(document.keySet())) {
+            BsonValue value = document.get(key);
+            if (value == null) {
+                document.remove(key);
+                continue;
+            }
+            if (value.isDocument()) {
+                BsonDocument child = value.asDocument();
+                filterBsonDocument(child, supported);
+                if (child.isEmpty()) {
+                    document.remove(key);
+                }
+                continue;
+            }
+            if (value.isArray()) {
+                BsonArray array = value.asArray();
+                boolean hasDocumentEntries = false;
+                BsonArray filtered = new BsonArray();
+                for (BsonValue entry : array) {
+                    if (entry.isDocument()) {
+                        hasDocumentEntries = true;
+                        BsonDocument child = entry.asDocument();
+                        filterBsonDocument(child, supported);
+                        if (!child.isEmpty()) {
+                            filtered.add(child);
+                        }
+                    } else {
+                        filtered.add(entry);
+                    }
+                }
+                if (hasDocumentEntries) {
+                    if (filtered.isEmpty()) {
+                        document.remove(key);
+                    } else {
+                        document.put(key, filtered);
+                    }
+                    continue;
+                }
+                if (!supported.contains(key)) {
+                    document.remove(key);
+                }
+                continue;
+            }
+            if (!supported.contains(key)) {
+                document.remove(key);
+            }
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -962,13 +1031,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
 
         boolean whitelist = isStyleWhitelist();
         Set<String> supported = whitelist ? getSupportedStyleProperties() : Set.of();
-        Set<String> unsupported = whitelist ? Set.of() : getUnsupportedStyleProperties();
-        java.util.function.Predicate<String> isAllowed = property -> {
-            if (whitelist) {
-                return supported.contains(property);
-            }
-            return !unsupported.contains(property);
-        };
+        java.util.function.Predicate<String> isAllowed = property -> !whitelist || supported.contains(property);
         
         if (style.getFontSize() != null && isAllowed.test("FontSize")) {
             HyUIPlugin.getLog().logFinest("Setting Style FontSize: " + style.getFontSize() + " for " + prefix);
@@ -1023,13 +1086,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
     protected void applyRawStyleProperties(UICommandBuilder commands, String prefix, HyUIStyle style) {
         boolean whitelist = isStyleWhitelist();
         Set<String> supported = whitelist ? getSupportedStyleProperties() : Set.of();
-        Set<String> unsupported = whitelist ? Set.of() : getUnsupportedStyleProperties();
-        java.util.function.Predicate<String> isAllowed = property -> {
-            if (whitelist) {
-                return supported.contains(property);
-            }
-            return !unsupported.contains(property);
-        };
+        java.util.function.Predicate<String> isAllowed = property -> !whitelist || supported.contains(property);
         style.getRawProperties().forEach((key, value) -> {
             if (!isAllowed.test(key)) {
                 return;

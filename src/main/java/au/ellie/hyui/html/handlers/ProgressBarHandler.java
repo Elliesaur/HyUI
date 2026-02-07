@@ -18,10 +18,13 @@
 
 package au.ellie.hyui.html.handlers;
 
+import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.builders.ProgressBarBuilder;
 import au.ellie.hyui.builders.UIElementBuilder;
 import au.ellie.hyui.html.HtmlParser;
 import au.ellie.hyui.html.TagHandler;
+import au.ellie.hyui.types.ProgressBarAlignment;
+import au.ellie.hyui.types.ProgressBarDirection;
 import au.ellie.hyui.utils.ParseUtils;
 import org.jsoup.nodes.Element;
 
@@ -59,7 +62,13 @@ public class ProgressBarHandler implements TagHandler {
         }
 
         if (element.hasAttr("data-hyui-direction")) {
-            builder.withDirection(element.attr("data-hyui-direction"));
+            String directionValue = element.attr("data-hyui-direction");
+            try {
+                builder.withDirection(ProgressBarDirection.valueOf(directionValue));
+            } catch (IllegalArgumentException e) {
+                // Fall back to string method for backwards compatibility
+                builder.withDirection(directionValue);
+            }
         }
 
         if (element.hasAttr("data-hyui-bar-texture-path")) {
@@ -78,7 +87,13 @@ public class ProgressBarHandler implements TagHandler {
         }
 
         if (element.hasAttr("data-hyui-alignment")) {
-            builder.withAlignment(element.attr("data-hyui-alignment"));
+            String alignmentValue = element.attr("data-hyui-alignment");
+            try {
+                builder.withAlignment(ProgressBarAlignment.valueOf(alignmentValue));
+            } catch (IllegalArgumentException e) {
+                // Fall back to string method for backwards compatibility
+                builder.withAlignment(alignmentValue);
+            }
         }
 
         applyCommonAttributes(builder, element);

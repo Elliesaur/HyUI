@@ -355,9 +355,7 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
         if ( hyUIStyle == null && typedStyle == null  && style != null && !isBackButton()) {
             HyUIPlugin.getLog().logFinest("Setting Style: " + style + " for " + selector);
             commands.set(selector + ".Style", style);
-        } /*else if (hyUIStyle == null && typedStyle != null && !isBackButton()) {
-            PropertyBatcher.endSet(selector + ".Style", typedStyle.toBsonDocument(), commands);
-        }*/
+        }
 
         listeners.forEach(listener -> {
             if (listener.type() == CustomUIEventBindingType.Activating) {

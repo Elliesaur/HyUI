@@ -28,6 +28,7 @@ import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -141,8 +142,19 @@ public class CheckBoxBuilder extends UIElementBuilder<CheckBoxBuilder> {
     }
 
     @Override
-    protected java.util.Set<String> getSupportedStyleProperties() {
-        return java.util.Set.of();
+    protected Set<String> getSupportedStyleProperties() {
+        return StylePropertySets.merge(
+                StylePropertySets.ANCHOR,
+                StylePropertySets.PADDING,
+                StylePropertySets.PATCH_STYLE,
+                StylePropertySets.SOUND_STYLE,
+                Set.of(
+                        "DefaultBackground",
+                        "HoveredBackground",
+                        "PressedBackground",
+                        "DisabledBackground"
+                )
+        );
     }
 
     @Override
@@ -162,7 +174,7 @@ public class CheckBoxBuilder extends UIElementBuilder<CheckBoxBuilder> {
         } 
         // WE CANNOT set the underlying style of the child checkbox element.
         /*else if (hyUIStyle == null && typedStyle != null) {
-            PropertyBatcher.endSet(selector + ".Style", typedStyle.toBsonDocument(), commands);
+            PropertyBatcher.endSet(selector + ".Style", filterStyleDocument(typedStyle.toBsonDocument()), commands);
         }*/
         
         if (listeners.isEmpty()) {

@@ -56,6 +56,11 @@ public class UIElements {
     public static final String PLAYER_PREVIEW_COMPONENT = "PlayerPreviewComponent";
     public static final String HOTKEY_LABEL = "HotkeyLabel";
     public static final String MENU_ITEM = "MenuItem";
+    public static final String DYNAMIC_PANE_CONTAINER = "DynamicPaneContainer";
+    public static final String DYNAMIC_PANE = "DynamicPane";
+    public static final String NATIVE_TAB_BUTTON = "NativeTabButton";
+    public static final String NATIVE_TAB_NAVIGATION = "NativeTabNavigation";
+    public static final String NATIVE_TIMER_LABEL = "NativeTimerLabel";
 
     // Macros (Common.ui)
     public static final String PAGE_OVERLAY = "PageOverlay";
@@ -116,7 +121,12 @@ public class UIElements {
             HOTKEY_LABEL,
             MENU_ITEM,
             PANEL,
-            LABELED_CHECK_BOX
+            LABELED_CHECK_BOX,
+            DYNAMIC_PANE_CONTAINER,
+            DYNAMIC_PANE,
+            NATIVE_TAB_BUTTON,
+            NATIVE_TAB_NAVIGATION,
+            NATIVE_TIMER_LABEL
     );
 
     public static final Set<String> MACRO_ELEMENTS = Set.of(

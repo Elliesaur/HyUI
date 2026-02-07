@@ -24,13 +24,7 @@ import au.ellie.hyui.builders.*;
 import au.ellie.hyui.elements.LayoutModeSupported;
 import au.ellie.hyui.events.PageRefreshResult;
 import au.ellie.hyui.events.SlotMouseDragCompletedEventData;
-import au.ellie.hyui.types.ButtonSounds;
-import au.ellie.hyui.types.ButtonStyle;
-import au.ellie.hyui.types.CheckBoxStyle;
-import au.ellie.hyui.types.ColorPickerDropdownBoxStyle;
-import au.ellie.hyui.types.ColorPickerStyle;
-import au.ellie.hyui.types.InputFieldStyle;
-import au.ellie.hyui.types.SliderStyle;
+import au.ellie.hyui.types.*;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.GameMode;
@@ -496,7 +490,7 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                                 .withId("ActionButtonExample")
                                 .withActionName("ExampleAction")
                                 .withKeyBindingLabel("K")
-                                .withAlignment(Alignment.Right))
+                                .withAlignment(ActionButtonAlignment.Right))
                         .addChild(BlockSelectorBuilder.blockSelector()
                                 .withId("BlockSelectorExample")
                                 .withCapacity(8))

@@ -61,6 +61,17 @@ public interface LayoutModeSupported<T extends LayoutModeSupported<T>> {
     }
 
     /**
+     * Sets the layout mode for the element using the types.LayoutMode enum.
+     * This overload supports the new typed enum while maintaining backwards compatibility.
+     *
+     * @param layoutMode The layout mode enum value from au.ellie.hyui.types.LayoutMode.
+     * @return This builder instance for method chaining.
+     */
+    default T withLayoutMode(au.ellie.hyui.types.LayoutMode layoutMode) {
+        return withLayoutMode(layoutMode.name());
+    }
+
+    /**
      * Gets the current layout mode.
      * 
      * @return The layout mode, or null if not set.

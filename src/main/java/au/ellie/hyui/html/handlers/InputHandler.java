@@ -97,8 +97,16 @@ public class InputHandler implements TagHandler {
                 break;
             case "color":
                 builder = new ColorPickerBuilder();
+                ColorPickerBuilder colorBuilder = (ColorPickerBuilder) builder;
                 if (element.hasAttr("value")) {
-                    ((ColorPickerBuilder) builder).withValue(element.attr("value"));
+                    colorBuilder.withValue(element.attr("value"));
+                }
+                if (element.hasAttr("data-hyui-display-text-field")) {
+                    colorBuilder.withDisplayTextField(Boolean.parseBoolean(element.attr("data-hyui-display-text-field")));
+                }
+                if (element.hasAttr("data-hyui-reset-transparency-when-changing-color")) {
+                    colorBuilder.withResetTransparencyWhenChangingColor(
+                        Boolean.parseBoolean(element.attr("data-hyui-reset-transparency-when-changing-color")));
                 }
                 break;
             case "submit":
@@ -168,6 +176,9 @@ public class InputHandler implements TagHandler {
         }
         if (builder instanceof SliderBuilder sliderBuilder) {
             applyIntSliderValues(sliderBuilder, value, min, max, step);
+            if (element.hasAttr("readonly") || element.hasAttr("data-hyui-is-read-only")) {
+                sliderBuilder.withIsReadOnly(true);
+            }
         }
     }
 

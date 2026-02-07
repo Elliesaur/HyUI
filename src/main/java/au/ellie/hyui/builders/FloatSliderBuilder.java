@@ -29,6 +29,7 @@ import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -80,6 +81,27 @@ public class FloatSliderBuilder extends UIElementBuilder<FloatSliderBuilder> {
         return addEventListenerWithContext(type, Float.class, callback);
     }
 
+    /**
+     * Adds an event listener for the MouseButtonReleased event.
+     */
+    public FloatSliderBuilder onMouseButtonReleased(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.MouseButtonReleased, Void.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the ValueChanged event.
+     */
+    public FloatSliderBuilder onValueChanged(Consumer<Float> callback) {
+        return addEventListener(CustomUIEventBindingType.ValueChanged, Float.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the ValueChanged event with context.
+     */
+    public FloatSliderBuilder onValueChanged(BiConsumer<Float, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.ValueChanged, Float.class, callback);
+    }
+
     @Override
     protected void applyRuntimeValue(Object value) {
         if (value instanceof Number number) {
@@ -92,6 +114,28 @@ public class FloatSliderBuilder extends UIElementBuilder<FloatSliderBuilder> {
     @Override
     protected boolean supportsStyling() {
         return true;
+    }
+
+    @Override
+    protected boolean isStyleWhitelist() {
+        return true;
+    }
+
+    @Override
+    protected Set<String> getSupportedStyleProperties() {
+        return StylePropertySets.merge(
+                StylePropertySets.ANCHOR,
+                StylePropertySets.PADDING,
+                StylePropertySets.PATCH_STYLE,
+                StylePropertySets.SOUND_STYLE,
+                Set.of(
+                        "Background",
+                        "Fill",
+                        "Handle",
+                        "HandleWidth",
+                        "HandleHeight"
+                )
+        );
     }
 
     @Override
@@ -130,17 +174,25 @@ public class FloatSliderBuilder extends UIElementBuilder<FloatSliderBuilder> {
             HyUIPlugin.getLog().logFinest("Setting Style for FloatSlider " + selector);
             commands.set(selector + ".Style", style);
         } else if (hyUIStyle == null && typedStyle != null) {
-            PropertyBatcher.endSet(selector + ".Style", typedStyle.toBsonDocument(), commands);
+            PropertyBatcher.endSet(selector + ".Style", filterStyleDocument(typedStyle.toBsonDocument()), commands);
         } else if ( hyUIStyle == null && typedStyle == null ) {
             HyUIPlugin.getLog().logFinest("Setting Style for FloatSlider to DefaultSliderStyle " + selector);
             commands.set(selector + ".Style", Value.ref("Common.ui", "DefaultSliderStyle"));
         }
         if (listeners.isEmpty()) {
-            addEventListener(CustomUIEventBindingType.ValueChanged, (_, _) -> {});
+            // To handle data back to the .getValue, we need to add at least one listener.
+            addEventListener(CustomUIEventBindingType.ValueChanged, (Float v, UIContext ctx) -> {});
         }
+
+        // Register event listeners
         listeners.forEach(listener -> {
-            if (listener.type() == CustomUIEventBindingType.ValueChanged) {
-                String eventId = getEffectiveId();
+            String eventId = getEffectiveId();
+            if (listener.type() == CustomUIEventBindingType.MouseButtonReleased) {
+                HyUIPlugin.getLog().logFinest("Adding MouseButtonReleased event binding for " + selector);
+                events.addEventBinding(CustomUIEventBindingType.MouseButtonReleased, selector,
+                        EventData.of("Action", UIEventActions.MOUSE_BUTTON_RELEASED)
+                            .append("Target", eventId), false);
+            } else if (listener.type() == CustomUIEventBindingType.ValueChanged) {
                 HyUIPlugin.getLog().logFinest("Adding ValueChanged event binding for " + selector + " with eventId: " + eventId);
                 events.addEventBinding(CustomUIEventBindingType.ValueChanged, selector,
                         EventData.of("@ValueFloat", selector + ".Value")

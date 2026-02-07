@@ -116,9 +116,16 @@ public class MenuItemBuilder extends UIElementBuilder<MenuItemBuilder> {
 
     @Override
     protected Set<String> getSupportedStyleProperties() {
-        return Set.of(
-                "Default",
-                "Hovered"
+        return StylePropertySets.merge(
+                StylePropertySets.ANCHOR,
+                StylePropertySets.PADDING,
+                StylePropertySets.PATCH_STYLE,
+                StylePropertySets.SOUND_STYLE,
+                StylePropertySets.LABEL_STYLE,
+                Set.of(
+                        "Background",
+                        "LabelMaskTexturePath"
+                )
         );
     }
 

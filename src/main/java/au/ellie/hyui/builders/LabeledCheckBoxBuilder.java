@@ -48,7 +48,20 @@ public class LabeledCheckBoxBuilder extends UIElementBuilder<LabeledCheckBoxBuil
 
     @Override
     protected java.util.Set<String> getSupportedStyleProperties() {
-        return java.util.Set.of();
+        return StylePropertySets.merge(
+                StylePropertySets.ANCHOR,
+                StylePropertySets.PADDING,
+                StylePropertySets.PATCH_STYLE,
+                StylePropertySets.SOUND_STYLE,
+                StylePropertySets.LABEL_STYLE,
+                java.util.Set.of(
+                        "Text",
+                        "DefaultBackground",
+                        "HoveredBackground",
+                        "PressedBackground",
+                        "DisabledBackground"
+                )
+        );
     }
 
     @Override

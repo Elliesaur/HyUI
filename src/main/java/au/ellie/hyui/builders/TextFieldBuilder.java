@@ -390,12 +390,14 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
 
     @Override
     protected Set<String> getSupportedStyleProperties() {
-        return Set.of(
-                "TextColor",
-                "FontSize",
-                "RenderBold",
-                "RenderItalics",
-                "RenderUppercase"
+        return StylePropertySets.merge(
+                StylePropertySets.ANCHOR,
+                StylePropertySets.PADDING,
+                StylePropertySets.PATCH_STYLE,
+                StylePropertySets.INPUT_FIELD_STYLE,
+                StylePropertySets.INPUT_FIELD_ICON,
+                StylePropertySets.INPUT_FIELD_BUTTON,
+                StylePropertySets.INPUT_FIELD_DECORATION_STATE
         );
     }
 
@@ -421,6 +423,7 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
         } else if (placeholderTypedStyle != null) {
             BsonDocumentHelper doc = PropertyBatcher.beginSet();
             placeholderTypedStyle.applyTo(doc);
+            filterStyleDocument(doc.getDocument());
             PropertyBatcher.endSet(selector + ".PlaceholderStyle", doc, commands);
         }
 
@@ -457,6 +460,7 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
         if (decoration != null) {
             BsonDocumentHelper decorationDoc = PropertyBatcher.beginSet();
             decoration.applyTo(decorationDoc);
+            filterStyleDocument(decorationDoc.getDocument());
             PropertyBatcher.endSet(selector + ".Decoration", decorationDoc, commands);
         }
 
@@ -477,7 +481,7 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
             HyUIPlugin.getLog().logFinest("Setting Style: " + style + " for " + selector);
             commands.set(selector + ".Style", style);
         } else if (hyUIStyle == null && typedStyle != null) {
-            PropertyBatcher.endSet(selector + ".Style", typedStyle.toBsonDocument(), commands);
+            PropertyBatcher.endSet(selector + ".Style", filterStyleDocument(typedStyle.toBsonDocument()), commands);
         }
         if (listeners.isEmpty()) {
             // To handle data back to the .getValue, we need to add at least one listener.

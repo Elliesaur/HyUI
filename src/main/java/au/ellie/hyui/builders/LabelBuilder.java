@@ -22,9 +22,13 @@ import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.elements.BackgroundSupported;
 import au.ellie.hyui.elements.UIElements;
 import au.ellie.hyui.theme.Theme;
+import au.ellie.hyui.types.LabelSpan;
 import au.ellie.hyui.utils.PropertyBatcher;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -33,6 +37,7 @@ import java.util.Set;
  */
 public class LabelBuilder extends UIElementBuilder<LabelBuilder> {
     private String text;
+    private List<LabelSpan> textSpans;
 
     /**
      * Constructs a new instance of {@code LabelBuilder} for creating label UI elements.
@@ -70,9 +75,65 @@ public class LabelBuilder extends UIElementBuilder<LabelBuilder> {
         this.text = text;
         return this;
     }
-    
+
+    /**
+     * Sets the text spans to be displayed by the label.
+     * TextSpans allow for rich text formatting with different styles per span.
+     *
+     * @param textSpans The list of LabelSpan objects defining formatted text sections.
+     * @return The current instance of the {@code LabelBuilder} for method chaining.
+     */
+    public LabelBuilder withTextSpans(List<LabelSpan> textSpans) {
+        this.textSpans = textSpans;
+        return this;
+    }
+
+    /**
+     * Adds a single text span to the label.
+     * TextSpans allow for rich text formatting with different styles per span.
+     *
+     * @param textSpan The LabelSpan object to add.
+     * @return The current instance of the {@code LabelBuilder} for method chaining.
+     */
+    public LabelBuilder addTextSpan(LabelSpan textSpan) {
+        if (this.textSpans == null) {
+            this.textSpans = new ArrayList<>();
+        }
+        this.textSpans.add(textSpan);
+        return this;
+    }
+
     public String getText() {
         return text;
+    }
+
+    @Override
+    protected boolean supportsStyling() {
+        return true;
+    }
+
+    @Override
+    protected boolean isStyleWhitelist() {
+        return true;
+    }
+
+    @Override
+    protected Set<String> getSupportedStyleProperties() {
+        return Set.of(
+                "HorizontalAlignment",
+                "VerticalAlignment",
+                "Wrap",
+                "FontName",
+                "FontSize",
+                "TextColor",
+                "OutlineColor",
+                "LetterSpacing",
+                "RenderUppercase",
+                "RenderBold",
+                "RenderItalics",
+                "RenderUnderlined",
+                "Alignment"
+        );
     }
 
     @Override
@@ -84,12 +145,17 @@ public class LabelBuilder extends UIElementBuilder<LabelBuilder> {
             HyUIPlugin.getLog().logFinest("Setting Text: " + text + " for " + selector);
             commands.set(selector + ".Text", text);
         }
+        if (textSpans != null && !textSpans.isEmpty()) {
+            HyUIPlugin.getLog().logFinest("Setting TextSpans for " + selector);
+            // TODO: Work out way to set arrays of bson properly.
+            //PropertyBatcher.endSet(selector + ".TextSpans", textSpans, commands);
+        }
 
         if ( hyUIStyle == null && typedStyle == null  && style != null) {
             HyUIPlugin.getLog().logFinest("Setting Raw Style: " + style + " for " + selector);
             commands.set(selector + ".Style", style);
         } else if (hyUIStyle == null && typedStyle != null) {
-            PropertyBatcher.endSet(selector + ".Style", typedStyle.toBsonDocument(), commands);
+            PropertyBatcher.endSet(selector + ".Style", filterStyleDocument(typedStyle.toBsonDocument()), commands);
         }
     }
 }

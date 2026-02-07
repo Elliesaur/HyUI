@@ -19,9 +19,12 @@
 package au.ellie.hyui.html.handlers;
 
 import au.ellie.hyui.builders.LabelBuilder;
+import au.ellie.hyui.builders.NativeTimerLabelBuilder;
 import au.ellie.hyui.builders.UIElementBuilder;
 import au.ellie.hyui.html.HtmlParser;
 import au.ellie.hyui.html.TagHandler;
+import au.ellie.hyui.types.TimerDirection;
+import au.ellie.hyui.utils.ParseUtils;
 import org.jsoup.nodes.Element;
 
 public class LabelHandler implements TagHandler {
@@ -33,6 +36,34 @@ public class LabelHandler implements TagHandler {
 
     @Override
     public UIElementBuilder<?> handle(Element element, HtmlParser parser) {
+        // Check if this is a native timer label
+        if (element.hasClass("native-timer-label")) {
+            NativeTimerLabelBuilder builder = NativeTimerLabelBuilder.nativeTimerLabel();
+
+            if (element.hasAttr("data-hyui-seconds")) {
+                ParseUtils.parseInt(element.attr("data-hyui-seconds"))
+                        .ifPresent(builder::withSeconds);
+            }
+            if (element.hasAttr("data-hyui-direction")) {
+                try {
+                    TimerDirection direction = TimerDirection.valueOf(element.attr("data-hyui-direction"));
+                    builder.withDirection(direction);
+                } catch (IllegalArgumentException e) {
+                    // Invalid direction, ignore
+                }
+            }
+            if (element.hasAttr("data-hyui-paused")) {
+                builder.withPaused(Boolean.parseBoolean(element.attr("data-hyui-paused")));
+            }
+            if (!element.text().isEmpty()) {
+                builder.withText(element.text());
+            }
+
+            applyCommonAttributes(builder, element);
+            return builder;
+        }
+
+        // Regular label
         LabelBuilder builder = LabelBuilder.label().withText(element.text());
         applyCommonAttributes(builder, element);
         return builder;

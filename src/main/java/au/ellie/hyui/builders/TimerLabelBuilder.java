@@ -25,6 +25,7 @@ import au.ellie.hyui.theme.Theme;
 import au.ellie.hyui.utils.PropertyBatcher;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
+import java.util.Set;
 
 import java.util.concurrent.TimeUnit;
 
@@ -176,6 +177,30 @@ public class TimerLabelBuilder extends UIElementBuilder<TimerLabelBuilder> {
     }
 
     @Override
+    protected boolean isStyleWhitelist() {
+        return true;
+    }
+
+    @Override
+    protected Set<String> getSupportedStyleProperties() {
+        return Set.of(
+                "HorizontalAlignment",
+                "VerticalAlignment",
+                "Wrap",
+                "FontName",
+                "FontSize",
+                "TextColor",
+                "OutlineColor",
+                "LetterSpacing",
+                "RenderUppercase",
+                "RenderBold",
+                "RenderItalics",
+                "RenderUnderlined",
+                "Alignment"
+        );
+    }
+
+    @Override
     protected void onBuild(UICommandBuilder commands, UIEventBuilder events) {
         String selector = getSelector();
         if (selector == null) return;
@@ -188,7 +213,7 @@ public class TimerLabelBuilder extends UIElementBuilder<TimerLabelBuilder> {
             HyUIPlugin.getLog().logFinest("Setting Raw Style: " + style + " for " + selector);
             commands.set(selector + ".Style", style);
         } else if (hyUIStyle == null && typedStyle != null) {
-            PropertyBatcher.endSet(selector + ".Style", typedStyle.toBsonDocument(), commands);
+            PropertyBatcher.endSet(selector + ".Style", filterStyleDocument(typedStyle.toBsonDocument()), commands);
         }
     }
 }

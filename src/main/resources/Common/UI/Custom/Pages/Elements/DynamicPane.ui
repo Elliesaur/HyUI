@@ -1,0 +1,3 @@
+DynamicPane #HyUIDynamicPane {
+    LayoutMode: Vertical;
+}

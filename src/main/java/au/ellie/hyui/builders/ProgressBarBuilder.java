@@ -24,8 +24,11 @@ import au.ellie.hyui.elements.LayoutModeSupported;
 import au.ellie.hyui.elements.ScrollbarStyleSupported;
 import au.ellie.hyui.elements.UIElements;
 import au.ellie.hyui.theme.Theme;
+import au.ellie.hyui.types.ProgressBarAlignment;
+import au.ellie.hyui.types.ProgressBarDirection;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
+import java.util.Set;
 
 /**
  * Builder for creating progress bar UI elements.
@@ -151,12 +154,23 @@ public class ProgressBarBuilder extends UIElementBuilder<ProgressBarBuilder> imp
 
     /**
      * Sets the direction of the progress bar.
-     * 
+     *
      * @param direction The direction: Start, or End.
      * @return This builder instance for method chaining.
      */
     public ProgressBarBuilder withDirection(String direction) {
         this.direction = direction;
+        return this;
+    }
+
+    /**
+     * Sets the direction of the progress bar using the typed enum.
+     *
+     * @param direction The direction enum value.
+     * @return This builder instance for method chaining.
+     */
+    public ProgressBarBuilder withDirection(ProgressBarDirection direction) {
+        this.direction = direction.name();
         return this;
     }
 
@@ -183,6 +197,16 @@ public class ProgressBarBuilder extends UIElementBuilder<ProgressBarBuilder> imp
     @Override
     protected boolean supportsStyling() {
         return false;
+    }
+
+    @Override
+    protected boolean isStyleWhitelist() {
+        return true;
+    }
+
+    @Override
+    protected Set<String> getSupportedStyleProperties() {
+        return Set.of();
     }
 
     @Override
@@ -236,6 +260,17 @@ public class ProgressBarBuilder extends UIElementBuilder<ProgressBarBuilder> imp
      */
     public ProgressBarBuilder withAlignment(String alignment) {
         this.alignment = alignment;
+        return this;
+    }
+
+    /**
+     * Sets the alignment of the progress bar using the typed enum.
+     *
+     * @param alignment The alignment enum value.
+     * @return This builder instance for method chaining.
+     */
+    public ProgressBarBuilder withAlignment(ProgressBarAlignment alignment) {
+        this.alignment = alignment.name();
         return this;
     }
 

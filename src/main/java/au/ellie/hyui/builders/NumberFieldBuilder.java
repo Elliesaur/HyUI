@@ -33,6 +33,7 @@ import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -213,6 +214,23 @@ public class NumberFieldBuilder extends UIElementBuilder<NumberFieldBuilder> {
     }
 
     @Override
+    protected boolean isStyleWhitelist() {
+        return true;
+    }
+
+    @Override
+    protected Set<String> getSupportedStyleProperties() {
+        return Set.of(
+                "FontName",
+                "FontSize",
+                "TextColor",
+                "RenderUppercase",
+                "RenderBold",
+                "RenderItalics"
+        );
+    }
+
+    @Override
     protected boolean hasCustomInlineContent() {
         return true;
     }
@@ -268,7 +286,7 @@ public class NumberFieldBuilder extends UIElementBuilder<NumberFieldBuilder> {
             HyUIPlugin.getLog().logFinest("Setting Style: " + style + " for " + selector);
             commands.set(selector + ".Style", style);
         } else if (hyUIStyle == null && typedStyle != null) {
-            PropertyBatcher.endSet(selector + ".Style", typedStyle.toBsonDocument(), commands);
+            PropertyBatcher.endSet(selector + ".Style", filterStyleDocument(typedStyle.toBsonDocument()), commands);
         } else if ( hyUIStyle == null && typedStyle == null ) {
             commands.set(selector + ".Style", Value.ref("Common.ui", "DefaultInputFieldStyle"));
         }

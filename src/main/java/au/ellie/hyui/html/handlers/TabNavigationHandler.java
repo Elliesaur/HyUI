@@ -18,6 +18,7 @@
 
 package au.ellie.hyui.html.handlers;
 
+import au.ellie.hyui.builders.NativeTabNavigationBuilder;
 import au.ellie.hyui.builders.TabNavigationBuilder;
 import au.ellie.hyui.builders.UIElementBuilder;
 import au.ellie.hyui.html.HtmlParser;
@@ -61,11 +62,34 @@ public class TabNavigationHandler implements TagHandler {
     public boolean canHandle(Element element) {
         String tagName = element.tagName().toLowerCase();
         return (tagName.equals("nav") || tagName.equals("div")) &&
-               (element.hasClass("tabs") || element.hasClass("tab-navigation"));
+               (element.hasClass("tabs") || element.hasClass("tab-navigation") || element.hasClass("native-tab-navigation"));
     }
 
     @Override
     public UIElementBuilder<?> handle(Element element, HtmlParser parser) {
+        // Check if this is a native tab navigation
+        if (element.hasClass("native-tab-navigation")) {
+            NativeTabNavigationBuilder builder = NativeTabNavigationBuilder.nativeTabNavigation();
+
+            if (element.hasAttr("data-selected-tab")) {
+                builder.withSelectedTab(element.attr("data-selected-tab"));
+            }
+            if (element.hasAttr("data-allow-unselection")) {
+                builder.withAllowUnselection(Boolean.parseBoolean(element.attr("data-allow-unselection")));
+            }
+
+            applyCommonAttributes(builder, element);
+
+            // Parse children
+            List<UIElementBuilder<?>> children = parser.parseChildren(element);
+            for (UIElementBuilder<?> child : children) {
+                builder.addChild(child);
+            }
+
+            return builder;
+        }
+
+        // Custom tab navigation system
         TabNavigationBuilder builder = TabNavigationBuilder.tabNavigation();
 
         applyCommonAttributes(builder, element);

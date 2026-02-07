@@ -20,8 +20,18 @@ package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.elements.UIElements;
+import au.ellie.hyui.events.UIContext;
+import au.ellie.hyui.events.UIEventActions;
+import au.ellie.hyui.types.ActionButtonAlignment;
+import au.ellie.hyui.types.ButtonStyle;
+import au.ellie.hyui.types.LayoutMode;
+import au.ellie.hyui.utils.PropertyBatcher;
+import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
+import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
+import java.util.Set;
+import java.util.function.BiConsumer;
 
 /**
  * Builder for creating ActionButton UI elements.
@@ -29,7 +39,13 @@ import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 public class ActionButtonBuilder extends UIElementBuilder<ActionButtonBuilder> {
     private Boolean disabled;
     private String keyBindingLabel;
-    private Alignment alignment;
+    private String bindingModifier1Label;
+    private String bindingModifier2Label;
+    private Boolean isAvailable;
+    private Boolean isHoldBinding;
+    private ActionButtonAlignment alignment;
+    private LayoutMode layoutMode;
+    private ButtonStyle buttonStyle;
     private String actionName;
 
     public ActionButtonBuilder() {
@@ -52,8 +68,38 @@ public class ActionButtonBuilder extends UIElementBuilder<ActionButtonBuilder> {
         return this;
     }
 
-    public ActionButtonBuilder withAlignment(Alignment alignment) {
+    public ActionButtonBuilder withBindingModifier1Label(String bindingModifier1Label) {
+        this.bindingModifier1Label = bindingModifier1Label;
+        return this;
+    }
+
+    public ActionButtonBuilder withBindingModifier2Label(String bindingModifier2Label) {
+        this.bindingModifier2Label = bindingModifier2Label;
+        return this;
+    }
+
+    public ActionButtonBuilder withIsAvailable(boolean isAvailable) {
+        this.isAvailable = isAvailable;
+        return this;
+    }
+
+    public ActionButtonBuilder withIsHoldBinding(boolean isHoldBinding) {
+        this.isHoldBinding = isHoldBinding;
+        return this;
+    }
+
+    public ActionButtonBuilder withAlignment(ActionButtonAlignment alignment) {
         this.alignment = alignment;
+        return this;
+    }
+
+    public ActionButtonBuilder withLayoutMode(LayoutMode layoutMode) {
+        this.layoutMode = layoutMode;
+        return this;
+    }
+
+    public ActionButtonBuilder withStyle(ButtonStyle buttonStyle) {
+        this.buttonStyle = buttonStyle;
         return this;
     }
 
@@ -62,9 +108,68 @@ public class ActionButtonBuilder extends UIElementBuilder<ActionButtonBuilder> {
         return this;
     }
 
+    /**
+     * Adds an event listener for the Activating event.
+     */
+    public ActionButtonBuilder onActivating(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.Activating, Void.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the Activating event with context.
+     */
+    public ActionButtonBuilder onActivating(BiConsumer<Void, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.Activating, Void.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the DoubleClicking event.
+     */
+    public ActionButtonBuilder onDoubleClicking(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.DoubleClicking, Void.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the RightClicking event.
+     */
+    public ActionButtonBuilder onRightClicking(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.RightClicking, Void.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the MouseEntered event.
+     */
+    public ActionButtonBuilder onMouseEntered(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.MouseEntered, Void.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the MouseExited event.
+     */
+    public ActionButtonBuilder onMouseExited(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.MouseExited, Void.class, v -> callback.run());
+    }
+
     @Override
     protected boolean supportsStyling() {
-        return false;
+        return true;
+    }
+
+    @Override
+    protected boolean isStyleWhitelist() {
+        return true;
+    }
+
+    @Override
+    protected Set<String> getSupportedStyleProperties() {
+        return StylePropertySets.merge(
+                StylePropertySets.PATCH_STYLE,
+                StylePropertySets.PADDING,
+                StylePropertySets.ANCHOR,
+                StylePropertySets.LABEL_STYLE,
+                StylePropertySets.SOUND_STYLE,
+                Set.of("Background")
+        );
     }
 
     @Override
@@ -72,21 +177,76 @@ public class ActionButtonBuilder extends UIElementBuilder<ActionButtonBuilder> {
         String selector = getSelector();
         if (selector == null) return;
 
-        if (disabled != null) {
-            HyUIPlugin.getLog().logFinest("Setting Disabled: " + disabled + " for " + selector);
-            commands.set(selector + ".Disabled", disabled);
+        if (actionName != null) {
+            HyUIPlugin.getLog().logFinest("Setting ActionName: " + actionName + " for " + selector);
+            commands.set(selector + ".ActionName", actionName);
         }
         if (keyBindingLabel != null) {
             HyUIPlugin.getLog().logFinest("Setting KeyBindingLabel: " + keyBindingLabel + " for " + selector);
             commands.set(selector + ".KeyBindingLabel", keyBindingLabel);
         }
+        if (bindingModifier1Label != null) {
+            HyUIPlugin.getLog().logFinest("Setting BindingModifier1Label: " + bindingModifier1Label + " for " + selector);
+            commands.set(selector + ".BindingModifier1Label", bindingModifier1Label);
+        }
+        if (bindingModifier2Label != null) {
+            HyUIPlugin.getLog().logFinest("Setting BindingModifier2Label: " + bindingModifier2Label + " for " + selector);
+            commands.set(selector + ".BindingModifier2Label", bindingModifier2Label);
+        }
+        if (isAvailable != null) {
+            HyUIPlugin.getLog().logFinest("Setting IsAvailable: " + isAvailable + " for " + selector);
+            commands.set(selector + ".IsAvailable", isAvailable);
+        }
+        if (isHoldBinding != null) {
+            HyUIPlugin.getLog().logFinest("Setting IsHoldBinding: " + isHoldBinding + " for " + selector);
+            commands.set(selector + ".IsHoldBinding", isHoldBinding);
+        }
         if (alignment != null) {
             HyUIPlugin.getLog().logFinest("Setting Alignment: " + alignment + " for " + selector);
             commands.set(selector + ".Alignment", alignment.name());
         }
-        if (actionName != null) {
-            HyUIPlugin.getLog().logFinest("Setting ActionName: " + actionName + " for " + selector);
-            commands.set(selector + ".ActionName", actionName);
+        if (layoutMode != null) {
+            HyUIPlugin.getLog().logFinest("Setting LayoutMode: " + layoutMode + " for " + selector);
+            commands.set(selector + ".LayoutMode", layoutMode.name());
         }
+        if (disabled != null) {
+            HyUIPlugin.getLog().logFinest("Setting Disabled: " + disabled + " for " + selector);
+            commands.set(selector + ".Disabled", disabled);
+        }
+        if (buttonStyle != null) {
+            HyUIPlugin.getLog().logFinest("Setting Style: " + buttonStyle + " for " + selector);
+            PropertyBatcher.endSet(selector + ".Style", filterStyleDocument(buttonStyle.toBsonDocument()), commands);
+        }
+
+        // Register event listeners
+        listeners.forEach(listener -> {
+            String eventId = getEffectiveId();
+            if (listener.type() == CustomUIEventBindingType.Activating) {
+                HyUIPlugin.getLog().logFinest("Adding Activating event binding: " + eventId + " for " + selector);
+                events.addEventBinding(CustomUIEventBindingType.Activating, selector,
+                        EventData.of("Action", UIEventActions.BUTTON_CLICKED)
+                            .append("Target", eventId), false);
+            } else if (listener.type() == CustomUIEventBindingType.DoubleClicking) {
+                HyUIPlugin.getLog().logFinest("Adding DoubleClicking event binding for " + selector);
+                events.addEventBinding(CustomUIEventBindingType.DoubleClicking, selector,
+                        EventData.of("Action", UIEventActions.DOUBLE_CLICKING)
+                            .append("Target", eventId), false);
+            } else if (listener.type() == CustomUIEventBindingType.RightClicking) {
+                HyUIPlugin.getLog().logFinest("Adding RightClicking event binding for " + selector);
+                events.addEventBinding(CustomUIEventBindingType.RightClicking, selector,
+                        EventData.of("Action", UIEventActions.RIGHT_CLICKING)
+                            .append("Target", eventId), false);
+            } else if (listener.type() == CustomUIEventBindingType.MouseEntered) {
+                HyUIPlugin.getLog().logFinest("Adding MouseEntered event binding for " + selector);
+                events.addEventBinding(CustomUIEventBindingType.MouseEntered, selector,
+                        EventData.of("Action", UIEventActions.MOUSE_ENTERED)
+                            .append("Target", eventId), false);
+            } else if (listener.type() == CustomUIEventBindingType.MouseExited) {
+                HyUIPlugin.getLog().logFinest("Adding MouseExited event binding for " + selector);
+                events.addEventBinding(CustomUIEventBindingType.MouseExited, selector,
+                        EventData.of("Action", UIEventActions.MOUSE_EXITED)
+                            .append("Target", eventId), false);
+            }
+        });
     }
 }
