@@ -30,14 +30,14 @@ public final class SlotMouseDragCompletedEventData {
     private final Integer itemStackQuantity;
     private final Integer pressedMouseButton;
     private final String itemStackId;
-    private final String sourceInventorySectionId;
+    private final Integer sourceInventorySectionId;
 
     public SlotMouseDragCompletedEventData(Integer sourceItemGridIndex,
                                            Integer sourceSlotId,
                                            Integer itemStackQuantity,
                                            Integer pressedMouseButton,
                                            String itemStackId,
-                                           String sourceInventorySectionId,
+                                           Integer sourceInventorySectionId,
                                            Integer slotIndex) {
         this.sourceItemGridIndex = sourceItemGridIndex;
         this.sourceSlotId = sourceSlotId;
@@ -72,7 +72,7 @@ public final class SlotMouseDragCompletedEventData {
         return slotIndex;
     }
 
-    public String getSourceInventorySectionId() {
+    public Integer getSourceInventorySectionId() {
         return sourceInventorySectionId;
     }
 
@@ -83,7 +83,7 @@ public final class SlotMouseDragCompletedEventData {
                 DynamicPageDataReader.getInt(data, "ItemStackQuantity"),
                 DynamicPageDataReader.getInt(data, "PressedMouseButton"),
                 DynamicPageDataReader.getString(data, "ItemStackId"),
-                DynamicPageDataReader.getString(data, "SourceInventorySectionId"),
+                DynamicPageDataReader.getInt(data, "SourceInventorySectionId"),
                 DynamicPageDataReader.getInt(data, "SlotIndex")
         );
     }

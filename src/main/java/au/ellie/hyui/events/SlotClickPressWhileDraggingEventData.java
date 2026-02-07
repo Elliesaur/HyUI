@@ -26,7 +26,7 @@ public final class SlotClickPressWhileDraggingEventData {
     private final Integer slotIndex;
     private final String dragItemStackId;
     private final Integer dragItemStackQuantity;
-    private final String dragSourceInventorySectionId;
+    private final Integer dragSourceInventorySectionId;
     private final Integer dragSourceItemGridIndex;
     private final Integer dragSourceSlotId;
     private final Integer dragPressedMouseButton;
@@ -36,7 +36,7 @@ public final class SlotClickPressWhileDraggingEventData {
     public SlotClickPressWhileDraggingEventData(Integer slotIndex,
                                                 String dragItemStackId,
                                                 Integer dragItemStackQuantity,
-                                                String dragSourceInventorySectionId,
+                                                Integer dragSourceInventorySectionId,
                                                 Integer dragSourceItemGridIndex,
                                                 Integer dragSourceSlotId,
                                                 Integer dragPressedMouseButton,
@@ -65,7 +65,7 @@ public final class SlotClickPressWhileDraggingEventData {
         return dragItemStackQuantity;
     }
 
-    public String getDragSourceInventorySectionId() {
+    public Integer getDragSourceInventorySectionId() {
         return dragSourceInventorySectionId;
     }
 
@@ -94,7 +94,7 @@ public final class SlotClickPressWhileDraggingEventData {
                 DynamicPageDataReader.getInt(data, "SlotIndex"),
                 DynamicPageDataReader.getString(data, "DragItemStackId"),
                 DynamicPageDataReader.getInt(data, "DragItemStackQuantity"),
-                DynamicPageDataReader.getString(data, "DragSourceInventorySectionId"),
+                DynamicPageDataReader.getInt(data, "DragSourceInventorySectionId"),
                 DynamicPageDataReader.getInt(data, "DragSourceItemGridIndex"),
                 DynamicPageDataReader.getInt(data, "DragSourceSlotId"),
                 DynamicPageDataReader.getInt(data, "DragPressedMouseButton"),
