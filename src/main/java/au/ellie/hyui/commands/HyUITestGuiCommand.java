@@ -21,7 +21,6 @@ package au.ellie.hyui.commands;
 import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.HyUIPluginLogger;
 import au.ellie.hyui.builders.*;
-import au.ellie.hyui.elements.LayoutModeSupported;
 import au.ellie.hyui.events.PageRefreshResult;
 import au.ellie.hyui.events.SlotMouseDragCompletedEventData;
 import au.ellie.hyui.types.*;
@@ -387,6 +386,18 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                                     String text = ctx.getValue("MyTextField", String.class).orElse("N/A");
                                     Double num = ctx.getValue("ANum", Double.class).orElse(0.0);
                                     playerRef.sendMessage(Message.raw("Text Field: " + text + ", Num: " + num));
+                                })
+                                .onDoubleClicking((mouseEventData) -> {
+                                    playerRef.sendMessage(Message.raw("FirstButton double clicked: " + mouseEventData));
+                                })
+                                .onRightClicking((mouseEventData) -> {
+                                    playerRef.sendMessage(Message.raw("FirstButton right clicked: " + mouseEventData));
+                                })
+                                .onMouseEntered((mouseEventData) -> {
+                                    HyUIPlugin.getLog().logFinest("FirstButton mouse entered: " + mouseEventData);
+                                })
+                                .onMouseExited((mouseEventData) -> {
+                                    HyUIPlugin.getLog().logFinest("FirstButton mouse exited: " + mouseEventData);
                                 }))
                         /*.addChild(SliderBuilder.slider()
                                 .withId("Hey")
@@ -474,7 +485,19 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                                 .withOuterAnchor(new HyUIAnchor().setWidth(200).setHeight(12))
                         )*/
                         .addChild(ButtonBuilder.textButton()
-                                .withText("Button with Icon"))
+                                .withText("Button with Icon")
+                                .onDoubleClicking((mouseEventData) -> {
+                                    playerRef.sendMessage(Message.raw("Button with Icon double clicked: " + mouseEventData));
+                                })
+                                .onRightClicking((mouseEventData) -> {
+                                    playerRef.sendMessage(Message.raw("Button with Icon right clicked: " + mouseEventData));
+                                })
+                                .onMouseEntered((mouseEventData) -> {
+                                    HyUIPlugin.getLog().logFinest("Button with Icon mouse entered: " + mouseEventData);
+                                })
+                                .onMouseExited((mouseEventData) -> {
+                                    HyUIPlugin.getLog().logFinest("Button with Icon mouse exited: " + mouseEventData);
+                                }))
                                 //.withItemIcon(ItemIconBuilder.itemIcon().withItemId("Items/IronSword.png")))
                         .addChild(ContainerBuilder.container()
                                 .withId("MyContainer")
@@ -492,7 +515,19 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                                 .withId("ActionButtonExample")
                                 .withActionName("ExampleAction")
                                 .withKeyBindingLabel("K")
-                                .withAlignment(ActionButtonAlignment.Right))
+                                .withAlignment(ActionButtonAlignment.Right)
+                                .onDoubleClicking((mouseEventData) -> {
+                                    playerRef.sendMessage(Message.raw("ActionButton double clicked: " + mouseEventData));
+                                })
+                                .onRightClicking((mouseEventData) -> {
+                                    playerRef.sendMessage(Message.raw("ActionButton right clicked: " + mouseEventData));
+                                })
+                                .onMouseEntered((mouseEventData) -> {
+                                    HyUIPlugin.getLog().logFinest("ActionButton mouse entered: " + mouseEventData);
+                                })
+                                .onMouseExited((mouseEventData) -> {
+                                    HyUIPlugin.getLog().logFinest("ActionButton mouse exited: " + mouseEventData);
+                                }))
                         .addChild(BlockSelectorBuilder.blockSelector()
                                 .withId("BlockSelectorExample")
                                 .withCapacity(8))
@@ -507,6 +542,9 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                                 .withMax(1)
                                 .withStep(0.05f)
                                 .withValue(0.3f)
+                                .onMouseButtonReleased((mouseEventData, ctx) -> {
+                                    playerRef.sendMessage(Message.raw("Slider: " + mouseEventData));
+                                })
                                 .withStyle(SliderStyle.defaultStyle()))
                         .addChild(LabelBuilder.label()
                                 .withText("Hey")
@@ -528,12 +566,36 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                                 .withInputBindingKey("F"))
                         .addChild(ItemSlotButtonBuilder.itemSlotButton()
                                 .withId("ItemSlotButtonExample")
-                                .withLayoutMode("Left"))
+                                .withLayoutMode("Left")
+                                .onDoubleClicking((mouseEventData) -> {
+                                    playerRef.sendMessage(Message.raw("ItemSlotButton double clicked: " + mouseEventData));
+                                })
+                                .onRightClicking((mouseEventData) -> {
+                                    playerRef.sendMessage(Message.raw("ItemSlotButton right clicked: " + mouseEventData));
+                                })
+                                .onMouseEntered((mouseEventData) -> {
+                                    HyUIPlugin.getLog().logFinest("ItemSlotButton mouse entered: " + mouseEventData);
+                                })
+                                .onMouseExited((mouseEventData) -> {
+                                    HyUIPlugin.getLog().logFinest("ItemSlotButton mouse exited: " + mouseEventData);
+                                }))
                         .addChild(LabeledCheckBoxBuilder.labeledCheckBox()
                                 .withId("LabeledCheckBoxExample"))
                         .addChild(MenuItemBuilder.menuItem()
                                 .withId("MenuItemExample")
-                                .withText("Menu Item"))
+                                .withText("Menu Item")
+                                .onDoubleClicking((mouseEventData) -> {
+                                    playerRef.sendMessage(Message.raw("MenuItem double clicked: " + mouseEventData));
+                                })
+                                .onRightClicking((mouseEventData) -> {
+                                    playerRef.sendMessage(Message.raw("MenuItem right clicked: " + mouseEventData));
+                                })
+                                .onMouseEntered((mouseEventData) -> {
+                                    HyUIPlugin.getLog().logFinest("MenuItem mouse entered: " + mouseEventData);
+                                })
+                                .onMouseExited((mouseEventData) -> {
+                                    HyUIPlugin.getLog().logFinest("MenuItem mouse exited: " + mouseEventData);
+                                }))
                         .addChild(PanelBuilder.panel()
                                 .withId("PanelExample")
                                 .withBackground(new HyUIPatchStyle().setColor("#00000020"))
@@ -646,12 +708,36 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                         .addChild(ToggleButtonBuilder.toggleButton()
                                 .withId("ToggleButtonExample")
                                 .withStyle(ButtonStyle.primaryStyle())
-                                .withCheckedStyle(ButtonStyle.primaryStyle()))
+                                .withCheckedStyle(ButtonStyle.primaryStyle())
+                                .onDoubleClicking((mouseEventData) -> {
+                                    playerRef.sendMessage(Message.raw("ToggleButton double clicked: " + mouseEventData));
+                                })
+                                .onRightClicking((mouseEventData) -> {
+                                    playerRef.sendMessage(Message.raw("ToggleButton right clicked: " + mouseEventData));
+                                })
+                                .onMouseEntered((mouseEventData) -> {
+                                    HyUIPlugin.getLog().logFinest("ToggleButton mouse entered: " + mouseEventData);
+                                })
+                                .onMouseExited((mouseEventData) -> {
+                                    HyUIPlugin.getLog().logFinest("ToggleButton mouse exited: " + mouseEventData);
+                                }))
                         .addChild(PageOverlayBuilder.pageOverlay()
                                 .withId("MyOverlay")
                                 .addChild(new LabelBuilder()
                                         .withText("Overlay Content"))
-                                .addChild(ButtonBuilder.backButton()))
+                                .addChild(ButtonBuilder.backButton()
+                                        .onDoubleClicking((mouseEventData) -> {
+                                            playerRef.sendMessage(Message.raw("BackButton double clicked: " + mouseEventData));
+                                        })
+                                        .onRightClicking((mouseEventData) -> {
+                                            playerRef.sendMessage(Message.raw("BackButton right clicked: " + mouseEventData));
+                                        })
+                                        .onMouseEntered((mouseEventData) -> {
+                                            HyUIPlugin.getLog().logFinest("BackButton mouse entered: " + mouseEventData);
+                                        })
+                                        .onMouseExited((mouseEventData) -> {
+                                            HyUIPlugin.getLog().logFinest("BackButton mouse exited: " + mouseEventData);
+                                        })))
                 )
                 .open(store);
     }

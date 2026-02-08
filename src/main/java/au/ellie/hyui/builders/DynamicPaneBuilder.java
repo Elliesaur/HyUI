@@ -20,6 +20,7 @@ package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.elements.UIElements;
+import au.ellie.hyui.events.MouseEventData;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventActions;
 import au.ellie.hyui.types.LayoutMode;
@@ -81,7 +82,21 @@ public class DynamicPaneBuilder extends UIElementBuilder<DynamicPaneBuilder> {
      * Adds an event listener for the MouseButtonReleased event.
      */
     public DynamicPaneBuilder onMouseButtonReleased(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.MouseButtonReleased, Void.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.MouseButtonReleased, MouseEventData.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the MouseButtonReleased event.
+     */
+    public DynamicPaneBuilder onMouseButtonReleased(Consumer<MouseEventData> callback) {
+        return addEventListener(CustomUIEventBindingType.MouseButtonReleased, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the MouseButtonReleased event with context.
+     */
+    public DynamicPaneBuilder onMouseButtonReleased(BiConsumer<MouseEventData, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseButtonReleased, MouseEventData.class, callback);
     }
 
     /**

@@ -61,6 +61,8 @@ public class DynamicPageData {
             .addField(new KeyedCodec<>("ClickCount", Codec.INTEGER), (data, s) -> data.values.put("ClickCount", String.valueOf(s)), data -> Integer.parseInt(data.values.get("ClickCount")))
             // Used for: SelectedTabChanged
             .addField(new KeyedCodec<>("SelectedTab", Codec.STRING), (data, s) -> data.values.put("SelectedTab", String.valueOf(s)), data -> data.values.get("SelectedTab"))
+            // Used for Activating in reality.
+            .addField(new KeyedCodec<>("ShiftHeld", Codec.BOOLEAN), (data, s) -> data.values.put("ShiftHeld", String.valueOf(s)), data -> Boolean.parseBoolean(data.values.get("ShiftHeld")))
             .build();
 
     public String action;

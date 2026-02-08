@@ -34,7 +34,7 @@ public class HyUIPlugin extends JavaPlugin {
 
     private static HyUIPluginLogger instance;
     
-    private static final boolean ADD_CMDS = false;
+    private static final boolean ADD_CMDS = true;
     
     public static HyUIPluginLogger getLog() {
         if (instance == null)

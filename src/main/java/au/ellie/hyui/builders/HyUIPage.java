@@ -242,9 +242,9 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
         return delegate.templateProcessor;
     }
     
-/*    @Override
+    @Override
     public void handleDataEvent(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store, @Nonnull String data) {
         super.handleDataEvent(ref, store, data);
         HytaleLogger.forEnclosingClass().atInfo().log("Handling data event: " + data);
-    }*/
+    }
 }

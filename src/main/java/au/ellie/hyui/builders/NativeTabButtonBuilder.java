@@ -19,6 +19,7 @@
 package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
+import au.ellie.hyui.events.MouseEventData;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventActions;
 import au.ellie.hyui.types.LayoutMode;
@@ -30,6 +31,7 @@ import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * Builder for native Hytale TabButton UI elements.
@@ -106,28 +108,84 @@ public class NativeTabButtonBuilder extends UIElementBuilder<NativeTabButtonBuil
      * Adds an event listener for the DoubleClicking event.
      */
     public NativeTabButtonBuilder onDoubleClicking(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.DoubleClicking, Void.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the DoubleClicking event.
+     */
+    public NativeTabButtonBuilder onDoubleClicking(Consumer<MouseEventData> callback) {
+        return addEventListener(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the DoubleClicking event with context.
+     */
+    public NativeTabButtonBuilder onDoubleClicking(BiConsumer<MouseEventData, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, callback);
     }
 
     /**
      * Adds an event listener for the RightClicking event.
      */
     public NativeTabButtonBuilder onRightClicking(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.RightClicking, Void.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the RightClicking event.
+     */
+    public NativeTabButtonBuilder onRightClicking(Consumer<MouseEventData> callback) {
+        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the RightClicking event with context.
+     */
+    public NativeTabButtonBuilder onRightClicking(BiConsumer<MouseEventData, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
     }
 
     /**
      * Adds an event listener for the MouseEntered event.
      */
     public NativeTabButtonBuilder onMouseEntered(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.MouseEntered, Void.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.MouseEntered, MouseEventData.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the MouseEntered event.
+     */
+    public NativeTabButtonBuilder onMouseEntered(Consumer<MouseEventData> callback) {
+        return addEventListener(CustomUIEventBindingType.MouseEntered, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the MouseEntered event with context.
+     */
+    public NativeTabButtonBuilder onMouseEntered(BiConsumer<MouseEventData, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseEntered, MouseEventData.class, callback);
     }
 
     /**
      * Adds an event listener for the MouseExited event.
      */
     public NativeTabButtonBuilder onMouseExited(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.MouseExited, Void.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.MouseExited, MouseEventData.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the MouseExited event.
+     */
+    public NativeTabButtonBuilder onMouseExited(Consumer<MouseEventData> callback) {
+        return addEventListener(CustomUIEventBindingType.MouseExited, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the MouseExited event with context.
+     */
+    public NativeTabButtonBuilder onMouseExited(BiConsumer<MouseEventData, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseExited, MouseEventData.class, callback);
     }
 
     @Override

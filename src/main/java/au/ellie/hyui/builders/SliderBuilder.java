@@ -19,6 +19,7 @@
 package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
+import au.ellie.hyui.events.MouseEventData;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventActions;
 import au.ellie.hyui.elements.UIElements;
@@ -102,8 +103,17 @@ public class SliderBuilder extends UIElementBuilder<SliderBuilder> {
     /**
      * Adds an event listener for the MouseButtonReleased event.
      */
-    public SliderBuilder onMouseButtonReleased(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.MouseButtonReleased, Void.class, v -> callback.run());
+    public SliderBuilder onMouseButtonReleased(Consumer<MouseEventData> callback) {
+        return addEventListener(CustomUIEventBindingType.MouseButtonReleased, MouseEventData.class,
+                callback);
+    }
+
+    /**
+     * Adds an event listener for the MouseButtonReleased event.
+     */
+    public SliderBuilder onMouseButtonReleased(BiConsumer<MouseEventData, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseButtonReleased, MouseEventData.class,
+                callback);
     }
 
     /**

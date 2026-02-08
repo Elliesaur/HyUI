@@ -20,6 +20,7 @@ package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.elements.UIElements;
+import au.ellie.hyui.events.MouseEventData;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventActions;
 import au.ellie.hyui.events.UIEventListener;
@@ -95,28 +96,84 @@ public class ToggleButtonBuilder extends UIElementBuilder<ToggleButtonBuilder> {
      * Adds an event listener for the DoubleClicking event.
      */
     public ToggleButtonBuilder onDoubleClicking(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.DoubleClicking, Void.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the DoubleClicking event.
+     */
+    public ToggleButtonBuilder onDoubleClicking(Consumer<MouseEventData> callback) {
+        return addEventListener(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the DoubleClicking event with context.
+     */
+    public ToggleButtonBuilder onDoubleClicking(BiConsumer<MouseEventData, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, callback);
     }
 
     /**
      * Adds an event listener for the RightClicking event.
      */
     public ToggleButtonBuilder onRightClicking(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.RightClicking, Void.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the RightClicking event.
+     */
+    public ToggleButtonBuilder onRightClicking(Consumer<MouseEventData> callback) {
+        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the RightClicking event with context.
+     */
+    public ToggleButtonBuilder onRightClicking(BiConsumer<MouseEventData, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
     }
 
     /**
      * Adds an event listener for the MouseEntered event.
      */
     public ToggleButtonBuilder onMouseEntered(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.MouseEntered, Void.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.MouseEntered, MouseEventData.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the MouseEntered event.
+     */
+    public ToggleButtonBuilder onMouseEntered(Consumer<MouseEventData> callback) {
+        return addEventListener(CustomUIEventBindingType.MouseEntered, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the MouseEntered event with context.
+     */
+    public ToggleButtonBuilder onMouseEntered(BiConsumer<MouseEventData, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseEntered, MouseEventData.class, callback);
     }
 
     /**
      * Adds an event listener for the MouseExited event.
      */
     public ToggleButtonBuilder onMouseExited(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.MouseExited, Void.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.MouseExited, MouseEventData.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the MouseExited event.
+     */
+    public ToggleButtonBuilder onMouseExited(Consumer<MouseEventData> callback) {
+        return addEventListener(CustomUIEventBindingType.MouseExited, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the MouseExited event with context.
+     */
+    public ToggleButtonBuilder onMouseExited(BiConsumer<MouseEventData, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseExited, MouseEventData.class, callback);
     }
 
     @Override

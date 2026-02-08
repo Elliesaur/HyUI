@@ -107,7 +107,7 @@ public class SliderNumberFieldBuilder extends UIElementBuilder<SliderNumberField
     @Override
     protected Object parseValue(String rawValue) {
         try {
-            return Double.parseDouble(rawValue);
+            return Integer.parseInt(rawValue);
         } catch (NumberFormatException e) {
             return null;
         }
@@ -175,7 +175,7 @@ public class SliderNumberFieldBuilder extends UIElementBuilder<SliderNumberField
                 String eventId = getEffectiveId();
                 HyUIPlugin.getLog().logFinest("Adding ValueChanged event binding for " + selector + " with eventId: " + eventId);
                 events.addEventBinding(CustomUIEventBindingType.ValueChanged, selector,
-                        EventData.of("@ValueDouble", selector + ".Value")
+                        EventData.of("@ValueInt", selector + ".Value")
                                 .append("Target", eventId)
                                 .append("Action", UIEventActions.VALUE_CHANGED),
                         false);

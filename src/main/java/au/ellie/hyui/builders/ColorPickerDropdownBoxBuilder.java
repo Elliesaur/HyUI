@@ -19,12 +19,19 @@
 package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
+import au.ellie.hyui.events.MouseEventData;
+import au.ellie.hyui.events.UIContext;
+import au.ellie.hyui.events.UIEventActions;
 import au.ellie.hyui.types.ColorFormat;
 import au.ellie.hyui.elements.UIElements;
+import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
+import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 
 /**
@@ -58,6 +65,27 @@ public class ColorPickerDropdownBoxBuilder extends UIElementBuilder<ColorPickerD
     public ColorPickerDropdownBoxBuilder withResetTransparencyWhenChangingColor(boolean resetTransparencyWhenChangingColor) {
         this.resetTransparencyWhenChangingColor = resetTransparencyWhenChangingColor;
         return this;
+    }
+
+    /**
+     * Adds an event listener for the RightClicking event.
+     */
+    public ColorPickerDropdownBoxBuilder onRightClicking(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the RightClicking event.
+     */
+    public ColorPickerDropdownBoxBuilder onRightClicking(Consumer<MouseEventData> callback) {
+        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the RightClicking event with context.
+     */
+    public ColorPickerDropdownBoxBuilder onRightClicking(BiConsumer<MouseEventData, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
     }
 
     @Override
@@ -114,5 +142,16 @@ public class ColorPickerDropdownBoxBuilder extends UIElementBuilder<ColorPickerD
             HyUIPlugin.getLog().logFinest("Setting ResetTransparencyWhenChangingColor: " + resetTransparencyWhenChangingColor + " for " + selector);
             commands.set(selector + ".ResetTransparencyWhenChangingColor", resetTransparencyWhenChangingColor);
         }
+
+        listeners.forEach(listener -> {
+            if (listener.type() == CustomUIEventBindingType.RightClicking) {
+                String eventId = getEffectiveId();
+                HyUIPlugin.getLog().logFinest("Adding RightClicking event binding for " + selector);
+                events.addEventBinding(CustomUIEventBindingType.RightClicking, selector,
+                        EventData.of("Action", UIEventActions.RIGHT_CLICKING)
+                            .append("Target", eventId),
+                        false);
+            }
+        });
     }
 }

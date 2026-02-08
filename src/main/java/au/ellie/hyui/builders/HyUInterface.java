@@ -274,7 +274,14 @@ public abstract class HyUInterface implements UIContext {
                     ((UIEventListener<Void>) listener).callback().accept(null, context);
                     continue;
                 }
-                if (isSlotEventRelated(listener.type()) || listener.type() == CustomUIEventBindingType.SelectedTabChanged) {
+                if (isSlotEventRelated(listener.type()) || 
+                        listener.type() == CustomUIEventBindingType.SelectedTabChanged ||
+                        listener.type() == CustomUIEventBindingType.MouseButtonReleased ||
+                        listener.type() == CustomUIEventBindingType.MouseEntered ||
+                        listener.type() == CustomUIEventBindingType.MouseExited ||
+                        listener.type() == CustomUIEventBindingType.DoubleClicking ||
+                        listener.type() == CustomUIEventBindingType.RightClicking
+                ) {
                     Object payload = buildEventPayload(listener.type(), data);
                     ((UIEventListener<Object>) listener).callback().accept(payload, context);
                     continue;
@@ -329,6 +336,8 @@ public abstract class HyUInterface implements UIContext {
             case SlotClickReleaseWhileDragging -> SlotClickReleaseWhileDraggingEventData.from(data);
             case SlotClickPressWhileDragging -> SlotClickPressWhileDraggingEventData.from(data);
             case SelectedTabChanged -> SelectedTabChangedEventData.from(data);
+            // Only RightClicking and DoubleClicking has event data, but we wrap it in the same event data.
+            case MouseButtonReleased, MouseEntered, MouseExited, DoubleClicking, RightClicking -> MouseEventData.from(data);
             default -> null;
         };
     }

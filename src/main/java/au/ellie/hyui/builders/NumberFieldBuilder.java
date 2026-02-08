@@ -19,6 +19,7 @@
 package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
+import au.ellie.hyui.events.MouseEventData;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventActions;
 import au.ellie.hyui.elements.UIElements;
@@ -185,6 +186,27 @@ public class NumberFieldBuilder extends UIElementBuilder<NumberFieldBuilder> {
         return addEventListenerWithContext(type, Double.class, callback);
     }
 
+    /**
+     * Adds an event listener for the RightClicking event.
+     */
+    public NumberFieldBuilder onRightClicking(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the RightClicking event.
+     */
+    public NumberFieldBuilder onRightClicking(Consumer<MouseEventData> callback) {
+        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the RightClicking event with context.
+     */
+    public NumberFieldBuilder onRightClicking(BiConsumer<MouseEventData, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
+    }
+
     @Override
     protected void applyRuntimeValue(Object value) {
         if (value instanceof Number number) {
@@ -322,6 +344,13 @@ public class NumberFieldBuilder extends UIElementBuilder<NumberFieldBuilder> {
                         EventData.of("@ValueDouble", selector + ".Value")
                             .append("Target", eventId)
                             .append("Action", UIEventActions.VALUE_CHANGED), 
+                        false);
+            } else if (listener.type() == CustomUIEventBindingType.RightClicking) {
+                String eventId = getEffectiveId();
+                HyUIPlugin.getLog().logFinest("Adding RightClicking event binding for " + selector);
+                events.addEventBinding(CustomUIEventBindingType.RightClicking, selector,
+                        EventData.of("Action", UIEventActions.RIGHT_CLICKING)
+                            .append("Target", eventId),
                         false);
             }
         });

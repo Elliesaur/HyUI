@@ -18,26 +18,8 @@
 
 package au.ellie.hyui.events;
 
-import au.ellie.hyui.utils.ParseUtils;
-
-final class DynamicPageDataReader {
-    private DynamicPageDataReader() {}
-
-    static Integer getInt(DynamicPageData data, String key) {
-        String value = data.getValue(key);
-        if (value == null) {
-            return null;
-        }
-        return ParseUtils.parseInt(value).orElse(null);
-    }
-    static Boolean getBool(DynamicPageData data, String key) {
-        String value = data.getValue(key);
-        if (value == null) {
-            return null;
-        }
-        return Boolean.parseBoolean(value);
-    }
-    static String getString(DynamicPageData data, String key) {
-        return data.getValue(key);
+public record MouseEventData(Boolean shiftHeld) {
+    public static MouseEventData from(DynamicPageData data) {
+        return new MouseEventData(DynamicPageDataReader.getBool(data, "ShiftHeld"));
     }
 }

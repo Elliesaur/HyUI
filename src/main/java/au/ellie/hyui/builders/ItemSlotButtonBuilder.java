@@ -20,6 +20,7 @@ package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.elements.LayoutModeSupported;
+import au.ellie.hyui.events.MouseEventData;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventActions;
 import au.ellie.hyui.elements.UIElements;
@@ -27,8 +28,6 @@ import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
-import java.util.Set;
-
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -67,6 +66,90 @@ public class ItemSlotButtonBuilder extends UIElementBuilder<ItemSlotButtonBuilde
 
     public ItemSlotButtonBuilder addEventListener(CustomUIEventBindingType type, BiConsumer<Void, UIContext> callback) {
         return addEventListenerWithContext(type, Void.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the DoubleClicking event.
+     */
+    public ItemSlotButtonBuilder onDoubleClicking(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the DoubleClicking event.
+     */
+    public ItemSlotButtonBuilder onDoubleClicking(Consumer<MouseEventData> callback) {
+        return addEventListener(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the DoubleClicking event with context.
+     */
+    public ItemSlotButtonBuilder onDoubleClicking(BiConsumer<MouseEventData, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the RightClicking event.
+     */
+    public ItemSlotButtonBuilder onRightClicking(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the RightClicking event.
+     */
+    public ItemSlotButtonBuilder onRightClicking(Consumer<MouseEventData> callback) {
+        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the RightClicking event with context.
+     */
+    public ItemSlotButtonBuilder onRightClicking(BiConsumer<MouseEventData, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the MouseEntered event.
+     */
+    public ItemSlotButtonBuilder onMouseEntered(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.MouseEntered, MouseEventData.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the MouseEntered event.
+     */
+    public ItemSlotButtonBuilder onMouseEntered(Consumer<MouseEventData> callback) {
+        return addEventListener(CustomUIEventBindingType.MouseEntered, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the MouseEntered event with context.
+     */
+    public ItemSlotButtonBuilder onMouseEntered(BiConsumer<MouseEventData, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseEntered, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the MouseExited event.
+     */
+    public ItemSlotButtonBuilder onMouseExited(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.MouseExited, MouseEventData.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the MouseExited event.
+     */
+    public ItemSlotButtonBuilder onMouseExited(Consumer<MouseEventData> callback) {
+        return addEventListener(CustomUIEventBindingType.MouseExited, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the MouseExited event with context.
+     */
+    public ItemSlotButtonBuilder onMouseExited(BiConsumer<MouseEventData, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseExited, MouseEventData.class, callback);
     }
 
     @Override
@@ -109,6 +192,34 @@ public class ItemSlotButtonBuilder extends UIElementBuilder<ItemSlotButtonBuilde
                 HyUIPlugin.getLog().logFinest("Adding Activating event binding: " + eventId + " for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.Activating, selector,
                         EventData.of("Action", UIEventActions.BUTTON_CLICKED)
+                                .append("Target", eventId),
+                        false);
+            } else if (listener.type() == CustomUIEventBindingType.DoubleClicking) {
+                String eventId = getEffectiveId();
+                HyUIPlugin.getLog().logFinest("Adding DoubleClicking event binding for " + selector);
+                events.addEventBinding(CustomUIEventBindingType.DoubleClicking, selector,
+                        EventData.of("Action", UIEventActions.DOUBLE_CLICKING)
+                                .append("Target", eventId),
+                        false);
+            } else if (listener.type() == CustomUIEventBindingType.RightClicking) {
+                String eventId = getEffectiveId();
+                HyUIPlugin.getLog().logFinest("Adding RightClicking event binding for " + selector);
+                events.addEventBinding(CustomUIEventBindingType.RightClicking, selector,
+                        EventData.of("Action", UIEventActions.RIGHT_CLICKING)
+                                .append("Target", eventId),
+                        false);
+            } else if (listener.type() == CustomUIEventBindingType.MouseEntered) {
+                String eventId = getEffectiveId();
+                HyUIPlugin.getLog().logFinest("Adding MouseEntered event binding for " + selector);
+                events.addEventBinding(CustomUIEventBindingType.MouseEntered, selector,
+                        EventData.of("Action", UIEventActions.MOUSE_ENTERED)
+                                .append("Target", eventId),
+                        false);
+            } else if (listener.type() == CustomUIEventBindingType.MouseExited) {
+                String eventId = getEffectiveId();
+                HyUIPlugin.getLog().logFinest("Adding MouseExited event binding for " + selector);
+                events.addEventBinding(CustomUIEventBindingType.MouseExited, selector,
+                        EventData.of("Action", UIEventActions.MOUSE_EXITED)
                                 .append("Target", eventId),
                         false);
             }

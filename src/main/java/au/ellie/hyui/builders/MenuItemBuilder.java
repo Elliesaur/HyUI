@@ -20,16 +20,23 @@ package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.elements.UIElements;
+import au.ellie.hyui.events.MouseEventData;
+import au.ellie.hyui.events.UIContext;
+import au.ellie.hyui.events.UIEventActions;
 import au.ellie.hyui.types.MenuItemStyle;
 import au.ellie.hyui.types.PopupStyle;
 import au.ellie.hyui.types.TextTooltipStyle;
 import au.ellie.hyui.utils.BsonDocumentHelper;
 import au.ellie.hyui.utils.PropertyBatcher;
+import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.ui.Value;
+import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * Builder for MenuItem UI elements.
@@ -104,6 +111,90 @@ public class MenuItemBuilder extends UIElementBuilder<MenuItemBuilder> {
         return this;
     }
 
+    /**
+     * Adds an event listener for the DoubleClicking event.
+     */
+    public MenuItemBuilder onDoubleClicking(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the DoubleClicking event.
+     */
+    public MenuItemBuilder onDoubleClicking(Consumer<MouseEventData> callback) {
+        return addEventListener(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the DoubleClicking event with context.
+     */
+    public MenuItemBuilder onDoubleClicking(BiConsumer<MouseEventData, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the RightClicking event.
+     */
+    public MenuItemBuilder onRightClicking(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the RightClicking event.
+     */
+    public MenuItemBuilder onRightClicking(Consumer<MouseEventData> callback) {
+        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the RightClicking event with context.
+     */
+    public MenuItemBuilder onRightClicking(BiConsumer<MouseEventData, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the MouseEntered event.
+     */
+    public MenuItemBuilder onMouseEntered(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.MouseEntered, MouseEventData.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the MouseEntered event.
+     */
+    public MenuItemBuilder onMouseEntered(Consumer<MouseEventData> callback) {
+        return addEventListener(CustomUIEventBindingType.MouseEntered, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the MouseEntered event with context.
+     */
+    public MenuItemBuilder onMouseEntered(BiConsumer<MouseEventData, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseEntered, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the MouseExited event.
+     */
+    public MenuItemBuilder onMouseExited(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.MouseExited, MouseEventData.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the MouseExited event.
+     */
+    public MenuItemBuilder onMouseExited(Consumer<MouseEventData> callback) {
+        return addEventListener(CustomUIEventBindingType.MouseExited, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the MouseExited event with context.
+     */
+    public MenuItemBuilder onMouseExited(BiConsumer<MouseEventData, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseExited, MouseEventData.class, callback);
+    }
+
     @Override
     protected boolean supportsStyling() {
         return true;
@@ -162,5 +253,30 @@ public class MenuItemBuilder extends UIElementBuilder<MenuItemBuilder> {
             HyUIPlugin.getLog().logFinest("Setting IconAnchor for " + selector);
             commands.setObject(selector + ".IconAnchor", iconAnchor.toHytaleAnchor());
         }
+
+        listeners.forEach(listener -> {
+            String eventId = getEffectiveId();
+            if (listener.type() == CustomUIEventBindingType.DoubleClicking) {
+                HyUIPlugin.getLog().logFinest("Adding DoubleClicking event binding for " + selector);
+                events.addEventBinding(CustomUIEventBindingType.DoubleClicking, selector,
+                        EventData.of("Action", UIEventActions.DOUBLE_CLICKING)
+                            .append("Target", eventId), false);
+            } else if (listener.type() == CustomUIEventBindingType.RightClicking) {
+                HyUIPlugin.getLog().logFinest("Adding RightClicking event binding for " + selector);
+                events.addEventBinding(CustomUIEventBindingType.RightClicking, selector,
+                        EventData.of("Action", UIEventActions.RIGHT_CLICKING)
+                            .append("Target", eventId), false);
+            } else if (listener.type() == CustomUIEventBindingType.MouseEntered) {
+                HyUIPlugin.getLog().logFinest("Adding MouseEntered event binding for " + selector);
+                events.addEventBinding(CustomUIEventBindingType.MouseEntered, selector,
+                        EventData.of("Action", UIEventActions.MOUSE_ENTERED)
+                            .append("Target", eventId), false);
+            } else if (listener.type() == CustomUIEventBindingType.MouseExited) {
+                HyUIPlugin.getLog().logFinest("Adding MouseExited event binding for " + selector);
+                events.addEventBinding(CustomUIEventBindingType.MouseExited, selector,
+                        EventData.of("Action", UIEventActions.MOUSE_EXITED)
+                            .append("Target", eventId), false);
+            }
+        });
     }
 }
