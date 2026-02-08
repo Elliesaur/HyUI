@@ -164,13 +164,7 @@ public class GroupBuilder extends UIElementBuilder<GroupBuilder> implements
                 events.addEventBinding(CustomUIEventBindingType.Dismissing, selector,
                         EventData.of("Action", UIEventActions.DISMISSING)
                             .append("Target", eventId), false);
-            } else if (listener.type() == CustomUIEventBindingType.ValueChanged) {
-                // Scrolled event uses ValueChanged type
-                HyUIPlugin.getLog().logFinest("Adding Scrolled event binding for " + selector);
-                events.addEventBinding(CustomUIEventBindingType.ValueChanged, selector,
-                        EventData.of("Action", UIEventActions.SCROLLED)
-                            .append("Target", eventId), false);
-            }
+            } 
         });
     }
 }
