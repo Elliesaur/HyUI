@@ -114,20 +114,6 @@ public class GroupBuilder extends UIElementBuilder<GroupBuilder> implements
         return addEventListener(CustomUIEventBindingType.Dismissing, Void.class, v -> callback.run());
     }
 
-    /**
-     * Adds an event listener for the Scrolled event.
-     */
-    public GroupBuilder onScrolled(Consumer<Float> callback) {
-        return addEventListener(CustomUIEventBindingType.ValueChanged, Float.class, callback);
-    }
-
-    /**
-     * Adds an event listener for the Scrolled event with context.
-     */
-    public GroupBuilder onScrolled(BiConsumer<Float, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.ValueChanged, Float.class, callback);
-    }
-
     @Override
     protected boolean supportsStyling() {
         return false;

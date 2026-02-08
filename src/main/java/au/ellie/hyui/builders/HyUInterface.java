@@ -270,7 +270,9 @@ public abstract class HyUInterface implements UIContext {
                     continue;
                 }
 
-                if (listener.type() == CustomUIEventBindingType.Activating) {
+                if (listener.type() == CustomUIEventBindingType.Activating || 
+                        listener.type() == CustomUIEventBindingType.Dismissing || 
+                        listener.type() == CustomUIEventBindingType.Validating) {
                     ((UIEventListener<Void>) listener).callback().accept(null, context);
                     continue;
                 }
