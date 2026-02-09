@@ -13,8 +13,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import static au.ellie.hyui.html.TemplateProcessor.CachePolicy.CACHED;
-import static au.ellie.hyui.html.TemplateProcessor.CachePolicy.DYNAMIC;
+import static au.ellie.hyui.html.TemplateProcessor.ExecutionPolicy.*;
 import static au.ellie.hyui.html.template.context.VariableStack.VariableScope.EACH_SCOPE_NAME;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -218,8 +217,8 @@ class TemplateProcessorTest {
                 "false, 0, ",
                 "true, 1, value_1 - value_1"
         })
-        @DisplayName("Should handle supplier properties")
-        void supplierEvaluationOnIfCondition(boolean condition, int value, String expected) {
+        @DisplayName("Should ensure the variable is evaluated only once and cached")
+        void policyCachedEvaluation(boolean condition, int value, String expected) {
             AtomicInteger evaluations = new AtomicInteger();
 
             processor.setVariable("enabled", condition);
@@ -242,15 +241,12 @@ class TemplateProcessorTest {
                 "false, 0, ",
                 "true, 2, value_1 - value_2"
         })
-        @DisplayName("Should handle function properties")
-        void functionEvaluationOnIfCondition(boolean condition, int value, String expected) {
+        @DisplayName("Should ensure the variable is evaluated every time it's accessed")
+        void policyDynamicEvaluation(boolean condition, int value, String expected) {
             AtomicInteger evaluations = new AtomicInteger();
 
             processor.setVariable("enabled", condition);
-            processor.setVariable("secret", (_) -> {
-                evaluations.incrementAndGet();
-                return "value_" + evaluations;
-            }, DYNAMIC);
+            processor.setVariable("secret", (_) -> "value_" + evaluations.incrementAndGet(), DYNAMIC);
 
             processor.setTemplate("""
                     {{#if $enabled}}
@@ -259,6 +255,50 @@ class TemplateProcessorTest {
                     """);
             assertEquals(expected != null ? expected : "", processor.process());
             assertEquals(value, evaluations.get());
+        }
+
+        @ParameterizedTest
+        @CsvSource({
+                "false, secret value",
+                "true, secret already revealed: disappeared"
+        })
+        @DisplayName("Should ensure the variable is evaluated only once and then removed")
+        void policyEphemeralEvaluation(boolean condition, String expected) {
+            processor.setVariable("condition", condition);
+            processor.setVariable("secret", (_) -> "secret value", EPHEMERAL);
+
+            processor.setTemplate("""
+                    {{#if $condition && $secret}}{{/if}}
+                    {{$secret ?? "secret already revealed: disappeared"}}
+                    """);
+            assertEquals(expected, processor.process());
+        }
+
+        @Test
+        @DisplayName("Should ensure the variable is evaluated until it returns null, then removed")
+        void policyNonNullEvaluation() {
+            AtomicInteger evaluations = new AtomicInteger();
+
+            processor.setVariable("loop", List.of(1, 2, 3, 4));
+            processor.setVariable("secret", (_) -> {
+                var value = evaluations.incrementAndGet();
+                if (value == 3)
+                    return null; // Simulate a value that disappears after 2 uses
+
+                return "This is a value that can only be twice once, " + (2 - value) + " remaining";
+            }, NON_NULL);
+
+            processor.setTemplate("""
+                    {{#each $loop}}
+                    {{$secret ?? "disappeared"}}
+                    {{/each}}
+                    """);
+            assertEquals(normalize("""
+                    This is a value that can only be twice once, 1 remaining
+                    This is a value that can only be twice once, 0 remaining
+                    disappeared
+                    disappeared
+                    """), processor.process());
         }
     }
 

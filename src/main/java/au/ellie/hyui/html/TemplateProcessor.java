@@ -25,6 +25,8 @@ import au.ellie.hyui.html.template.Lexer;
 import au.ellie.hyui.html.template.Parser;
 import au.ellie.hyui.html.template.context.FilterRegistry;
 import au.ellie.hyui.html.template.context.VariableHandler.CachingVariableHandler;
+import au.ellie.hyui.html.template.context.VariableHandler.EphemeralVariableHandler;
+import au.ellie.hyui.html.template.context.VariableHandler.NonNullVariableHandler;
 import au.ellie.hyui.html.template.context.VariableStack;
 import au.ellie.hyui.html.template.context.VariableStack.VariableScope;
 import au.ellie.hyui.html.template.item.Node;
@@ -98,52 +100,63 @@ public class TemplateProcessor {
     /**
      * Registers a template variable backed by an arbitrary object.
      * <p>
-     * The provided value is lazily resolved and cached on first access.
-     * This is useful for deferring expensive computations until the variable
-     * is actually used during template evaluation.
      *
      * @param name  Variable name (without the '$' prefix)
-     * @param value Variable value (will be resolved and converted to a string)
+     * @param value Variable value
      * @return This {@link TemplateProcessor} instance, allowing method chaining
      */
     public TemplateProcessor setVariable(String name, Object value) {
-        variables.put(name, new CachingVariableHandler(value));
+        return setVariable(name, value, ExecutionPolicy.CACHED);
+    }
+
+    /**
+     * Registers a template variable backed by an arbitrary object.
+     * <p>
+     * The behavior of the evaluation is controlled by the provided {@link ExecutionPolicy}.
+     *
+     * @param name   The variable name (without the '$' prefix)
+     * @param value  Variable value
+     * @param policy The execution policy controlling how the value is evaluated and retained
+     * @return This {@link TemplateProcessor} instance, allowing method chaining
+     */
+    public TemplateProcessor setVariable(String name, Object value, ExecutionPolicy policy) {
+        var result = switch (policy) {
+            case CACHED -> new CachingVariableHandler(value);
+            case NON_NULL -> new NonNullVariableHandler(value);
+            case EPHEMERAL -> new EphemeralVariableHandler(value);
+            default -> value;
+        };
+
+        variables.put(name, result);
         return this;
     }
 
     /**
-     * Registers a template variable whose value is provided lazily via a {@link Supplier}.
+     * Registers a template variable whose value is evaluated lazily using a {@link Supplier}.
      * <p>
-     * The value can be cached according to the provided {@link CachePolicy}. If the policy is
-     * {@link CachePolicy#DYNAMIC}, the supplier is evaluated on every access. Otherwise, the value
-     * is computed once and cached.
+     * The behavior of the evaluation is controlled by the provided {@link ExecutionPolicy}.
      *
-     * @param name        The variable name (without the '$' prefix)
-     * @param value       A {@link Supplier} that provides the variable's value
-     * @param cachePolicy The caching strategy to apply for this variable
+     * @param name   The variable name (without the '$' prefix)
+     * @param value  A {@link Supplier} that provides the variable's value
+     * @param policy The execution policy controlling how the value is evaluated and retained
      * @return This {@link TemplateProcessor} instance, allowing method chaining
      */
-    public TemplateProcessor setVariable(String name, Supplier<Object> value, CachePolicy cachePolicy) {
-        variables.put(name, cachePolicy == CachePolicy.DYNAMIC ? value : new CachingVariableHandler(value));
-        return this;
+    public TemplateProcessor setVariable(String name, Supplier<Object> value, ExecutionPolicy policy) {
+        return setVariable(name, (Object) value, policy);
     }
 
     /**
-     * Registers a template variable whose value is provided lazily via a {@link Function} that
-     * receives the current {@link VariableStack}.
+     * Registers a template variable whose value is evaluated lazily using a {@link Function}.
      * <p>
-     * The value can be cached according to the provided {@link CachePolicy}. If the policy is
-     * {@link CachePolicy#DYNAMIC}, the function is evaluated on every access. Otherwise, the value
-     * is computed once and cached.
+     * The behavior of the evaluation is controlled by the provided {@link ExecutionPolicy}.
      *
-     * @param name        The variable name (without the '$' prefix)
-     * @param value       A {@link Function} that computes the variable's value based on the current {@link VariableStack}
-     * @param cachePolicy The caching strategy to apply for this variable
+     * @param name   The variable name (without the '$' prefix)
+     * @param value  A {@link Function} that provides the variable's value
+     * @param policy The execution policy controlling how the value is evaluated and retained
      * @return This {@link TemplateProcessor} instance, allowing method chaining
      */
-    public TemplateProcessor setVariable(String name, Function<VariableStack, Object> value, CachePolicy cachePolicy) {
-        variables.put(name, cachePolicy == CachePolicy.DYNAMIC ? value : new CachingVariableHandler(value));
-        return this;
+    public TemplateProcessor setVariable(String name, Function<VariableStack, Object> value, ExecutionPolicy policy) {
+        return setVariable(name, (Object) value, policy);
     }
 
     /**
@@ -154,7 +167,7 @@ public class TemplateProcessor {
      */
     public TemplateProcessor setVariables(Map<String, ?> vars) {
         for (Map.Entry<String, ?> entry : vars.entrySet())
-            setVariable(entry.getKey(), entry.getValue());
+            setVariable(entry.getKey(), entry.getValue(), ExecutionPolicy.CACHED);
 
         return this;
     }
@@ -391,9 +404,9 @@ public class TemplateProcessor {
     }
 
     /**
-     * Caching policy for variable.
+     * Execution policy for lazily evaluated variables.
      */
-    public enum CachePolicy {
+    public enum ExecutionPolicy {
         /**
          * No caching.
          * The value with be evaluated on every request.
@@ -403,6 +416,18 @@ public class TemplateProcessor {
         /**
          * Cache the value after the first evaluation.
          */
-        CACHED
+        CACHED,
+
+        /**
+         * Evaluate the value only once, deleting it afterward.
+         * This is useful for one-time action.
+         */
+        EPHEMERAL,
+
+        /**
+         * Evaluate the value until the first null result,
+         * then delete it from the stack.
+         */
+        NON_NULL
     }
 }

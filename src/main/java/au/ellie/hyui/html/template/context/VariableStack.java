@@ -207,6 +207,11 @@ public class VariableStack {
             content.put(key, value);
         }
 
+        public void remove(String key) {
+            content.remove(key);
+            keys.remove(key);
+        }
+
         public void putKeyed(String key, Object value) {
             content.put(key, value);
             keys.add(key);

@@ -152,20 +152,20 @@ public class Evaluator {
      * @return The result of the binary operation.
      */
     private Object evaluateBinaryOp(BinaryOpNode node) {
+        Supplier<Object> right = () -> evaluateExpression(node.right());
         var left = evaluateExpression(node.left());
-        var right = evaluateExpression(node.right());
 
         return switch (node.operator()) {
-            case Symbols.EQUALS -> evaluateEquals(left, right);
-            case Symbols.NOT_EQUALS -> !evaluateEquals(left, right);
-            case Symbols.LESS_THAN -> evaluateComparison(node, left, right) < 0;
-            case Symbols.GREATER_THAN -> evaluateComparison(node, left, right) > 0;
-            case Symbols.LESS_THAN_EQUALS -> evaluateComparison(node, left, right) <= 0;
-            case Symbols.GREATER_THAN_EQUALS -> evaluateComparison(node, left, right) >= 0;
-            case Symbols.AND -> toBoolean(left) && toBoolean(right);
-            case Symbols.OR -> toBoolean(left) || toBoolean(right);
-            case Symbols.IN -> evaluateIn(left, right);
-            case Symbols.NOT_IN -> !evaluateIn(left, right);
+            case Symbols.EQUALS -> evaluateEquals(left, right.get());
+            case Symbols.NOT_EQUALS -> !evaluateEquals(left, right.get());
+            case Symbols.LESS_THAN -> evaluateComparison(node, left, right.get()) < 0;
+            case Symbols.GREATER_THAN -> evaluateComparison(node, left, right.get()) > 0;
+            case Symbols.LESS_THAN_EQUALS -> evaluateComparison(node, left, right.get()) <= 0;
+            case Symbols.GREATER_THAN_EQUALS -> evaluateComparison(node, left, right.get()) >= 0;
+            case Symbols.AND -> toBoolean(left) && toBoolean(right.get());
+            case Symbols.OR -> toBoolean(left) || toBoolean(right.get());
+            case Symbols.IN -> evaluateIn(left, right.get());
+            case Symbols.NOT_IN -> !evaluateIn(left, right.get());
             default -> throw new EvaluationException("Unknown operator", node);
         };
     }

@@ -40,4 +40,50 @@ public interface VariableHandler {
             scope.put(key, value);
         }
     }
+
+    /**
+     * A simple implementation of VariableHandler that delete the variable if the value is null.
+     * This handle remove the key from the {@link VariableScope} if the value is null, otherwise it does nothing.
+     */
+    class NonNullVariableHandler implements VariableHandler {
+        private final Object cachedValue;
+
+        public NonNullVariableHandler(Object value) {
+            this.cachedValue = value;
+        }
+
+        @Override
+        public Object get() {
+            return cachedValue;
+        }
+
+        @Override
+        public void handle(String key, Object value, VariableScope scope) {
+            if (value == null)
+                scope.remove(key);
+        }
+    }
+
+    /**
+     * A simple implementation of VariableHandler that delete the variable after the first access.
+     * This handle remove the key from the {@link VariableScope} after the first retrieval of the variable,
+     * allowing for one-time use variables.
+     */
+    class EphemeralVariableHandler implements VariableHandler {
+        private final Object cachedValue;
+
+        public EphemeralVariableHandler(Object value) {
+            this.cachedValue = value;
+        }
+
+        @Override
+        public Object get() {
+            return cachedValue;
+        }
+
+        @Override
+        public void handle(String key, Object value, VariableScope scope) {
+            scope.remove(key);
+        }
+    }
 }
