@@ -16,25 +16,35 @@
  *
  */
 
-package au.ellie.hyui.html.template.context;
+package au.ellie.hyui.html.template.exception;
 
-import au.ellie.hyui.html.template.item.Token;
+import au.ellie.hyui.html.template.item.Node;
 
-public class ParserException extends RuntimeException {
-
-    /**
-     * The token in cause at the time of the exception
-     */
-    public final Token token;
+public class EvaluationException extends RuntimeException {
 
     /**
-     * The index of the token in the original template string
+     * The node in cause at the time of the exception
      */
-    public final int index;
+    public final Node node;
 
-    public ParserException(String message, Token token, int index) {
+    public EvaluationException(String message, Node node) {
         super(message);
-        this.token = token;
-        this.index = index;
+        this.node = node;
+    }
+
+    /**
+     * Exception thrown when a component is not found in the context during evaluation
+     */
+    public static class ComponentNotFoundException extends EvaluationException {
+
+        /**
+         * The tag of the component that was found
+         */
+        public final String tag;
+
+        public ComponentNotFoundException(String message, Node node, String tag) {
+            super(message, node);
+            this.tag = tag;
+        }
     }
 }

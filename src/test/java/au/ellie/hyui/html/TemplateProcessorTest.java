@@ -13,6 +13,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import static au.ellie.hyui.html.TemplateProcessor.CachePolicy.CACHED;
+import static au.ellie.hyui.html.TemplateProcessor.CachePolicy.DYNAMIC;
 import static au.ellie.hyui.html.template.context.VariableStack.VariableScope.EACH_SCOPE_NAME;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -224,7 +226,7 @@ class TemplateProcessorTest {
             processor.setVariable("secret", () -> {
                 evaluations.incrementAndGet();
                 return "value_" + evaluations;
-            });
+            }, CACHED);
 
             processor.setTemplate("""
                     {{#if $enabled}}
@@ -248,7 +250,7 @@ class TemplateProcessorTest {
             processor.setVariable("secret", (_) -> {
                 evaluations.incrementAndGet();
                 return "value_" + evaluations;
-            });
+            }, DYNAMIC);
 
             processor.setTemplate("""
                     {{#if $enabled}}
@@ -798,7 +800,7 @@ class TemplateProcessorTest {
                     return "";
 
                 return product.getTagsWithPrefix("tag_");
-            });
+            }, DYNAMIC);
 
             processor.setTemplate(normalize("""
                     {{#each $products product}}
@@ -818,8 +820,8 @@ class TemplateProcessorTest {
             final var modulator = new Modulator();
 
             processor.setVariable("list", List.of(1, 2, 3, 4));
-            processor.setVariable("modulation", (_) -> modulator.increment());
-            processor.setVariable("style", (stack) -> (int) stack.getVariable("key") < 3 ? "color: red;" : null);
+            processor.setVariable("modulation", (_) -> modulator.increment(), DYNAMIC);
+            processor.setVariable("style", (stack) -> (int) stack.getVariable("key") < 3 ? "color: red;" : null, DYNAMIC);
 
             processor.registerComponent("module", """
                     <div{{#if $style}} style="{{$style}}"{{/if}}>Module {{$key}} -> Active : {{ $active ?? false }}</div>

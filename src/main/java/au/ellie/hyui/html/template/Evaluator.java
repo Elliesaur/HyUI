@@ -20,11 +20,11 @@ package au.ellie.hyui.html.template;
 
 import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.html.TemplateProcessor.CachedComponent;
-import au.ellie.hyui.html.template.context.EvaluationException;
-import au.ellie.hyui.html.template.context.EvaluationException.ComponentNotFoundException;
 import au.ellie.hyui.html.template.context.FilterRegistry;
 import au.ellie.hyui.html.template.context.VariableStack;
 import au.ellie.hyui.html.template.context.VariableStack.VariableScope;
+import au.ellie.hyui.html.template.exception.EvaluationException;
+import au.ellie.hyui.html.template.exception.EvaluationException.ComponentNotFoundException;
 import au.ellie.hyui.html.template.item.Node;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode.DynamicAttributeNode;

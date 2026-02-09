@@ -18,7 +18,7 @@
 
 package au.ellie.hyui.html.template;
 
-import au.ellie.hyui.html.template.context.ParserException;
+import au.ellie.hyui.html.template.exception.ParserException;
 import au.ellie.hyui.html.template.item.Node;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode.DynamicAttributeNode;

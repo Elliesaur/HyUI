@@ -23,12 +23,7 @@ import au.ellie.hyui.utils.LambdaUtils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.ArrayDeque;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Supplier;
 
 public class VariableStack {
@@ -96,11 +91,11 @@ public class VariableStack {
                 if (object == null)
                     return null;
 
-                if (object instanceof Supplier<?> supplier) {
-                    object = supplier.get();
-                    scope.put(name, object);
-                } else if (LambdaUtils.isFunction(object))
-                    object = LambdaUtils.call(object, this, defaultValue);
+                if (object instanceof VariableHandler handler) {
+                    object = resolveVariable(handler.get(), defaultValue);
+                    handler.handle(name, object, scope);
+                } else
+                    object = resolveVariable(object, defaultValue);
 
                 return object;
             }
@@ -146,6 +141,20 @@ public class VariableStack {
         var scope = stack.peek();
 
         return scope != null ? scope.getKeys() : null;
+    }
+
+    /**
+     * Resolve a variable that may be a function or supplier.
+     *
+     * @param object       The variable value to resolve
+     * @param defaultValue Default value supplier for function calls
+     * @return Resolved variable value
+     */
+    private Object resolveVariable(Object object, Supplier<Object> defaultValue) {
+        if (LambdaUtils.isFunction(object))
+            object = LambdaUtils.call(object, this, defaultValue);
+
+        return object;
     }
 
     // ===== Scope =====

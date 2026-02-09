@@ -21,12 +21,7 @@ package au.ellie.hyui.utils;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.concurrent.Callable;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.function.*;
 
 /**
  * Quick utility for detecting and calling multiple type of lambda/function objects,

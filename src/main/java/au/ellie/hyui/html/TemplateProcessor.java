@@ -24,6 +24,7 @@ import au.ellie.hyui.html.template.Evaluator;
 import au.ellie.hyui.html.template.Lexer;
 import au.ellie.hyui.html.template.Parser;
 import au.ellie.hyui.html.template.context.FilterRegistry;
+import au.ellie.hyui.html.template.context.VariableHandler.CachingVariableHandler;
 import au.ellie.hyui.html.template.context.VariableStack;
 import au.ellie.hyui.html.template.context.VariableStack.VariableScope;
 import au.ellie.hyui.html.template.item.Node;
@@ -37,11 +38,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -99,43 +96,53 @@ public class TemplateProcessor {
     }
 
     /**
-     * Sets a template variable from any object.
+     * Registers a template variable backed by an arbitrary object.
+     * <p>
+     * The provided value is lazily resolved and cached on first access.
+     * This is useful for deferring expensive computations until the variable
+     * is actually used during template evaluation.
      *
-     * @param name  Variable name (without $)
-     * @param value Variable value (will be converted to string)
-     * @return This processor for chaining
+     * @param name  Variable name (without the '$' prefix)
+     * @param value Variable value (will be resolved and converted to a string)
+     * @return This {@link TemplateProcessor} instance, allowing method chaining
      */
     public TemplateProcessor setVariable(String name, Object value) {
-        if (value instanceof Function)
-            throw new RuntimeException("Use the Function overload to set a variable from a function.");
-
-        variables.put(name, value);
+        variables.put(name, new CachingVariableHandler(value));
         return this;
     }
 
     /**
-     * Sets a template variable from a supplier.
-     * Resolved at processing time and cached for the duration of the processing.
+     * Registers a template variable whose value is provided lazily via a {@link Supplier}.
+     * <p>
+     * The value can be cached according to the provided {@link CachePolicy}. If the policy is
+     * {@link CachePolicy#DYNAMIC}, the supplier is evaluated on every access. Otherwise, the value
+     * is computed once and cached.
      *
-     * @param name  Variable name (without $)
-     * @param value Supplier that provides the variable value
-     * @return This processor for chaining
+     * @param name        The variable name (without the '$' prefix)
+     * @param value       A {@link Supplier} that provides the variable's value
+     * @param cachePolicy The caching strategy to apply for this variable
+     * @return This {@link TemplateProcessor} instance, allowing method chaining
      */
-    public TemplateProcessor setVariable(String name, Supplier<?> value) {
-        variables.put(name, value);
+    public TemplateProcessor setVariable(String name, Supplier<Object> value, CachePolicy cachePolicy) {
+        variables.put(name, cachePolicy == CachePolicy.DYNAMIC ? value : new CachingVariableHandler(value));
         return this;
     }
 
     /**
-     * Sets a template variable from a function.
-     * Resolved at processing time with access to the variable stack, not cached.
+     * Registers a template variable whose value is provided lazily via a {@link Function} that
+     * receives the current {@link VariableStack}.
+     * <p>
+     * The value can be cached according to the provided {@link CachePolicy}. If the policy is
+     * {@link CachePolicy#DYNAMIC}, the function is evaluated on every access. Otherwise, the value
+     * is computed once and cached.
      *
-     * @param name  Variable name (without $)
-     * @param value Function that provides the variable value
-     * @return This processor for chaining
+     * @param name        The variable name (without the '$' prefix)
+     * @param value       A {@link Function} that computes the variable's value based on the current {@link VariableStack}
+     * @param cachePolicy The caching strategy to apply for this variable
+     * @return This {@link TemplateProcessor} instance, allowing method chaining
      */
-    public TemplateProcessor setVariable(String name, Function<VariableStack, Object> value) {
-        variables.put(name, value);
+    public TemplateProcessor setVariable(String name, Function<VariableStack, Object> value, CachePolicy cachePolicy) {
+        variables.put(name, cachePolicy == CachePolicy.DYNAMIC ? value : new CachingVariableHandler(value));
         return this;
     }
 
@@ -148,6 +155,7 @@ public class TemplateProcessor {
     public TemplateProcessor setVariables(Map<String, ?> vars) {
         for (Map.Entry<String, ?> entry : vars.entrySet())
             setVariable(entry.getKey(), entry.getValue());
+
         return this;
     }
 
@@ -380,5 +388,21 @@ public class TemplateProcessor {
 
             return ast;
         }
+    }
+
+    /**
+     * Caching policy for variable.
+     */
+    public enum CachePolicy {
+        /**
+         * No caching.
+         * The value with be evaluated on every request.
+         */
+        DYNAMIC,
+
+        /**
+         * Cache the value after the first evaluation.
+         */
+        CACHED
     }
 }
