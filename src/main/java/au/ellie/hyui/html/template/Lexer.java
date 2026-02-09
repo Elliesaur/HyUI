@@ -306,7 +306,7 @@ public class Lexer {
         // Attributes
         while (pos < input.length() && !peek(COMPONENT_END, COMPONENT_SELF_CLOSE)) {
             // Attribute name
-            if (peek("--") || Character.isLetter(current()))
+            if (Character.isLetter(current()))
                 tokens.add(tokenizeComponentAttributeName());
 
             skipWhitespace();

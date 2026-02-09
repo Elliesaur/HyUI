@@ -375,7 +375,7 @@ public class TemplateProcessor {
         public List<Node> getAst(Map<String, CachedComponent> componentCache) {
             if (ast == null) {
                 List<Token> tokens = new Lexer(template, componentCache, name).tokenize();
-                ast = new Parser(tokens, componentCache).parse();
+                ast = new Parser(tokens).parse();
             }
 
             return ast;

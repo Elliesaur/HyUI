@@ -22,29 +22,7 @@ import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.builders.InterfaceBuilder;
 import au.ellie.hyui.builders.LabelBuilder;
 import au.ellie.hyui.builders.UIElementBuilder;
-import au.ellie.hyui.html.handlers.BlockSelectorHandler;
-import au.ellie.hyui.html.handlers.ButtonHandler;
-import au.ellie.hyui.html.handlers.ColorPickerDropdownBoxHandler;
-import au.ellie.hyui.html.handlers.DivHandler;
-import au.ellie.hyui.html.handlers.HotkeyLabelHandler;
-import au.ellie.hyui.html.handlers.HyvatarHandler;
-import au.ellie.hyui.html.handlers.ImgHandler;
-import au.ellie.hyui.html.handlers.InputHandler;
-import au.ellie.hyui.html.handlers.ItemGridHandler;
-import au.ellie.hyui.html.handlers.ItemIconHandler;
-import au.ellie.hyui.html.handlers.ItemSlotHandler;
-import au.ellie.hyui.html.handlers.LabelHandler;
-import au.ellie.hyui.html.handlers.LabeledCheckBoxHandler;
-import au.ellie.hyui.html.handlers.MenuItemHandler;
-import au.ellie.hyui.html.handlers.ProgressBarHandler;
-import au.ellie.hyui.html.handlers.ReorderableListGripHandler;
-import au.ellie.hyui.html.handlers.SceneBlurHandler;
-import au.ellie.hyui.html.handlers.SelectHandler;
-import au.ellie.hyui.html.handlers.SpriteHandler;
-import au.ellie.hyui.html.handlers.TabContentHandler;
-import au.ellie.hyui.html.handlers.TabNavigationHandler;
-import au.ellie.hyui.html.handlers.TextAreaHandler;
-import au.ellie.hyui.html.handlers.TimerHandler;
+import au.ellie.hyui.html.handlers.*;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -98,21 +76,21 @@ public class HtmlParser {
     }
 
     /**
-     * Gets the current template processor.
-     *
-     * @return The template processor, or null if not set.
-     */
-    public TemplateProcessor getTemplateProcessor() {
-        return templateProcessor;
-    }
-
-    /**
      * Sets the template processor for variable interpolation and component inclusion.
      *
      * @param processor The template processor to use.
      */
     public void setTemplateProcessor(TemplateProcessor processor) {
         this.templateProcessor = processor;
+    }
+
+    /**
+     * Gets the current template processor.
+     *
+     * @return The template processor, or null if not set.
+     */
+    public TemplateProcessor getTemplateProcessor() {
+        return templateProcessor;
     }
 
     /**

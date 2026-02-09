@@ -18,6 +18,9 @@
 
 package au.ellie.hyui.html.template.context;
 
+import au.ellie.hyui.utils.ParseUtils;
+import au.ellie.hyui.utils.StringUtils;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Locale;
@@ -30,16 +33,8 @@ public class FilterRegistry {
     public FilterRegistry() {
         register("uppercase", value -> value == null ? null : value.toString().toUpperCase(), "upper");
         register("lowercase", value -> value == null ? null : value.toString().toLowerCase(), "lower");
-        register("capitalize", value -> {
-            if (value == null)
-                return null;
-
-            String str = value.toString();
-            if (str.isEmpty())
-                return str;
-
-            return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
-        });
+        register("capitalize", value -> StringUtils.capitalize(value.toString()));
+        register("capitalizeAll", value -> StringUtils.capitalizeAll(value.toString()));
         register("trim", value -> value == null ? null : value.toString().trim());
         register("length", value -> switch (value) {
             case null -> 0;
@@ -49,24 +44,22 @@ public class FilterRegistry {
             default -> value.toString().length();
         });
         register("number", value -> {
-            try {
-                double num = Double.parseDouble(value.toString());
-                if (num == (long) num)
-                    return String.format(Locale.ENGLISH, "%,d", (long) num);
-
-                return String.format("%,.2f", num);
-            } catch (NumberFormatException e) {
+            var num = ParseUtils.parseDouble(value.toString());
+            if (num.isEmpty())
                 return value;
-            }
+
+            var numValue = num.get();
+            if (numValue % 1 == 0)
+                return String.format(Locale.ENGLISH, "%,d", numValue.longValue());
+
+            return String.format("%,.2f", numValue);
         });
         register("percent", value -> {
-            try {
-                double num = Double.parseDouble(value.toString());
-
-                return String.format(Locale.ENGLISH, "%.0f%%", num * 100);
-            } catch (NumberFormatException e) {
+            var num = ParseUtils.parseDouble(value.toString());
+            if (num.isEmpty())
                 return value;
-            }
+
+            return String.format(Locale.ENGLISH, "%.0f%%", num.get() * 100);
         });
     }
 

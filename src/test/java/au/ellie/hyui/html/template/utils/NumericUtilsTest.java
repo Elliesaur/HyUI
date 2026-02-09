@@ -1,5 +1,6 @@
 package au.ellie.hyui.html.template.utils;
 
+import au.ellie.hyui.utils.NumericUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

@@ -20,6 +20,8 @@ package au.ellie.hyui.html.template;
 
 import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.html.TemplateProcessor.CachedComponent;
+import au.ellie.hyui.html.template.context.EvaluationException;
+import au.ellie.hyui.html.template.context.EvaluationException.ComponentNotFoundException;
 import au.ellie.hyui.html.template.context.FilterRegistry;
 import au.ellie.hyui.html.template.context.VariableStack;
 import au.ellie.hyui.html.template.context.VariableStack.VariableScope;
@@ -33,27 +35,18 @@ import au.ellie.hyui.html.template.item.Node.BlockNode.EachBlockNode;
 import au.ellie.hyui.html.template.item.Node.BlockNode.IfBlockNode;
 import au.ellie.hyui.html.template.item.Node.ComponentElementNode;
 import au.ellie.hyui.html.template.item.Node.ExpressionNode;
-import au.ellie.hyui.html.template.item.Node.ExpressionNode.BinaryOpNode;
-import au.ellie.hyui.html.template.item.Node.ExpressionNode.DefaultNode;
-import au.ellie.hyui.html.template.item.Node.ExpressionNode.LiteralNode;
-import au.ellie.hyui.html.template.item.Node.ExpressionNode.PipeNode;
-import au.ellie.hyui.html.template.item.Node.ExpressionNode.PropertyAccessNode;
-import au.ellie.hyui.html.template.item.Node.ExpressionNode.TextNode;
-import au.ellie.hyui.html.template.item.Node.ExpressionNode.VariableNode;
+import au.ellie.hyui.html.template.item.Node.ExpressionNode.*;
 import au.ellie.hyui.html.template.item.Symbols;
-import au.ellie.hyui.html.template.utils.NumericUtils;
-import au.ellie.hyui.html.template.utils.ReflectionUtils;
+import au.ellie.hyui.utils.NumericUtils;
+import au.ellie.hyui.utils.ReflectionUtils;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Supplier;
 
 import static au.ellie.hyui.html.template.context.VariableStack.VariableScope.COMPONENT_SCOPE_PREFIX;
 import static au.ellie.hyui.html.template.context.VariableStack.VariableScope.EACH_SCOPE_NAME;
+import static au.ellie.hyui.utils.ObjectUtils.toBoolean;
+import static au.ellie.hyui.utils.ObjectUtils.toIterable;
 
 public class Evaluator {
     private final FilterRegistry filterRegistry;
@@ -165,15 +158,15 @@ public class Evaluator {
         return switch (node.operator()) {
             case Symbols.EQUALS -> evaluateEquals(left, right);
             case Symbols.NOT_EQUALS -> !evaluateEquals(left, right);
-            case Symbols.LESS_THAN -> evaluateComparison(left, right) < 0;
-            case Symbols.GREATER_THAN -> evaluateComparison(left, right) > 0;
-            case Symbols.LESS_THAN_EQUALS -> evaluateComparison(left, right) <= 0;
-            case Symbols.GREATER_THAN_EQUALS -> evaluateComparison(left, right) >= 0;
+            case Symbols.LESS_THAN -> evaluateComparison(node, left, right) < 0;
+            case Symbols.GREATER_THAN -> evaluateComparison(node, left, right) > 0;
+            case Symbols.LESS_THAN_EQUALS -> evaluateComparison(node, left, right) <= 0;
+            case Symbols.GREATER_THAN_EQUALS -> evaluateComparison(node, left, right) >= 0;
             case Symbols.AND -> toBoolean(left) && toBoolean(right);
             case Symbols.OR -> toBoolean(left) || toBoolean(right);
             case Symbols.IN -> evaluateIn(left, right);
             case Symbols.NOT_IN -> !evaluateIn(left, right);
-            default -> throw new RuntimeException("Unknown operator: " + node.operator());
+            default -> throw new EvaluationException("Unknown operator", node);
         };
     }
 
@@ -205,7 +198,7 @@ public class Evaluator {
      * @return Negative if left < right, 0 if left == right, positive if left > right
      */
     @SuppressWarnings("unchecked")
-    private int evaluateComparison(Object left, Object right) {
+    private int evaluateComparison(Node node, Object left, Object right) {
         if (left == null && right == null) return 0;
         if (left == null) return -1;
         if (right == null) return 1;
@@ -221,8 +214,8 @@ public class Evaluator {
             return leftComp.compareTo(right);
         }
 
-        throw new RuntimeException("Cannot compare " + left.getClass().getSimpleName() +
-                " and " + right.getClass().getSimpleName());
+        throw new EvaluationException("Cannot compare " + left.getClass().getSimpleName() +
+                " and " + right.getClass().getSimpleName(), node);
     }
 
     /**
@@ -317,7 +310,7 @@ public class Evaluator {
         var cachedComponent = components.get(componentDef);
 
         if (cachedComponent == null)
-            throw new RuntimeException("Component not found: " + componentDef);
+            throw new ComponentNotFoundException("Component not found", component, componentDef);
 
         // Attributes
         var context = new HashMap<String, Object>();
@@ -378,7 +371,6 @@ public class Evaluator {
 
     /**
      * Parse inline attributes from evaluated expression content.
-     * Handles formats like: "--selected", "--name=value", "class=active"
      *
      * @param content The evaluated content containing attributes
      * @param context The context map to add attributes to
@@ -442,45 +434,6 @@ public class Evaluator {
             } else
                 context.put(name, true);
         }
-    }
-
-    // ===== Helpers =====
-
-    /**
-     * Convert an object to a boolean value.
-     *
-     * @param value The object to convert
-     * @return The boolean value
-     */
-    private boolean toBoolean(Object value) {
-        return switch (value) {
-            case null -> false;
-            case Boolean b -> b;
-            case Number n -> n.doubleValue() != 0;
-            case String s -> !s.isEmpty();
-            case Collection<?> c -> !c.isEmpty();
-            case Map<?, ?> m -> !m.isEmpty();
-            default -> true;
-        };
-    }
-
-    /**
-     * Convert an object to an iterable or throw an exception.
-     *
-     * @param value The object to convert
-     * @return The iterable
-     */
-    private Iterable<?> toIterable(Object value) {
-        if (value instanceof Iterable<?> iterable)
-            return iterable;
-
-        if (value instanceof Map<?, ?> map)
-            return map.entrySet();
-
-        if (value.getClass().isArray())
-            return Arrays.asList((Object[]) value);
-
-        throw new RuntimeException("Cannot iterate over " + value.getClass());
     }
 
     /**

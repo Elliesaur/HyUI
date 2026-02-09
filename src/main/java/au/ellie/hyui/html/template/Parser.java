@@ -18,7 +18,7 @@
 
 package au.ellie.hyui.html.template;
 
-import au.ellie.hyui.html.TemplateProcessor.CachedComponent;
+import au.ellie.hyui.html.template.context.ParserException;
 import au.ellie.hyui.html.template.item.Node;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode.DynamicAttributeNode;
@@ -29,13 +29,7 @@ import au.ellie.hyui.html.template.item.Node.BlockNode.EachBlockNode;
 import au.ellie.hyui.html.template.item.Node.BlockNode.IfBlockNode;
 import au.ellie.hyui.html.template.item.Node.ComponentElementNode;
 import au.ellie.hyui.html.template.item.Node.ExpressionNode;
-import au.ellie.hyui.html.template.item.Node.ExpressionNode.BinaryOpNode;
-import au.ellie.hyui.html.template.item.Node.ExpressionNode.DefaultNode;
-import au.ellie.hyui.html.template.item.Node.ExpressionNode.LiteralNode;
-import au.ellie.hyui.html.template.item.Node.ExpressionNode.PipeNode;
-import au.ellie.hyui.html.template.item.Node.ExpressionNode.PropertyAccessNode;
-import au.ellie.hyui.html.template.item.Node.ExpressionNode.TextNode;
-import au.ellie.hyui.html.template.item.Node.ExpressionNode.VariableNode;
+import au.ellie.hyui.html.template.item.Node.ExpressionNode.*;
 import au.ellie.hyui.html.template.item.Symbols;
 import au.ellie.hyui.html.template.item.Token;
 import au.ellie.hyui.html.template.item.Token.Type;
@@ -43,19 +37,16 @@ import au.ellie.hyui.html.template.item.Token.Type;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Stack;
 
 import static au.ellie.hyui.html.template.item.Token.Type.*;
 
 public class Parser {
-    private final Map<String, CachedComponent> components;
     private final Stack<Token> context;
     private final List<Token> tokens;
     private int pos = 0;
 
-    public Parser(List<Token> tokens, Map<String, CachedComponent> componentCache) {
-        this.components = componentCache;
+    public Parser(List<Token> tokens) {
         this.context = new Stack<>();
         this.tokens = tokens;
     }
@@ -90,7 +81,7 @@ public class Parser {
             case EXPRESSION_OPEN -> parseExpressionOrBlock();
             case COMPONENT_OPEN -> parseComponentElement();
             case ATTRIBUTE -> parseAttribute();
-            default -> throw new RuntimeException("Unexpected token: " + token);
+            default -> throw new ParserException("Unexpected token", token, pos);
         };
     }
 
@@ -142,7 +133,7 @@ public class Parser {
             return expr;
         }
 
-        throw new RuntimeException("Unexpected token in expression: " + current());
+        throw new ParserException("Unexpected token in expression", current(), pos);
     }
 
     // ===== Logical Expression =====
@@ -267,8 +258,7 @@ public class Parser {
         return switch (token.value()) {
             case Symbols.SECTION_IF -> parseIfBlock();
             case Symbols.SECTION_EACH -> parseEachBlock();
-            default ->
-                    throw new RuntimeException("Unknown block value \"" + token.value() + "\" for token " + token.type());
+            default -> throw new ParserException("Unknown token for block", token, pos);
         };
     }
 
@@ -376,7 +366,7 @@ public class Parser {
     private Node parseAttribute() {
         var context = this.context.peek();
         if (context == null)
-            throw new RuntimeException("No HTML tag context for attribute at position " + pos);
+            throw new ParserException("No HTML tag context for attribute", current(), pos);
 
         var attribute = get(ATTRIBUTE);
         if (attribute != null) {
@@ -396,11 +386,11 @@ public class Parser {
                 return new DynamicAttributeNode(name, expr);
             }
 
-            throw new RuntimeException("Expected attribute value at position " + current().position());
+            throw new ParserException("Expected attribute value", current(), pos);
         } else if (peek(EXPRESSION_OPEN))
             return new ExpressionAttributeNode(parseExpressionOrBlock());
 
-        throw new RuntimeException("Unexpected token in tag <" + context.value() + ">: " + current());
+        throw new ParserException("Unexpected token in tag <" + context.value() + ">", current(), pos);
     }
 
     /**
@@ -425,7 +415,8 @@ public class Parser {
                 children.add(child);
         }
 
-        throw new RuntimeException("Unclosed tag: " + parentTag + " at position " + tokens.getLast().position());
+        var last = tokens.getLast();
+        throw new ParserException("Unclosed tag <" + parentTag + ">", last, last.position());
     }
 
     // ===== Helpers =====
@@ -506,7 +497,7 @@ public class Parser {
     /**
      * Except the token to match the given type and any of the given values, consuming it.
      *
-     * @throws RuntimeException if the expected type or value do not match
+     * @throws ParserException if the expected type or value do not match
      */
     private Token expect(Type type, String... values) {
         var token = current();
@@ -515,7 +506,7 @@ public class Parser {
             return token;
         }
 
-        throw new RuntimeException("Expected " + type + (values.length > 0 ? " with value \"" + String.join("/", values) + "\"" : "") + " but got " + current().type() + " with value " + current().value() + " at index " + pos);
+        throw new ParserException("Expected " + type + (values.length > 0 ? " with value \"" + String.join("/", values) + "\"" : ""), token, pos);
     }
 
     /**

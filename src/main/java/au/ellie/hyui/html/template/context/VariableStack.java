@@ -19,7 +19,7 @@
 package au.ellie.hyui.html.template.context;
 
 import au.ellie.hyui.html.TemplateProcessor.ValueResolver;
-import au.ellie.hyui.html.template.utils.LambdaUtils;
+import au.ellie.hyui.utils.LambdaUtils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

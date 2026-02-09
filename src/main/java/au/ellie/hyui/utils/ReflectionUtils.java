@@ -16,7 +16,7 @@
  *
  */
 
-package au.ellie.hyui.html.template.utils;
+package au.ellie.hyui.utils;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
