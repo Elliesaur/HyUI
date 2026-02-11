@@ -19,6 +19,7 @@
 package au.ellie.hyui.html.template.item;
 
 public record Token(Type type, String value, int position) {
+
     /**
      * Check if the token matches the given type and value
      *
@@ -26,7 +27,7 @@ public record Token(Type type, String value, int position) {
      * @param symbols The values to check
      */
     public boolean match(Type type, String... symbols) {
-        if (this.type != type)
+        if (this.type != type && type != Type.ANY)
             return false;
 
         if (symbols.length == 0)
@@ -65,20 +66,22 @@ public record Token(Type type, String value, int position) {
         COMPARATOR,
         OPERATOR,
         ASSIGN,
+        SLOT,
 
         // Expression
         EXPRESSION_OPEN,
         EXPRESSION_CLOSE,
 
         // Components
-        COMPONENT_OPEN,
-        COMPONENT_CLOSE,
+        HTML_OPEN,
+        HTML_CLOSE,
 
         // Block
         BLOCK_HEAD,
         BLOCK_TAIL,
 
         // Special
+        ANY,
         EOF
     }
 }

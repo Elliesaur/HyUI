@@ -23,6 +23,7 @@ import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.html.template.Evaluator;
 import au.ellie.hyui.html.template.Lexer;
 import au.ellie.hyui.html.template.Parser;
+import au.ellie.hyui.html.template.context.ExecutionPolicy;
 import au.ellie.hyui.html.template.context.FilterRegistry;
 import au.ellie.hyui.html.template.context.VariableHandler.CachingVariableHandler;
 import au.ellie.hyui.html.template.context.VariableHandler.EphemeralVariableHandler;
@@ -81,7 +82,7 @@ public class TemplateProcessor {
     private final Map<String, Object> variables = new HashMap<>();
     private final Map<String, CachedComponent> components = new HashMap<>();
     private final FilterRegistry filterRegistry = new FilterRegistry();
-    private final CachedComponent root = new CachedComponent("__root__");
+    private final CachedComponent root = new CachedComponent();
 
     private ValueResolver valueResolver;
     private boolean preferDynamicValues;
@@ -196,7 +197,7 @@ public class TemplateProcessor {
         assert !template.isEmpty() : "Component template cannot be empty.";
 
 
-        var cache = components.computeIfAbsent(name, _ -> new CachedComponent(name));
+        var cache = components.computeIfAbsent(name, _ -> new CachedComponent());
         var updated = cache.setTemplate(template);
 
         // Invalidate other components cache
@@ -273,7 +274,7 @@ public class TemplateProcessor {
         if (additionalVariables != null)
             parameters.putAll(additionalVariables);
 
-        var rootAst = this.root.getAst(components);
+        var rootAst = this.root.getAst();
         var scope = new VariableScope(ROOT_SCOPE_NAME, parameters);
         var stack = new VariableStack(scope, valueResolver, preferDynamicValues);
 
@@ -343,11 +344,9 @@ public class TemplateProcessor {
     public static class CachedComponent {
         private List<Node> ast;
         private String template;
-        private String name;
 
-        public CachedComponent(String name) {
+        public CachedComponent() {
             this.template = "";
-            this.name = name;
         }
 
         /**
@@ -393,41 +392,13 @@ public class TemplateProcessor {
          *
          * @return The built template processor.
          */
-        public List<Node> getAst(Map<String, CachedComponent> componentCache) {
+        public List<Node> getAst() {
             if (ast == null) {
-                List<Token> tokens = new Lexer(template, componentCache, name).tokenize();
+                List<Token> tokens = new Lexer(template).tokenize();
                 ast = new Parser(tokens).parse();
             }
 
             return ast;
         }
-    }
-
-    /**
-     * Execution policy for lazily evaluated variables.
-     */
-    public enum ExecutionPolicy {
-        /**
-         * No caching.
-         * The value with be evaluated on every request.
-         */
-        DYNAMIC,
-
-        /**
-         * Cache the value after the first evaluation.
-         */
-        CACHED,
-
-        /**
-         * Evaluate the value only once, deleting it afterward.
-         * This is useful for one-time action.
-         */
-        EPHEMERAL,
-
-        /**
-         * Evaluate the value until the first null result,
-         * then delete it from the stack.
-         */
-        NON_NULL
     }
 }

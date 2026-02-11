@@ -18,29 +18,25 @@
 
 package au.ellie.hyui.html.template;
 
-import au.ellie.hyui.html.TemplateProcessor.CachedComponent;
+import au.ellie.hyui.html.template.item.Symbols;
 import au.ellie.hyui.html.template.item.Token;
 import au.ellie.hyui.html.template.item.Token.Type;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 import static au.ellie.hyui.html.template.item.Symbols.*;
 
 public class Lexer {
-    private final Map<String, CachedComponent> components;
     private final String input;
-    private final String name;
 
+    private int lineStart = 0;
     private int line = 1;
     private int pos = 0;
 
-    public Lexer(String input, Map<String, CachedComponent> components, String name) {
-        this.components = components;
+    public Lexer(String input) {
         this.input = input;
-        this.name = name;
     }
 
     /**
@@ -50,16 +46,16 @@ public class Lexer {
         var tokens = new ArrayList<Token>();
 
         while (pos < input.length()) {
-            if (peek(EXPRESSION_START))
+            if (peek(EXPRESSION_OPEN))
                 tokenizeExpressionOrBlock(tokens);
-            else if (isDeclaredComponent()) {
-                var savedPos = pos;
-                var executed = peek(COMPONENT_CLOSE) ?
+            else if (isHtml()) {
+                var startPos = pos;
+                var executed = peek(HTML_END) ?
                         tokenizeEndComponent(tokens) :
                         tokenizeStartComponent(tokens);
 
                 if (!executed) {
-                    pos = savedPos;
+                    pos = startPos;
                     tokenizeText(tokens);
                 }
             } else
@@ -77,35 +73,32 @@ public class Lexer {
      * @param tokens The list to add tokens to
      */
     private void tokenizeExpressionOrBlock(List<Token> tokens) {
-        expect(EXPRESSION_START);
-        tokens.add(new Token(Type.EXPRESSION_OPEN, EXPRESSION_START, pos - EXPRESSION_START.length()));
+        var blockStartPos = pos;
+        var isBlock = true;
+
+        expect(EXPRESSION_OPEN);
+        tokens.add(new Token(Type.EXPRESSION_OPEN, EXPRESSION_OPEN, pos - EXPRESSION_OPEN.length()));
 
         skipWhitespace();
 
-        var consumeLine = false;
         if (consume(BLOCK_START)) {
-            consumeLine = true;
-
-            trimWhitespaceForBlock(tokens);
             tokens.add(new Token(Type.BLOCK_HEAD, BLOCK_START, pos - BLOCK_START.length()));
             tokens.add(tokenizeIdentifier(Type.IDENTIFIER));
             skipWhitespace();
         } else if (consume(BLOCK_END)) {
-            consumeLine = true;
-
-            trimWhitespaceForBlock(tokens);
             tokens.add(new Token(Type.BLOCK_TAIL, BLOCK_END, pos - BLOCK_END.length()));
             tokens.add(tokenizeIdentifier(Type.IDENTIFIER));
             skipWhitespace();
-        }
+        } else
+            isBlock = false;
 
         tokenizeExpression(tokens);
 
-        expect(EXPRESSION_END);
-        tokens.add(new Token(Type.EXPRESSION_CLOSE, EXPRESSION_END, pos - EXPRESSION_END.length()));
+        expect(EXPRESSION_CLOSE);
+        tokens.add(new Token(Type.EXPRESSION_CLOSE, EXPRESSION_CLOSE, pos - EXPRESSION_CLOSE.length()));
 
-        if (consumeLine)
-            skipBlockLineEnd();
+        if (isBlock && isStandaloneLine(blockStartPos, pos))
+            consumeStandaloneLine(tokens);
     }
 
     /**
@@ -117,7 +110,7 @@ public class Lexer {
         skipWhitespace();
 
         while (pos < input.length()) {
-            if (peek(EXPRESSION_END))
+            if (peek(EXPRESSION_CLOSE))
                 break;
 
             var current = current();
@@ -191,7 +184,7 @@ public class Lexer {
 
         var current = current();
         var builder = new StringBuilder();
-        while (pos < input.length() && (Character.isLetterOrDigit(current) || current == '_' || current == '-')) {
+        while (pos < input.length() && (Character.isLetterOrDigit(current) || current == '_' || current == '-' || current == ':')) {
             builder.append(current);
             current = skip();
         }
@@ -276,9 +269,13 @@ public class Lexer {
         var start = pos;
 
         var builder = new StringBuilder();
-        while (pos < input.length() && !peek(EXPRESSION_START) && !isDeclaredComponent()) {
-            builder.append(current());
+        while (pos < input.length() && !peek(EXPRESSION_OPEN) && !isHtml()) {
+            var current = current();
+            builder.append(current);
             skip();
+
+            if (current == '\n')
+                break;
         }
 
         if (!builder.isEmpty())
@@ -291,20 +288,15 @@ public class Lexer {
      * @param tokens The list to add tokens to
      */
     private boolean tokenizeStartComponent(List<Token> tokens) {
-        expect(COMPONENT_START);
-        skipWhitespace();
+        expect(HTML_OPEN);
+        tokens.add(new Token(Type.HTML_OPEN, HTML_OPEN, pos - HTML_OPEN.length()));
 
-        // Tag name
-        var identifier = tokenizeComponentName();
-        if (Objects.equals(identifier.value(), this.name) || !components.containsKey(identifier.value()))
-            return false;
-
-        tokens.add(new Token(Type.COMPONENT_OPEN, COMPONENT_START, identifier.position() - COMPONENT_START.length()));
-        tokens.add(new Token(Type.IDENTIFIER, identifier.value(), identifier.position()));
+        // Identifier
+        tokens.add(tokenizeComponentName());
         skipWhitespace();
 
         // Attributes
-        while (pos < input.length() && !peek(COMPONENT_END, COMPONENT_SELF_CLOSE)) {
+        while (pos < input.length() && !peek(HTML_CLOSE, HTML_END_SELF)) {
             // Attribute name
             if (Character.isLetter(current()))
                 tokens.add(tokenizeComponentAttributeName());
@@ -316,15 +308,15 @@ public class Lexer {
                 tokens.add(new Token(Type.ASSIGN, ASSIGN, pos - ASSIGN.length()));
                 skipWhitespace();
 
-                if (peek(EXPRESSION_START)) {
+                if (peek(EXPRESSION_OPEN))
                     tokenizeExpressionOrBlock(tokens);
-                } else if (peek(QUOTE))
+                else if (peek(QUOTE))
                     tokens.add(tokenizeString());
                 else if (isNumberType())
                     tokens.add(tokenizeNumber());
                 else
                     throwError("Unexpected character in attribute value: " + current(), pos);
-            } else if (peek(EXPRESSION_START))
+            } else if (peek(EXPRESSION_OPEN))
                 tokenizeExpressionOrBlock(tokens);
             else
                 throwError("Unexpected character in attribute value: " + current(), pos);
@@ -333,12 +325,12 @@ public class Lexer {
         }
 
         // Self-closing or normal close
-        var close = filter(COMPONENT_END, COMPONENT_SELF_CLOSE);
+        var close = filter(HTML_CLOSE, HTML_END_SELF);
         if (close != null) {
-            tokens.add(new Token(Type.COMPONENT_CLOSE, close, pos));
+            tokens.add(new Token(Type.HTML_CLOSE, close, pos));
             skip(close);
         } else
-            throwError("Expected '" + COMPONENT_END + "' or '" + COMPONENT_SELF_CLOSE + "' to close tag", pos);
+            throwError("Expected '" + HTML_CLOSE + "' or '" + HTML_END_SELF + "' to close tag", pos);
 
         return true;
     }
@@ -347,22 +339,17 @@ public class Lexer {
      * Tokenize an HTML end tag: </tagname>
      */
     private boolean tokenizeEndComponent(List<Token> tokens) {
-        expect(COMPONENT_CLOSE);
+        expect(HTML_END);
+        tokens.add(new Token(Type.HTML_OPEN, HTML_END, pos - HTML_OPEN.length()));
+
+        // Identifier
+        tokens.add(tokenizeComponentName());
         skipWhitespace();
 
-        // Tag name
-        var identifier = tokenizeComponentName();
-        if (Objects.equals(identifier.value(), this.name) || !components.containsKey(identifier.value()))
-            return false;
-
-        tokens.add(new Token(Type.COMPONENT_OPEN, COMPONENT_CLOSE, identifier.position() - COMPONENT_START.length()));
-        tokens.add(new Token(Type.IDENTIFIER, identifier.value(), identifier.position()));
-        skipWhitespace();
-
-        if (consume(COMPONENT_END))
-            tokens.add(new Token(Type.COMPONENT_CLOSE, COMPONENT_END, pos - COMPONENT_END.length()));
+        if (consume(HTML_CLOSE))
+            tokens.add(new Token(Type.HTML_CLOSE, HTML_CLOSE, pos - HTML_CLOSE.length()));
         else
-            throwError("Expected '" + COMPONENT_END + "' to close end tag", pos);
+            throwError("Expected '" + HTML_CLOSE + "' to close end tag", pos);
 
         return true;
     }
@@ -391,12 +378,16 @@ public class Lexer {
 
         var current = current();
         var builder = new StringBuilder();
-        while (pos < input.length() && (Character.isLetterOrDigit(current) || current == '-')) {
+        while (pos < input.length() && (Character.isLetterOrDigit(current) || current == '-' || current == ':')) {
             builder.append(current);
             current = skip();
         }
 
-        return new Token(Type.IDENTIFIER, builder.toString(), start);
+        var identifier = builder.toString();
+        var type = isSlotIdentifier(identifier) ?
+                Type.SLOT : Type.IDENTIFIER;
+
+        return new Token(type, identifier, start);
     }
 
     // ===== Helpers =====
@@ -505,8 +496,10 @@ public class Lexer {
      */
     private char skip(int count) {
         for (var i = 0; i < count && pos < input.length(); i++) {
-            if (input.charAt(pos) == '\n')
+            if (input.charAt(pos) == '\n') {
+                lineStart = pos + 1;
                 line++;
+            }
 
             pos++;
         }
@@ -524,24 +517,30 @@ public class Lexer {
     }
 
     /**
-     * Check if current position starts an HTML tag (not just a less-than operator)
+     * Check if the given identifier is a slot name
+     * <pre>
+     * - Start with {@link Symbols#HTML_SLOT_OUTPUT} for output slots
+     * - Start with {@link Symbols#HTML_SLOT_INPUT} for input slots
+     * </pre>
+     *
+     * @param id The identifier to check
      */
-    private boolean isDeclaredComponent() {
-        if (!peek(COMPONENT_START))
+    private boolean isSlotIdentifier(String id) {
+        return id.equals(HTML_SLOT_OUTPUT)
+                || id.startsWith(HTML_SLOT_OUTPUT + HTML_SLOT_INPUT)
+                || id.startsWith(HTML_SLOT_INPUT);
+    }
+
+    /**
+     * Check if current position starts an HTML tag
+     * and not just a less-than operator
+     */
+    private boolean isHtml() {
+        if (!peek(HTML_OPEN))
             return false;
 
-        var savedPos = this.pos;
-        var declaredComponent = false;
-
-        if (consume(COMPONENT_CLOSE) || consume(COMPONENT_START)) {
-            skipWhitespace();
-            var identifier = tokenizeComponentName();
-            if (!Objects.equals(identifier.value(), this.name) && components.containsKey(identifier.value()))
-                declaredComponent = true;
-        }
-
-        this.pos = savedPos;
-        return declaredComponent;
+        var next = next();
+        return next == '/' || next == ':' || Character.isLetter(next);
     }
 
     // === Whitespace ===
@@ -550,63 +549,88 @@ public class Lexer {
      * Skip whitespace characters
      */
     private void skipWhitespace() {
-        while (pos < input.length() && Character.isWhitespace(current()))
-            skip();
-    }
-
-    /**
-     * Trim trailing whitespace from the last text token in a block
-     * if it only contains whitespace after the last newline
-     *
-     * @param tokens The list of tokens to trim
-     */
-    private void trimWhitespaceForBlock(List<Token> tokens) {
-        if (tokens.size() < 2)
-            return;
-
-        var last = tokens.get(tokens.size() - 2);
-        if (last.type() != Type.TEXT)
-            return;
-
-        var text = last.value();
-        int lastNewlineIndex = text.lastIndexOf('\n');
-
-        if (lastNewlineIndex == -1) {
-            if (tokens.size() == 1 && text.matches("^[ \\t]+$"))
-                tokens.removeFirst();
-
-            return;
-        }
-
-        var afterLastNewline = text.substring(lastNewlineIndex + 1);
-        if (afterLastNewline.matches("^[ \\t]*$")) {
-            var keepPart = text.substring(0, lastNewlineIndex + 1);
-            tokens.set(tokens.size() - 2, new Token(Type.TEXT, keepPart, last.position()));
-        }
-    }
-
-    /**
-     * Skip whitespace and a newline if present after a standalone tag
-     */
-    private void skipBlockLineEnd() {
-        var start = pos;
-
-        // Skip spaces and tabs
         var current = current();
-        while (pos < input.length() && (current == ' ' || current == '\t' || current == '\r'))
+        while (pos < input.length() && Character.isWhitespace(current))
             current = skip();
+    }
 
-        // Check for newline
-        if (pos < input.length() && current == '\n')
-            skip();
-        else
-            pos = start;
+    /**
+     * Check if the block between blockStart and blockEnd is on a line by itself
+     *
+     * @param blockStart The start position of the block (inclusive)
+     * @param blockEnd   The end position of the block (exclusive)
+     */
+    private boolean isStandaloneLine(int blockStart, int blockEnd) {
+        // Check if there's only whitespace before the block on this line
+        for (var i = lineStart; i < blockStart; i++) {
+            var c = input.charAt(i);
+            if (c != ' ' && c != '\t')
+                return false;
+        }
+
+        // Check if there's only whitespace after the block until newline
+        var i = blockEnd;
+        while (i < input.length()) {
+            var c = input.charAt(i);
+            if (c == '\n' || c == '\r')
+                return true;
+
+            if (c != ' ' && c != '\t')
+                return false;
+
+            i++;
+        }
+
+        return true;
+    }
+
+    /**
+     * Consume the rest of the line after a standalone block
+     */
+    private void consumeStandaloneLine(List<Token> tokens) {
+        var index = tokens.size() - 1;
+        while (index >= 0) {
+            var token = tokens.get(index);
+            if (token.type() == Type.TEXT) {
+                if (!Objects.equals(token.value(), "\n") && token.value().isBlank())
+                    tokens.remove(index);
+
+                break;
+            }
+
+            index--;
+        }
+
+        // Skip trailing spaces/tabs on the same line
+        while (pos < input.length()) {
+            var c = input.charAt(pos);
+            if (c == ' ' || c == '\t')
+                pos++;
+            else
+                break;
+        }
+
+        // Skip the newline character(s)
+        if (pos < input.length()) {
+            var c = input.charAt(pos);
+            if (c == '\r') {
+                pos++;
+                if (pos < input.length() && input.charAt(pos) == '\n')
+                    pos++;
+                lineStart = pos;
+                line++;
+            } else if (c == '\n') {
+                pos++;
+                lineStart = pos;
+                line++;
+            }
+        }
     }
 
     // === Errors ===
 
     private String getLine(int lineNumber) {
-        var lines = input.split("\\R", -1); // handles \n, \r\n, etc.
+        var lines = input.split("\\R", -1); // handles \n,\t,\r\n, etc.
         if (lineNumber < 1 || lineNumber > lines.length)
             return "";
 
@@ -614,14 +638,15 @@ public class Lexer {
     }
 
     private void throwError(String message, int errorPos) {
-        var arrow = " ".repeat(Math.max(0, errorPos)) +
+        int column = errorPos - lineStart;
+        var arrow = " ".repeat(Math.max(0, column)) +
                 "↳ " + message;
 
         String formattedMessage = String.format("""
                 An error occurred when parsing the input at line %d, column %d
                 %s
                 %s
-                """, line, errorPos, getLine(line), arrow
+                """, line, column, getLine(line), arrow
         );
 
         throw new RuntimeException(formattedMessage);

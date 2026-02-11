@@ -21,19 +21,20 @@ package au.ellie.hyui.html.template;
 import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.html.TemplateProcessor.CachedComponent;
 import au.ellie.hyui.html.template.context.FilterRegistry;
+import au.ellie.hyui.html.template.context.SlotSupplier;
 import au.ellie.hyui.html.template.context.VariableStack;
 import au.ellie.hyui.html.template.context.VariableStack.VariableScope;
 import au.ellie.hyui.html.template.exception.EvaluationException;
-import au.ellie.hyui.html.template.exception.EvaluationException.ComponentNotFoundException;
 import au.ellie.hyui.html.template.item.Node;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode.DynamicAttributeNode;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode.ExpressionAttributeNode;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode.FlagAttributeNode;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode.StaticAttributeNode;
+import au.ellie.hyui.html.template.item.Node.BlockNode.ComponentBlockNode;
 import au.ellie.hyui.html.template.item.Node.BlockNode.EachBlockNode;
 import au.ellie.hyui.html.template.item.Node.BlockNode.IfBlockNode;
-import au.ellie.hyui.html.template.item.Node.ComponentElementNode;
+import au.ellie.hyui.html.template.item.Node.BlockNode.SlotBlockNode;
 import au.ellie.hyui.html.template.item.Node.ExpressionNode;
 import au.ellie.hyui.html.template.item.Node.ExpressionNode.*;
 import au.ellie.hyui.html.template.item.Symbols;
@@ -49,9 +50,11 @@ import static au.ellie.hyui.utils.ObjectUtils.toBoolean;
 import static au.ellie.hyui.utils.ObjectUtils.toIterable;
 
 public class Evaluator {
+    private final static Stack<String> STACK = new Stack<>();
+
     private final FilterRegistry filterRegistry;
     private final VariableStack contextStack;
-    private Map<String, CachedComponent> components;
+    private final Map<String, CachedComponent> components;
 
     public Evaluator(VariableStack context, FilterRegistry filterRegistry, Map<String, CachedComponent> components) {
         this.components = components;
@@ -89,8 +92,9 @@ public class Evaluator {
             }
             case IfBlockNode ifBlock -> evaluateIfBlock(ifBlock);
             case EachBlockNode eachBlock -> evaluateEachBlock(eachBlock);
-            case ComponentElementNode component -> evaluateComponent(component);
-            case AttributeValueNode attributeValueNode -> evaluateAttributeValueNode(attributeValueNode);
+            case SlotBlockNode slotBlockNode -> evaluateSlotBlock(slotBlockNode);
+            case ComponentBlockNode component -> evaluateComponent(component);
+            case AttributeValueNode attributeValueNode -> evaluateAttributeString(attributeValueNode);
 
             default -> throw new IllegalStateException("Unexpected value: " + node);
         };
@@ -305,12 +309,11 @@ public class Evaluator {
      * @param component The `component` element node to evaluate.
      * @return The resulting string after evaluation.
      */
-    private String evaluateComponent(ComponentElementNode component) {
+    private String evaluateComponent(ComponentBlockNode component) {
         var componentDef = component.tag();
-        var cachedComponent = components.get(componentDef);
 
-        if (cachedComponent == null)
-            throw new ComponentNotFoundException("Component not found", component, componentDef);
+        if (!components.containsKey(componentDef) || STACK.contains(componentDef))
+            return evaluateComponentString(component);
 
         // Attributes
         var context = new HashMap<String, Object>();
@@ -331,19 +334,75 @@ public class Evaluator {
 
         // Children
         var scope = new VariableScope(COMPONENT_SCOPE_PREFIX + componentDef, context);
-        scope.putKeyed("children", (Supplier<String>) () -> {
-            var result = new StringBuilder();
-            for (Node child : component.children())
-                result.append(evaluateNode(child));
-            return result.toString();
-        });
+        for (var child : component.children()) {
+            var slotName = Symbols.HTML_SLOT_DEFAULT;
+            if (child instanceof SlotBlockNode slot) {
+                if (slot.name().startsWith(Symbols.HTML_SLOT_INPUT))
+                    slotName = slot.name().substring(Symbols.HTML_SLOT_INPUT.length());
+            }
+
+            // Saved as "slot.{slotName}" in component scope
+            scope.computeIfAbsent(Symbols.HTML_SLOT_KEY + slotName, key -> {
+                scope.getKeys().add(key);
+                return new SlotSupplier(this::evaluateNode);
+            }).add(child);
+        }
 
         contextStack.pushScope(scope);
+        STACK.push(componentDef);
         try {
-            return evaluate(cachedComponent.getAst(components));
+            var cachedComponent = components.get(componentDef);
+            return evaluate(cachedComponent.getAst());
         } finally {
+            STACK.pop();
             contextStack.popScope();
         }
+    }
+
+    /**
+     * Evaluate a `slot` block node and return the resulting string.
+     *
+     * @param slotBlockNode The `slot` block node to evaluate.
+     */
+    private String evaluateSlotBlock(SlotBlockNode slotBlockNode) {
+        var slotName = slotBlockNode.name();
+        if (slotName.startsWith(Symbols.HTML_SLOT_OUTPUT))
+            slotName = slotName.substring(Symbols.HTML_SLOT_OUTPUT.length() + 1);
+
+        var content = contextStack.getVariable(Symbols.HTML_SLOT_KEY + slotName, () -> null);
+        if (content != null)
+            return content.toString();
+
+        return evaluate(slotBlockNode.children());
+    }
+
+    /**
+     * Evaluate a component as a string without processing it as a component.
+     *
+     * @param component The component element node to evaluate as a string.
+     * @return The resulting string representation of the component.
+     */
+    private String evaluateComponentString(ComponentBlockNode component) {
+        var sb = new StringBuilder();
+        sb.append("<").append(component.tag());
+
+        for (var attribute : component.attributes()) {
+            var attrStr = evaluateAttributeString(attribute);
+            if (!attrStr.isEmpty())
+                sb.append(" ").append(attrStr);
+        }
+
+        if (component.children().isEmpty())
+            sb.append("/");
+        sb.append(">");
+
+        for (Node child : component.children())
+            sb.append(evaluateNode(child));
+
+        if (!component.children().isEmpty())
+            sb.append("</").append(component.tag()).append(">");
+
+        return sb.toString();
     }
 
     /**
@@ -352,7 +411,7 @@ public class Evaluator {
      * @param attributeValueNode The attribute value node to evaluate.
      * @return The resulting string after evaluation.
      */
-    private String evaluateAttributeValueNode(AttributeValueNode attributeValueNode) {
+    private String evaluateAttributeString(AttributeValueNode attributeValueNode) {
         var sb = new StringBuilder();
 
         switch (attributeValueNode) {
@@ -361,9 +420,7 @@ public class Evaluator {
             case StaticAttributeNode staticNode ->
                     sb.append(staticNode.getName()).append("=\"").append(staticNode.value()).append("\"");
             case FlagAttributeNode flag -> sb.append(flag.getName());
-            default -> {
-                // We don't support expression attributes here
-            }
+            case ExpressionAttributeNode expression -> sb.append(evaluateNode(expression.expressions()));
         }
 
         return sb.toString();

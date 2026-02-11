@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import static au.ellie.hyui.html.TemplateProcessor.ExecutionPolicy.*;
+import static au.ellie.hyui.html.template.context.ExecutionPolicy.*;
 import static au.ellie.hyui.html.template.context.VariableStack.VariableScope.EACH_SCOPE_NAME;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -271,7 +271,7 @@ class TemplateProcessorTest {
                     {{#if $condition && $secret}}{{/if}}
                     {{$secret ?? "secret already revealed: disappeared"}}
                     """);
-            assertEquals(expected, processor.process());
+            assertEquals(expected, processor.process().trim());
         }
 
         @Test
@@ -864,7 +864,7 @@ class TemplateProcessorTest {
             processor.setVariable("style", (stack) -> (int) stack.getVariable("key") < 3 ? "color: red;" : null, DYNAMIC);
 
             processor.registerComponent("module", """
-                    <div{{#if $style}} style="{{$style}}"{{/if}}>Module {{$key}} -> Active : {{ $active ?? false }}</div>
+                    <div{{#if $style}} style={{$style}}{{/if}}>Module {{$key}} -> Active : {{ $active ?? false }}</div>
                     """);
 
             processor.setTemplate(normalize("""
@@ -921,8 +921,7 @@ class TemplateProcessorTest {
                     new Item("preset_02", true, "Test name 02", 1)
             ));
 
-
-            processor.setTemplate(normalize("""
+            processor.setTemplate("""
                     <div class="container-contents">
                         <div class="content-name">
                             <input placeholder="Preset..." type="text" value=""/>
@@ -930,15 +929,15 @@ class TemplateProcessorTest {
                     
                         {{#if $render && $preset-list.size > 1}}
                         <div class="content-preset">
-                            <select data-hyui-showlabel="true" value="{{$preset-active}}">
+                            <select data-hyui-showlabel="true" value={{$preset-active}}>
                                 {{#each $preset-list}}
-                                <option {{#if $preset-active == $item.name}}selected {{/if}}value="{{$item.name}}">{{$item.display}}</option>
+                                <option {{#if $preset-active == $item.name}}selected {{/if}}value={{$item.name}}>{{$item.display}}</option>
                                 {{/each}}
                             </select>
                         </div>
                         {{/if}}
                     </div>
-                    """));
+                    """);
 
             assertEquals(normalize("""
                     <div class="container-contents">
@@ -1035,7 +1034,7 @@ class TemplateProcessorTest {
         @Test
         @DisplayName("Should allow components to pass existing parameters")
         void componentCanPassExistingParameters() {
-            processor.registerComponent("button", "<button style=\"{{$style}}\">Submit</button>");
+            processor.registerComponent("button", "<button style={{$style}}>Submit</button>");
 
             processor.setTemplate("<button style=\"align: center\" />");
             assertEquals(
@@ -1047,12 +1046,61 @@ class TemplateProcessorTest {
         @Test
         @DisplayName("Should allow components to use children as content")
         void componentCanPassChildren() {
-            processor.registerComponent("panel", "<div style=\"background: red\">{{ $children }}</div>");
-            processor.registerComponent("bigButton", "<h1>{{ $children }}</h1>");
+            processor.registerComponent("panel", "<div style=\"background: red\"><slot/></div>");
+            processor.registerComponent("bigButton", "<h1><slot/></h1>");
 
             processor.setTemplate("<panel><bigButton>Deep Big Button</bigButton></panel>");
             assertEquals(
                     "<div style=\"background: red\"><h1>Deep Big Button</h1></div>",
+                    processor.process()
+            );
+        }
+
+        @Test
+        @DisplayName("Should allow default slot content when no children are provided")
+        void defaultSlot() {
+            processor.registerComponent("panel", "<h1><slot>Default</slot></h1>");
+
+            processor.setTemplate("<panel />");
+            assertEquals(
+                    "<h1>Default</h1>",
+                    processor.process()
+            );
+        }
+
+        @Test
+        @DisplayName("Should handle named slots with default content")
+        void complexSlotHandling() {
+            processor.registerComponent("panel", """
+                    <div class="panel">
+                        <h1><slot:header>Default Header</slot></h1>
+                        {{#if $slot:default}}
+                        <div class="content">
+                            <slot>Default Content</slot>
+                        </div>
+                        {{/if}}
+                        {{#if $slot:footer}}
+                        <footer><slot:footer/></footer>
+                        {{/if}}
+                    </div>
+                    """);
+
+            processor.setTemplate("""
+                    <panel>
+                        Custom Content
+                        <:header>Custom Header</:header>
+                        <:footer>Custom Footer</:footer>
+                    </panel>
+                    """);
+            assertEquals(normalize("""
+                            <div class="panel">
+                                <h1>Custom Header</h1>
+                                <div class="content">
+                                    Custom Content
+                                </div>
+                                <footer>Custom Footer</footer>
+                            </div>
+                            """),
                     processor.process()
             );
         }

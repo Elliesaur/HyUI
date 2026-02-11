@@ -82,6 +82,17 @@ public interface Node {
          */
         record EachBlockNode(String itemName, ExpressionNode collection, List<Node> body) implements BlockNode {
         }
+
+        /**
+         * Represents an HTML element with attributes and children
+         */
+        record ComponentBlockNode(String tag, List<AttributeValueNode> attributes,
+                                  List<Node> children) implements BlockNode {
+        }
+
+        record SlotBlockNode(String name, List<AttributeValueNode> attributes,
+                             List<Node> children) implements BlockNode {
+        }
     }
 
     // ---- Component Nodes ----
@@ -112,13 +123,6 @@ public interface Node {
                 return "<expression>";
             }
         }
-    }
-
-    record ComponentElementNode(
-            String tag,
-            List<AttributeValueNode> attributes,
-            List<Node> children
-    ) implements Node {
     }
 }
 

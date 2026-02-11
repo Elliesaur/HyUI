@@ -25,9 +25,10 @@ import au.ellie.hyui.html.template.item.Node.AttributeValueNode.DynamicAttribute
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode.ExpressionAttributeNode;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode.FlagAttributeNode;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode.StaticAttributeNode;
+import au.ellie.hyui.html.template.item.Node.BlockNode.ComponentBlockNode;
 import au.ellie.hyui.html.template.item.Node.BlockNode.EachBlockNode;
 import au.ellie.hyui.html.template.item.Node.BlockNode.IfBlockNode;
-import au.ellie.hyui.html.template.item.Node.ComponentElementNode;
+import au.ellie.hyui.html.template.item.Node.BlockNode.SlotBlockNode;
 import au.ellie.hyui.html.template.item.Node.ExpressionNode;
 import au.ellie.hyui.html.template.item.Node.ExpressionNode.*;
 import au.ellie.hyui.html.template.item.Symbols;
@@ -35,19 +36,15 @@ import au.ellie.hyui.html.template.item.Token;
 import au.ellie.hyui.html.template.item.Token.Type;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Stack;
 
 import static au.ellie.hyui.html.template.item.Token.Type.*;
 
 public class Parser {
-    private final Stack<Token> context;
     private final List<Token> tokens;
     private int pos = 0;
 
     public Parser(List<Token> tokens) {
-        this.context = new Stack<>();
         this.tokens = tokens;
     }
 
@@ -61,7 +58,16 @@ public class Parser {
 
         while (!isAtEnd()) {
             var node = parseNode();
-            if (node != null)
+            if (node == null)
+                continue;
+
+            // Merge consecutive text nodes
+            if (!nodes.isEmpty() &&
+                    node instanceof TextNode(String content) &&
+                    nodes.getLast() instanceof TextNode(String prev)
+            )
+                nodes.set(nodes.size() - 1, new TextNode(prev + content));
+            else
                 nodes.add(node);
         }
 
@@ -77,11 +83,11 @@ public class Parser {
         var token = current();
 
         return switch (token.type()) {
-            case TEXT -> parseText();
             case EXPRESSION_OPEN -> parseExpressionOrBlock();
-            case COMPONENT_OPEN -> parseComponentElement();
+            case HTML_OPEN -> parseHtmlElement();
             case ATTRIBUTE -> parseAttribute();
-            default -> throw new ParserException("Unexpected token", token, pos);
+            case EOF -> throw new ParserException("Unexpected end of input", token, pos);
+            default -> parseText();
         };
     }
 
@@ -93,7 +99,7 @@ public class Parser {
      * @return TextNode
      */
     private TextNode parseText() {
-        return new TextNode(expect(TEXT).value());
+        return new TextNode(expect(ANY).value());
     }
 
     /**
@@ -235,6 +241,7 @@ public class Parser {
             node = parseExpression();
 
         expect(EXPRESSION_CLOSE);
+
         return node;
     }
 
@@ -323,51 +330,50 @@ public class Parser {
         expect(EXPRESSION_OPEN);
         expect(BLOCK_TAIL);
         expect(IDENTIFIER, Symbols.SECTION_EACH);
+
         return new EachBlockNode(itemName, collection, body);
     }
 
     // ===== Component =====
 
     /**
-     * Parse an component element
+     * Parse an HTML element
      */
-    private ComponentElementNode parseComponentElement() {
-        expect(COMPONENT_OPEN, Symbols.COMPONENT_START);
-        var identifier = expect(IDENTIFIER);
-        context.push(identifier);
+    private Node parseHtmlElement() {
+        expect(HTML_OPEN);
+        var identifier = exceptTagName();
 
         // Parse attributes
-        var attributes = new LinkedList<AttributeValueNode>();
-
-        try {
-            while (!peek(COMPONENT_CLOSE) && !isAtEnd()) {
-                var attribute = parseAttribute();
-                if (attribute instanceof AttributeValueNode attrNode)
-                    attributes.add(attrNode);
-                else {
-
-                }
+        var attributes = new ArrayList<AttributeValueNode>();
+        while (!peek(HTML_CLOSE) && !isAtEnd()) {
+            var attribute = parseAttribute();
+            if (attribute instanceof AttributeValueNode attrNode)
+                attributes.add(attrNode);
+            else {
+                // Loop / if / ...
             }
-        } finally {
-            context.pop();
         }
 
         // Check for self-closing or regular close
-        var selfClosing = expect(COMPONENT_CLOSE).match(Symbols.COMPONENT_SELF_CLOSE);
+        var selfClosing = expect(HTML_CLOSE).match(Symbols.HTML_END_SELF);
         var children = selfClosing ? new ArrayList<Node>() : parseHtmlChildren(identifier.value());
 
-        return new ComponentElementNode(identifier.value(), attributes, children);
+        // Normalize slot name
+        if (identifier.match(SLOT)) {
+            var slotName = identifier.value();
+            if (slotName.equals(Symbols.HTML_SLOT_OUTPUT))
+                slotName += ":" + Symbols.HTML_SLOT_DEFAULT;
+
+            return new SlotBlockNode(slotName, attributes, children);
+        }
+
+        return new ComponentBlockNode(identifier.value(), attributes, children);
     }
 
     /**
      * Parse an HTML attribute
      */
-
     private Node parseAttribute() {
-        var context = this.context.peek();
-        if (context == null)
-            throw new ParserException("No HTML tag context for attribute", current(), pos);
-
         var attribute = get(ATTRIBUTE);
         if (attribute != null) {
             var name = attribute.value();
@@ -390,7 +396,7 @@ public class Parser {
         } else if (peek(EXPRESSION_OPEN))
             return new ExpressionAttributeNode(parseExpressionOrBlock());
 
-        throw new ParserException("Unexpected token in tag <" + context.value() + ">", current(), pos);
+        throw new ParserException("Unexpected non attribute token", current(), pos);
     }
 
     /**
@@ -400,14 +406,14 @@ public class Parser {
         var children = new ArrayList<Node>();
 
         while (!isAtEnd()) {
-            var savedPos = pos;
+            var startPos = pos;
 
             // Detect closing tag
-            if (consume(COMPONENT_OPEN, Symbols.COMPONENT_CLOSE) && consume(IDENTIFIER, parentTag)) {
-                expect(COMPONENT_CLOSE);
+            if (consume(HTML_OPEN, Symbols.HTML_END) && (consume(IDENTIFIER, parentTag) || consume(SLOT))) {
+                expect(HTML_CLOSE);
                 return children;
             } else
-                pos = savedPos;
+                pos = startPos;
 
             // Parse children
             Node child = parseNode();
@@ -507,6 +513,21 @@ public class Parser {
         }
 
         throw new ParserException("Expected " + type + (values.length > 0 ? " with value \"" + String.join("/", values) + "\"" : ""), token, pos);
+    }
+
+    /**
+     * Except the token to match either a SLOT or IDENTIFIER with the given value, consuming it.
+     *
+     * @throws ParserException if the expected type or value do not match
+     */
+    private Token exceptTagName() {
+        var token = current();
+
+        if (!token.match(SLOT) && !token.match(IDENTIFIER))
+            throw new ParserException("Expected identifier", token, pos);
+
+        skip();
+        return token;
     }
 
     /**

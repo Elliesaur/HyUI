@@ -24,15 +24,21 @@ public class Symbols {
     public final static String QUOTE = "\"";
     public final static String ASSIGN = "=";
 
-    public final static String EXPRESSION_START = "{{";
-    public final static String EXPRESSION_END = "}}";
+    public final static String EXPRESSION_OPEN = "{{";
+    public final static String EXPRESSION_CLOSE = "}}";
     public final static String BLOCK_START = "#";
     public final static String BLOCK_END = "/";
 
-    public final static String COMPONENT_START = "<";
-    public final static String COMPONENT_END = ">";
-    public final static String COMPONENT_SELF_CLOSE = "/>";
-    public final static String COMPONENT_CLOSE = "</";
+    public final static String HTML_OPEN = "<";
+    public final static String HTML_CLOSE = ">";
+    public final static String HTML_END = "</";
+    public final static String HTML_END_SELF = "/>";
+
+    public final static String HTML_SLOT_INPUT = ":";
+    public final static String HTML_SLOT_OUTPUT = "slot";
+
+    public static final String HTML_SLOT_DEFAULT = "default";
+    public static final String HTML_SLOT_KEY = "slot:";
 
     public final static String PIPE = "|";
     public final static String EQUALS = "==";

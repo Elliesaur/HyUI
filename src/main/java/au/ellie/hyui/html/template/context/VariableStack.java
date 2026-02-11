@@ -24,6 +24,7 @@ import au.ellie.hyui.utils.LambdaUtils;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class VariableStack {
@@ -201,6 +202,11 @@ public class VariableStack {
 
         public Object get(String key) {
             return content.get(key);
+        }
+
+        @SuppressWarnings("unchecked")
+        public <T> T computeIfAbsent(String key, Function<String, T> defaultValue) {
+            return (T) content.computeIfAbsent(key, defaultValue);
         }
 
         public void put(String key, Object value) {
