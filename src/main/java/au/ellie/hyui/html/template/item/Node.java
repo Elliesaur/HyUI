@@ -91,7 +91,7 @@ public interface Node {
         }
 
         record SlotBlockNode(String name, List<AttributeValueNode> attributes,
-                             List<Node> children) implements BlockNode {
+                             List<Node> children, boolean output) implements BlockNode {
         }
     }
 
@@ -100,7 +100,7 @@ public interface Node {
     sealed interface AttributeValueNode extends Node {
         String getName();
 
-        record StaticAttributeNode(String name, String value) implements AttributeValueNode {
+        record MixedAttributeNode(String name, List<Object> parts) implements AttributeValueNode {
             public String getName() {
                 return name;
             }
@@ -123,6 +123,11 @@ public interface Node {
                 return "<expression>";
             }
         }
+    }
+
+    // ---- Markers ----
+
+    record MarkerNode(String content, Node inside) implements Node {
     }
 }
 

@@ -14,11 +14,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static au.ellie.hyui.html.template.context.ExecutionPolicy.*;
-import static au.ellie.hyui.html.template.context.VariableStack.VariableScope.EACH_SCOPE_NAME;
+import static au.ellie.hyui.html.template.item.Symbols.SCOPE_EACH_NAME;
 import static org.junit.jupiter.api.Assertions.*;
 
 class TemplateProcessorTest {
-
     private TemplateProcessor processor;
 
     // ========== UTILITY METHODS ==========
@@ -68,9 +67,6 @@ class TemplateProcessorTest {
     }
 
     record Item(String name, boolean active, String display, int count) {
-    }
-
-    record Box(int size) {
     }
 
     record Product(String name, List<String> tags) {
@@ -228,7 +224,7 @@ class TemplateProcessorTest {
             }, CACHED);
 
             processor.setTemplate("""
-                    {{#if $enabled}}
+                    {{if $enabled}}
                     {{$secret}} - {{$secret}}
                     {{/if}}
                     """);
@@ -249,7 +245,7 @@ class TemplateProcessorTest {
             processor.setVariable("secret", (_) -> "value_" + evaluations.incrementAndGet(), DYNAMIC);
 
             processor.setTemplate("""
-                    {{#if $enabled}}
+                    {{if $enabled}}
                     {{$secret}} - {{$secret}}
                     {{/if}}
                     """);
@@ -268,7 +264,7 @@ class TemplateProcessorTest {
             processor.setVariable("secret", (_) -> "secret value", EPHEMERAL);
 
             processor.setTemplate("""
-                    {{#if $condition && $secret}}{{/if}}
+                    {{if $condition && $secret}}{{/if}}
                     {{$secret ?? "secret already revealed: disappeared"}}
                     """);
             assertEquals(expected, processor.process().trim());
@@ -289,7 +285,7 @@ class TemplateProcessorTest {
             }, NON_NULL);
 
             processor.setTemplate("""
-                    {{#each $loop}}
+                    {{each $loop}}
                     {{$secret ?? "disappeared"}}
                     {{/each}}
                     """);
@@ -432,7 +428,7 @@ class TemplateProcessorTest {
             else
                 processor.setVariable("val", value);
 
-            processor.setTemplate("{{#if $val}}true{{/if}}");
+            processor.setTemplate("{{if $val}}true{{/if}}");
             assertEquals(isTruthy ? "true" : "", processor.process());
         }
     }
@@ -619,7 +615,7 @@ class TemplateProcessorTest {
         void renderWhenTrue() {
             processor.setVariable("show", true);
 
-            processor.setTemplate("{{#if $show}}<div>Visible</div>{{/if}}");
+            processor.setTemplate("{{if $show}}<div>Visible</div>{{/if}}");
             assertEquals("<div>Visible</div>", processor.process());
         }
 
@@ -628,7 +624,7 @@ class TemplateProcessorTest {
         void notRenderWhenFalse() {
             processor.setVariable("show", false);
 
-            processor.setTemplate("{{#if $show}}<div>Hidden</div>{{/if}}");
+            processor.setTemplate("{{if $show}}<div>Hidden</div>{{/if}}");
             assertEquals("", processor.process());
         }
 
@@ -638,7 +634,7 @@ class TemplateProcessorTest {
             processor.setVariable("count", 5);
             processor.setVariable("enabled", true);
 
-            processor.setTemplate("{{#if $enabled && $count > 3}}<div>Show</div>{{/if}}");
+            processor.setTemplate("{{if $enabled && $count > 3}}<div>Show</div>{{/if}}");
             assertEquals("<div>Show</div>", processor.process());
         }
 
@@ -649,9 +645,9 @@ class TemplateProcessorTest {
             processor.setVariable("inner", true);
 
             processor.setTemplate(normalize("""
-                    {{#if $outer}}
+                    {{if $outer}}
                     Outer
-                    {{#if $inner}}
+                    {{if $inner}}
                     Inner
                     {{/if}}
                     {{/if}}
@@ -674,13 +670,13 @@ class TemplateProcessorTest {
             processor.setVariable("score", 85);
 
             processor.setTemplate(normalize("""
-                    {{#if $score >= 90}}
+                    {{if $score >= 90}}
                     A
                     {{/if}}
-                    {{#if $score >= 80 && $score < 90}}
+                    {{if $score >= 80 && $score < 90}}
                     B
                     {{/if}}
-                    {{#if $score < 80}}
+                    {{if $score < 80}}
                     C
                     {{/if}}
                     """));
@@ -703,8 +699,8 @@ class TemplateProcessorTest {
             processor.setVariable("loggedIn", loggedIn);
 
             processor.setTemplate("""
-                    {{#if $render}}
-                    {{#if $loggedIn}}
+                    {{if $render}}
+                    {{if $loggedIn}}
                     Welcome back!
                     {{else}}
                     Please log in
@@ -729,7 +725,7 @@ class TemplateProcessorTest {
         void iterateWithDefaultName() {
             processor.setVariable("items", List.of("A", "B", "C"));
 
-            processor.setTemplate("{{#each $items}}{{$item}} {{/each}}");
+            processor.setTemplate("{{each $items}}{{$item}} {{/each}}");
             assertEquals("A B C ", processor.process());
         }
 
@@ -738,7 +734,7 @@ class TemplateProcessorTest {
         void iterateWithCustomName() {
             processor.setVariable("items", List.of("A", "B", "C"));
 
-            processor.setTemplate("{{#each $items element}}{{$element}} {{/each}}");
+            processor.setTemplate("{{each $items element}}{{$element}} {{/each}}");
             assertEquals("A B C ", processor.process());
         }
 
@@ -747,10 +743,10 @@ class TemplateProcessorTest {
         void iterateRecords() {
             processor.setVariable("items", List.of(new Item("First", false, "First", 1), new Item("Second", true, "Second", 2)));
 
-            processor.setTemplate("{{#each $items}}{{$item.name}}:{{$item.count}} {{/each}}");
+            processor.setTemplate("{{each $items}}{{$item.name}}:{{$item.count}} {{/each}}");
             assertEquals("First:1 Second:2 ", processor.process());
 
-            processor.setTemplate("{{#each $items product}}{{$product.name}}:{{$product.count}} {{/each}}");
+            processor.setTemplate("{{each $items product}}{{$product.name}}:{{$product.count}} {{/each}}");
             assertEquals("First:1 Second:2 ", processor.process());
         }
 
@@ -759,7 +755,7 @@ class TemplateProcessorTest {
         void emptyCollection() {
             processor.setVariable("items", List.of());
 
-            processor.setTemplate("{{#each $items}}{{$item}}{{/each}}");
+            processor.setTemplate("{{each $items}}{{$item}}{{/each}}");
             assertEquals("", processor.process());
         }
 
@@ -769,10 +765,10 @@ class TemplateProcessorTest {
             processor.setVariable("prefix", "Item");
             processor.setVariable("numbers", List.of(1, 2, 3));
 
-            processor.setTemplate("{{#each $numbers}}{{$prefix}} {{$item}} {{/each}}");
+            processor.setTemplate("{{each $numbers}}{{$prefix}} {{$item}} {{/each}}");
             assertEquals("Item 1 Item 2 Item 3 ", processor.process());
 
-            processor.setTemplate("{{#each $numbers num}}Number {{$num}} {{/each}}");
+            processor.setTemplate("{{each $numbers num}}Number {{$num}} {{/each}}");
             assertEquals("Number 1 Number 2 Number 3 ", processor.process());
         }
 
@@ -785,9 +781,9 @@ class TemplateProcessorTest {
             ));
 
             processor.setTemplate(normalize("""
-                    {{#each $categories cat}}
+                    {{each $categories cat}}
                     {{$cat.name}}:
-                    {{#each $cat.items product}}
+                    {{each $cat.items product}}
                     - {{$product}}
                     {{/each}}
                     {{/each}}
@@ -812,7 +808,7 @@ class TemplateProcessorTest {
                 add("C");
             }});
 
-            processor.setTemplate("{{#each $items}}{{$item}},{{/each}}");
+            processor.setTemplate("{{each $items}}{{$item}},{{/each}}");
             assertEquals("A,,C,", processor.process());
         }
     }
@@ -831,7 +827,7 @@ class TemplateProcessorTest {
                     new Product("Potion", List.of("healing", "mana"))
             ));
             processor.setVariable("tags", (stack) -> {
-                if (!stack.isScope(EACH_SCOPE_NAME))
+                if (!stack.isScope(SCOPE_EACH_NAME))
                     return "";
 
                 String key = stack.getScopeKeys().iterator().next();
@@ -843,7 +839,7 @@ class TemplateProcessorTest {
             }, DYNAMIC);
 
             processor.setTemplate(normalize("""
-                    {{#each $products product}}
+                    {{each $products product}}
                     {{$name}}: {{$tags}}
                     {{/each}}
                     """));
@@ -864,12 +860,12 @@ class TemplateProcessorTest {
             processor.setVariable("style", (stack) -> (int) stack.getVariable("key") < 3 ? "color: red;" : null, DYNAMIC);
 
             processor.registerComponent("module", """
-                    <div{{#if $style}} style={{$style}}{{/if}}>Module {{$key}} -> Active : {{ $active ?? false }}</div>
+                    <div {{if $style}}style="{{$style}}"{{/if}}>Module {{$key}} -> Active : {{ $active ?? false }}</div>
                     """);
 
             processor.setTemplate(normalize("""
-                    {{#each $list key}}
-                    <module key={{$key}} {{#if $modulation == 0 }} {{#if $key < 3 }} active {{/if}} {{/if}} style={{$style}} />
+                    {{each $list key}}
+                    <module key={{$key}} {{if $modulation == 0 }} {{if $key < 3 }} active {{/if}} {{/if}} style={{$style}} />
                     {{/each}}
                     """));
 
@@ -898,8 +894,8 @@ class TemplateProcessorTest {
             ));
 
             processor.setTemplate(normalize("""
-                    {{#each $items}}
-                    {{#if $item.active}}
+                    {{each $items}}
+                    {{if $item.active}}
                     <div>{{$item.name}}</div>
                     {{/if}}
                     {{/each}}
@@ -927,11 +923,11 @@ class TemplateProcessorTest {
                             <input placeholder="Preset..." type="text" value=""/>
                         </div>
                     
-                        {{#if $render && $preset-list.size > 1}}
+                        {{if $render && $preset-list.size > 1}}
                         <div class="content-preset">
                             <select data-hyui-showlabel="true" value={{$preset-active}}>
-                                {{#each $preset-list}}
-                                <option {{#if $preset-active == $item.name}}selected {{/if}}value={{$item.name}}>{{$item.display}}</option>
+                                {{each $preset-list}}
+                                <option {{if $preset-active == $item.name}}selected {{/if}}value={{$item.name}}>{{$item.display}}</option>
                                 {{/each}}
                             </select>
                         </div>
@@ -1074,12 +1070,12 @@ class TemplateProcessorTest {
             processor.registerComponent("panel", """
                     <div class="panel">
                         <h1><slot:header>Default Header</slot></h1>
-                        {{#if $slot:default}}
+                        {{if $slot:default}}
                         <div class="content">
                             <slot>Default Content</slot>
                         </div>
                         {{/if}}
-                        {{#if $slot:footer}}
+                        {{if $slot:footer}}
                         <footer><slot:footer/></footer>
                         {{/if}}
                     </div>
@@ -1131,14 +1127,14 @@ class TemplateProcessorTest {
         @Test
         @DisplayName("Should throw exception for unclosed if block")
         void unclosedIfBlock() {
-            processor.setTemplate("{{#if $var}}Content");
+            processor.setTemplate("{{if $var}}Content");
             assertThrows(RuntimeException.class, () -> processor.process());
         }
 
         @Test
         @DisplayName("Should throw exception for unclosed each block")
         void unclosedEachBlock() {
-            processor.setTemplate("{{#each $items}}Content");
+            processor.setTemplate("{{each $items}}Content");
             assertThrows(RuntimeException.class, () -> processor.process());
         }
     }
@@ -1157,7 +1153,7 @@ class TemplateProcessorTest {
             processor.setVariable("numbers", largeList);
 
             long start = System.currentTimeMillis();
-            processor.setTemplate("{{#each $numbers}}{{$item}},{{/each}}");
+            processor.setTemplate("{{each $numbers}}{{$item}},{{/each}}");
             String result = processor.process();
             long duration = System.currentTimeMillis() - start;
 
@@ -1170,8 +1166,8 @@ class TemplateProcessorTest {
         @DisplayName("Should parse complex templates quickly")
         void complexTemplatePerformance() {
             String template = normalize("""
-                    {{#each $items}}
-                        {{#if $item.active}}
+                    {{each $items}}
+                        {{if $item.active}}
                             <div>{{$item.name | uppercase}}</div>
                         {{/if}}
                     {{/each}}

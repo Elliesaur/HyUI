@@ -18,6 +18,11 @@
 
 package au.ellie.hyui.html.template.item;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import static au.ellie.hyui.html.template.item.Token.Type.*;
+
 public record Token(Type type, String value, int position) {
 
     /**
@@ -27,7 +32,7 @@ public record Token(Type type, String value, int position) {
      * @param symbols The values to check
      */
     public boolean match(Type type, String... symbols) {
-        if (this.type != type && type != Type.ANY)
+        if (this.type != type)
             return false;
 
         if (symbols.length == 0)
@@ -37,15 +42,14 @@ public record Token(Type type, String value, int position) {
     }
 
     /**
-     * Check if the token matches the given type and value
+     * Check if the token matches one of the given values
      *
      * @param symbols The values to check
      */
     public boolean match(String... symbols) {
-        for (String v : symbols) {
-            if (this.value.equals(v))
+        for (var symbol : symbols)
+            if (this.value.equals(symbol))
                 return true;
-        }
 
         return false;
     }
@@ -54,34 +58,48 @@ public record Token(Type type, String value, int position) {
      * Token types
      */
     public enum Type {
-        // Global
-        TEXT,
+        // Template delimiters
+        CLOSE_ANGLE_BRACKET,
+        OPEN_ANGLE_BRACKET,
+        CLOSE_EXPRESSION,
+        OPEN_EXPRESSION,
+
+        // Global tokens
+        BACK_SLASH,
+        NEW_LINE,
         VARIABLE,
-        VARIABLE_DOT,
-        STRING,
-        NUMBER,
-        BOOLEAN,
-        IDENTIFIER,
-        ATTRIBUTE,
-        COMPARATOR,
-        OPERATOR,
         ASSIGN,
-        SLOT,
-
-        // Expression
-        EXPRESSION_OPEN,
-        EXPRESSION_CLOSE,
-
-        // Components
-        HTML_OPEN,
-        HTML_CLOSE,
-
-        // Block
-        BLOCK_HEAD,
-        BLOCK_TAIL,
+        COLON,
+        QUOTE,
+        SLASH,
+        PIPE,
+        DOT,
 
         // Special
-        ANY,
-        EOF
+        COMPARATOR,
+        OPERATOR,
+        KEYWORD,
+        SPACER,
+        NUMBER,
+        TEXT,
+
+        // INTERNAL
+        EOI
     }
+
+    public static final Map<String, Type> TOKEN_MAPPER = new HashMap<>() {{
+        put(Symbols.CLOSE_ANGLE_BRACKET, CLOSE_ANGLE_BRACKET);
+        put(Symbols.OPEN_ANGLE_BRACKET, OPEN_ANGLE_BRACKET);
+        put(Symbols.CLOSE_EXPRESSION, CLOSE_EXPRESSION);
+        put(Symbols.OPEN_EXPRESSION, OPEN_EXPRESSION);
+        put(Symbols.BACK_SLASH, BACK_SLASH);
+        put(Symbols.NEW_LINE, NEW_LINE);
+        put(Symbols.VARIABLE, VARIABLE);
+        put(Symbols.ASSIGN, ASSIGN);
+        put(Symbols.COLON, COLON);
+        put(Symbols.QUOTE, QUOTE);
+        put(Symbols.SLASH, SLASH);
+        put(Symbols.PIPE, PIPE);
+        put(Symbols.DOT, DOT);
+    }};
 }

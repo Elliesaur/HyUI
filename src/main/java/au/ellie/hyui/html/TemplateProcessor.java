@@ -46,7 +46,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static au.ellie.hyui.html.template.context.VariableStack.NULL_SENTINEL;
-import static au.ellie.hyui.html.template.context.VariableStack.VariableScope.ROOT_SCOPE_NAME;
+import static au.ellie.hyui.html.template.item.Symbols.SCOPE_ROOT_NAME;
 
 /**
  * Preprocessor for HyUIML templates that supports variable interpolation and component inclusion.
@@ -275,7 +275,7 @@ public class TemplateProcessor {
             parameters.putAll(additionalVariables);
 
         var rootAst = this.root.getAst();
-        var scope = new VariableScope(ROOT_SCOPE_NAME, parameters);
+        var scope = new VariableScope(SCOPE_ROOT_NAME, parameters);
         var stack = new VariableStack(scope, valueResolver, preferDynamicValues);
 
         return new Evaluator(stack, filterRegistry, components).evaluate(rootAst);

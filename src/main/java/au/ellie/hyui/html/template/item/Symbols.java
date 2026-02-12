@@ -19,61 +19,80 @@
 package au.ellie.hyui.html.template.item;
 
 public class Symbols {
+
+    // Template delimiters
+    public final static String CLOSE_ANGLE_BRACKET = ">";
+    public final static String OPEN_ANGLE_BRACKET = "<";
+    public final static String CLOSE_EXPRESSION = "}}";
+    public final static String OPEN_EXPRESSION = "{{";
+
+    // Global symbols
+    public final static String BACK_SLASH = "\\";
+    public final static String NEW_LINE = "\n";
     public final static String VARIABLE = "$";
-    public final static String DOT = ".";
-    public final static String QUOTE = "\"";
     public final static String ASSIGN = "=";
-
-    public final static String EXPRESSION_OPEN = "{{";
-    public final static String EXPRESSION_CLOSE = "}}";
-    public final static String BLOCK_START = "#";
-    public final static String BLOCK_END = "/";
-
-    public final static String HTML_OPEN = "<";
-    public final static String HTML_CLOSE = ">";
-    public final static String HTML_END = "</";
-    public final static String HTML_END_SELF = "/>";
-
-    public final static String HTML_SLOT_INPUT = ":";
-    public final static String HTML_SLOT_OUTPUT = "slot";
-
-    public static final String HTML_SLOT_DEFAULT = "default";
-    public static final String HTML_SLOT_KEY = "slot:";
-
+    public final static String COLON = ":";
+    public final static String QUOTE = "\"";
+    public final static String SLASH = "/";
     public final static String PIPE = "|";
+    public final static String DOT = ".";
+
+    // Logical operators
+    public final static String NULL_COALESCING = "??";
+    public final static String AND = "&&";
+    public final static String OR = "||";
+
+    // List of all Operators
+    public final static String[] OPERATORS = new String[]{
+            NULL_COALESCING,
+            AND,
+            OR,
+    };
+
+    // Comparison operators
     public final static String EQUALS = "==";
     public final static String NOT_EQUALS = "!=";
     public final static String LESS_THAN = "<";
     public final static String GREATER_THAN = ">";
     public final static String LESS_THAN_EQUALS = "<=";
     public final static String GREATER_THAN_EQUALS = ">=";
-    public final static String NULL_COALESCING = "??";
-    public final static String NOT_IN = "not in";
-    public final static String IN = "in";
-    public final static String AND = "&&";
-    public final static String OR = "||";
-
-    public final static String SECTION_IF = "if";
-    public final static String SECTION_ELSE = "else";
-    public final static String SECTION_EACH = "each";
 
     // List of all comparators
     public final static String[] COMPARATORS = new String[]{
             EQUALS,
             NOT_EQUALS,
             GREATER_THAN_EQUALS,
-            GREATER_THAN,
             LESS_THAN_EQUALS,
-            LESS_THAN,
-            NOT_IN,
-            IN
     };
 
-    // List of all operators
-    public final static String[] OPERATORS = new String[]{
-            NULL_COALESCING,
-            OR,
-            AND,
-            PIPE
+    // Keywords
+    public final static String KEYWORD_NOT_IN = "not in";
+    public final static String KEYWORD_IN = "in";
+
+    public final static String KEYWORD_EACH = "each";
+    public final static String KEYWORD_ELSE = "else";
+    public final static String KEYWORD_IF = "if";
+
+    public final static String KEYWORD_FALSE = "false";
+    public final static String KEYWORD_TRUE = "true";
+
+    // List of all Keywords
+    public final static String[] KEYWORDS = new String[]{
+            KEYWORD_NOT_IN,
+            KEYWORD_IN,
+            KEYWORD_EACH,
+            KEYWORD_ELSE,
+            KEYWORD_IF,
+            KEYWORD_FALSE,
+            KEYWORD_TRUE,
     };
+
+    // Html slot related symbols
+    public static final String HTML_SLOT_DEFAULT = "default";
+    public static final String HTML_SLOT_KEY = "slot:";
+
+    // Scope names
+    public static final String SCOPE_COMPONENT_PREFIX = "component:";
+    public static final String SCOPE_ROOT_NAME = "root";
+    public static final String SCOPE_EACH_NAME = "each";
 }

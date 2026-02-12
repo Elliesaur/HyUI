@@ -24,23 +24,25 @@ import au.ellie.hyui.html.template.item.Node.AttributeValueNode;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode.DynamicAttributeNode;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode.ExpressionAttributeNode;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode.FlagAttributeNode;
-import au.ellie.hyui.html.template.item.Node.AttributeValueNode.StaticAttributeNode;
+import au.ellie.hyui.html.template.item.Node.AttributeValueNode.MixedAttributeNode;
 import au.ellie.hyui.html.template.item.Node.BlockNode.ComponentBlockNode;
 import au.ellie.hyui.html.template.item.Node.BlockNode.EachBlockNode;
 import au.ellie.hyui.html.template.item.Node.BlockNode.IfBlockNode;
 import au.ellie.hyui.html.template.item.Node.BlockNode.SlotBlockNode;
 import au.ellie.hyui.html.template.item.Node.ExpressionNode;
 import au.ellie.hyui.html.template.item.Node.ExpressionNode.*;
-import au.ellie.hyui.html.template.item.Symbols;
+import au.ellie.hyui.html.template.item.Node.MarkerNode;
 import au.ellie.hyui.html.template.item.Token;
 import au.ellie.hyui.html.template.item.Token.Type;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 
-import static au.ellie.hyui.html.template.item.Token.Type.*;
+import static au.ellie.hyui.html.template.item.Symbols.*;
 
 public class Parser {
+    private final Stack<List<Node>> stack = new Stack<>();
     private final List<Token> tokens;
     private int pos = 0;
 
@@ -49,491 +51,865 @@ public class Parser {
     }
 
     /**
-     * Parse the list of tokens into an AST
-     *
-     * @return List of AST nodes
+     * Parse the tokens into an AST
      */
     public List<Node> parse() {
-        List<Node> nodes = new ArrayList<>();
+        var nodes = new ArrayList<Node>();
+        stack.push(nodes);
 
         while (!isAtEnd()) {
             var node = parseNode();
-            if (node == null)
-                continue;
-
-            // Merge consecutive text nodes
-            if (!nodes.isEmpty() &&
-                    node instanceof TextNode(String content) &&
-                    nodes.getLast() instanceof TextNode(String prev)
-            )
-                nodes.set(nodes.size() - 1, new TextNode(prev + content));
-            else
+            if (node != null)
                 nodes.add(node);
         }
 
-        return nodes;
+        mergeTextNodes(nodes);
+        return stack.pop();
     }
 
     /**
-     * Parse a single AST node
-     *
-     * @return AST node
+     * Parse and return the next node from the tokens list
+     * Unknown tokens are parsed as text nodes
      */
     private Node parseNode() {
-        var token = current();
+        // Handle mustache expressions
+        if (match(Type.OPEN_EXPRESSION))
+            return parseMustacheExpression();
 
-        return switch (token.type()) {
-            case EXPRESSION_OPEN -> parseExpressionOrBlock();
-            case HTML_OPEN -> parseHtmlElement();
-            case ATTRIBUTE -> parseAttribute();
-            case EOF -> throw new ParserException("Unexpected end of input", token, pos);
-            default -> parseText();
-        };
-    }
+        // Handle HTML/component tags
+        if (match(Type.OPEN_ANGLE_BRACKET))
+            return parseTag();
 
-    // ===== Primary Expression =====
+        // Others tokens are treated as text
+        if (!isAtEnd())
+            return new TextNode(advance().value());
 
-    /**
-     * Parse a text that represents value we ignore here
-     *
-     * @return TextNode
-     */
-    private TextNode parseText() {
-        return new TextNode(expect(ANY).value());
+        return null;
     }
 
     /**
-     * Parse primary expressions (literals, variables, property access)
-     *
-     * @return Expression node
+     * Parse mustache expression
+     * <pre>
+     *   {{if}}, {{$var}}, {{expr}}
+     * </pre>
      */
-    private ExpressionNode parsePrimary() {
-        // String literal
-        if (consume(STRING))
-            return new LiteralNode(previous().value());
+    private Node parseMustacheExpression() {
+        advance(); // consume {{
+        skipWhitespace();
 
-        // Number literal
-        if (consume(NUMBER)) {
-            var value = previous().value();
-
-            if (value.contains("."))
-                return new LiteralNode(Double.parseDouble(value));
-            else
-                return new LiteralNode(Long.parseLong(value));
+        // Parse control flow blocks
+        if (match(Type.KEYWORD)) {
+            if (matchSymbol(Type.KEYWORD, KEYWORD_IF))
+                return parseIfBlock();
+            else if (matchSymbol(Type.KEYWORD, KEYWORD_EACH))
+                return parseEachBlock();
         }
 
-        // Boolean literal
-        if (consume(BOOLEAN))
-            return new LiteralNode(Boolean.parseBoolean(previous().value()));
+        // Parse expression
+        var expr = parseExpression();
 
-        // Variable with property access
-        if (consume(VARIABLE)) {
-            var name = previous().value();
+        skipWhitespace();
+        expect(Type.CLOSE_EXPRESSION, "Expected '}}' after expression");
 
-            ExpressionNode expr = new VariableNode(name);
-            while (consume(VARIABLE_DOT)) {
-                var property = expect(IDENTIFIER).value();
-                expr = new PropertyAccessNode(expr, property);
+        return expr;
+    }
+
+    /**
+     * Parse a conditional block
+     * <pre>
+     *   {{#if condition}}...{{else}}...{{/if}}
+     * </pre>
+     */
+    private Node parseIfBlock() {
+        advance(); // consume 'if'
+        skipWhitespace();
+
+        var condition = parseExpression();
+
+        skipWhitespace();
+        expect(Type.CLOSE_EXPRESSION, "Expected '}}' after if condition");
+
+        // Clean whitespace for standalone tags
+        cleanStandaloneLineWhitespace();
+
+        // Parse then body
+        var thenBody = new ArrayList<Node>();
+        var elseBody = new ArrayList<Node>();
+        var elseDef = false;
+
+        stack.push(thenBody);
+        while (!isAtEnd()) {
+            if (consume(Type.OPEN_EXPRESSION)) {
+                int savedPos = pos - 1;
+                skipWhitespace();
+
+                // Looking for else token
+                if (consumeSymbol(Type.KEYWORD, KEYWORD_ELSE)) {
+                    skipWhitespace();
+                    expect(Type.CLOSE_EXPRESSION, "Expected '}}' after else");
+
+                    // Clean whitespace for standalone tags
+                    cleanStandaloneLineWhitespace();
+
+                    elseDef = true;
+                    stack.pop();
+
+                    break;
+                }
+
+                // Looking for end token
+                if (consume(Type.SLASH)) {
+                    skipWhitespace();
+
+                    if (consumeSymbol(Type.KEYWORD, KEYWORD_IF))
+                        break;
+                }
+
+                pos = savedPos;
             }
 
-            return expr;
+            var node = parseNode();
+            if (node != null)
+                thenBody.add(node);
         }
 
-        throw new ParserException("Unexpected token in expression", current(), pos);
+        // Parse else body (if it exists)
+        if (elseDef) {
+            stack.push(elseBody);
+            while (!isAtEnd()) {
+                // Looking for end token
+                if (consume(Type.OPEN_EXPRESSION)) {
+                    int savedPos = pos - 1;
+                    skipWhitespace();
+
+                    if (consume(Type.SLASH)) {
+                        skipWhitespace();
+
+                        if (consumeSymbol(Type.KEYWORD, KEYWORD_IF))
+                            break;
+                    }
+
+                    pos = savedPos;
+                }
+
+                var node = parseNode();
+                if (node != null)
+                    elseBody.add(node);
+            }
+        }
+
+        skipWhitespace();
+        expect(Type.CLOSE_EXPRESSION, "Expected '}}' after closing if tag");
+
+        // Clean whitespace for standalone tags
+        var clean = cleanStandaloneLineWhitespace();
+        var node = new IfBlockNode(condition, mergeTextNodes(thenBody), mergeTextNodes(elseBody));
+
+        stack.pop();
+        return clean ? new MarkerNode(NEW_LINE, node) : node;
     }
 
-    // ===== Logical Expression =====
+    /**
+     * Parse a loop block
+     * <pre>
+     *   {{#each $item in $list}}...{{/each}}
+     * </pre>
+     */
+    private Node parseEachBlock() {
+        advance(); // consume 'each'
+        skipWhitespace();
+
+        var collection = parseVariable();
+
+        skipWhitespace();
+
+        var itemName = "item";
+        if (match(Type.TEXT)) {
+            itemName = joinTokens(Type.TEXT, Type.NUMBER, Type.KEYWORD);
+            skipWhitespace();
+        }
+
+        expect(Type.CLOSE_EXPRESSION, "Expected '}}' after each expression");
+
+        // Clean whitespace for standalone tags
+        cleanStandaloneLineWhitespace();
+
+        // Parse body
+        var body = new ArrayList<Node>();
+
+        stack.push(body);
+        while (!isAtEnd()) {
+            if (consume(Type.OPEN_EXPRESSION)) {
+                int savedPos = pos - 1;
+                skipWhitespace();
+
+                if (consume(Type.SLASH)) {
+                    skipWhitespace();
+
+                    if (consumeSymbol(Type.KEYWORD, KEYWORD_EACH))
+                        break;
+                }
+
+                pos = savedPos;
+            }
+
+            var node = parseNode();
+            if (node != null)
+                body.add(node);
+        }
+
+        skipWhitespace();
+        expect(Type.CLOSE_EXPRESSION, "Expected '}}' after closing each tag");
+
+        // Clean whitespace for standalone tags
+        var clean = cleanStandaloneLineWhitespace();
+        var node = new EachBlockNode(itemName, collection, mergeTextNodes(body));
+
+        stack.pop();
+        return clean ? new MarkerNode(NEW_LINE, node) : node;
+    }
 
     /**
-     * Parse logical `OR` expressions
-     *
-     * @return Expression node
+     * Parse an expression (variable, property access, operators, etc.)
      */
-    private ExpressionNode parseOr() {
-        var left = parseAnd();
+    private ExpressionNode parseExpression() {
+        return parseNullCoalescingExpression();
+    }
 
-        while (consume(OPERATOR, Symbols.OR)) {
-            var right = parseAnd();
-            left = new BinaryOpNode(left, Symbols.OR, right);
+    /**
+     * Parse null coalescing expression
+     */
+    private ExpressionNode parseNullCoalescingExpression() {
+        var alternatives = new ArrayList<ExpressionNode>();
+
+        do {
+            alternatives.add(parseOrExpression());
+        } while (consumeSymbol(Type.OPERATOR, NULL_COALESCING));
+
+        return alternatives.size() == 1 ? alternatives.getFirst() : new DefaultNode(alternatives);
+    }
+
+    /**
+     * Parse OR expression
+     */
+    private ExpressionNode parseOrExpression() {
+        var left = parseAndExpression();
+
+        while (consumeSymbol(Type.OPERATOR, OR)) {
+            var right = parseAndExpression();
+            left = new BinaryOpNode(left, OR, right);
         }
 
         return left;
     }
 
     /**
-     * Parse logical `AND` expressions
-     *
-     * @return Expression node
+     * Parse AND expression
      */
-    private ExpressionNode parseAnd() {
-        var left = parseComparison();
+    private ExpressionNode parseAndExpression() {
+        var left = parseComparisonExpression();
 
-        while (consume(OPERATOR, Symbols.AND)) {
-            var right = parseComparison();
-            left = new BinaryOpNode(left, Symbols.AND, right);
+        while (consumeSymbol(Type.OPERATOR, AND)) {
+            var right = parseComparisonExpression();
+            left = new BinaryOpNode(left, AND, right);
         }
 
         return left;
     }
 
     /**
-     * Parse `comparison` expressions
-     *
-     * @return Expression node
+     * Parse comparison expression
      */
-    private ExpressionNode parseComparison() {
-        var left = parsePipe();
+    private ExpressionNode parseComparisonExpression() {
+        var left = parsePipeExpression();
 
-        var operation = get(COMPARATOR, Symbols.COMPARATORS);
-        if (operation != null) {
-            var right = parsePipe();
-            return new BinaryOpNode(left, operation.value(), right);
+        while (match(Type.COMPARATOR) || matchSymbol(Type.KEYWORD, KEYWORD_IN, KEYWORD_NOT_IN) || match(Type.CLOSE_ANGLE_BRACKET, Type.OPEN_ANGLE_BRACKET, Type.ASSIGN)) {
+            var op = advance().value();
+            if (consume(Type.ASSIGN))
+                op += ASSIGN;
+
+            var right = parsePipeExpression();
+            left = new BinaryOpNode(left, op, right);
         }
 
         return left;
     }
 
     /**
-     * Parse `pipe` expressions
-     *
-     * @return Expression node
+     * Parse pipe expression
      */
-    private ExpressionNode parsePipe() {
-        var expr = parsePrimary();
+    private ExpressionNode parsePipeExpression() {
+        var expr = parsePrimaryExpression();
+        skipWhitespace();
 
-        while (consume(OPERATOR, Symbols.PIPE)) {
-            var name = expect(IDENTIFIER).value();
-            expr = new PipeNode(expr, name);
+        while (consume(Type.PIPE)) {
+            skipWhitespace();
+
+            var token = expect(Type.TEXT, "Expected filter name after '|'");
+            skipWhitespace();
+
+            expr = new PipeNode(expr, token.value());
         }
 
         return expr;
     }
 
     /**
-     * Parse `nullish` coalescing expressions
-     *
-     * @return Expression node
+     * Parse primary expression (literals, variables, property access)
      */
-    private ExpressionNode parseNullish() {
-        var alternatives = new ArrayList<ExpressionNode>();
+    private ExpressionNode parsePrimaryExpression() {
+        skipWhitespace();
 
-        do {
-            alternatives.add(parseOr());
-        } while (consume(OPERATOR, Symbols.NULL_COALESCING));
+        // Boolean literals true
+        if (consumeSymbol(Type.KEYWORD, KEYWORD_TRUE))
+            return new LiteralNode(true);
 
-        return alternatives.size() == 1 ? alternatives.getFirst() : new DefaultNode(alternatives);
-    }
+        // Boolean literals false
+        if (consumeSymbol(Type.KEYWORD, KEYWORD_FALSE))
+            return new LiteralNode(false);
 
-    // ===== Expression and Block =====
+        // Numbers
+        if (match(Type.NUMBER))
+            return parseNumberLiteral();
 
-    /**
-     * Parse either an expression or a block
-     *
-     * @return AST node representing the expression or block
-     */
-    private Node parseExpressionOrBlock() {
-        expect(EXPRESSION_OPEN);
-        Node node;
+        // Backslash
+        if (consume(Type.BACK_SLASH))
+            return new LiteralNode(advance().value());
 
-        if (consume(BLOCK_HEAD))
-            node = parseBlock();
-        else
-            node = parseExpression();
+        // String literals
+        if (match(Type.QUOTE))
+            return parseStringLiteral();
 
-        expect(EXPRESSION_CLOSE);
+        // Variables and property access
+        if (match(Type.VARIABLE))
+            return parseVariable();
 
-        return node;
-    }
+        // Text
+        if (match(Type.TEXT))
+            return new LiteralNode(advance().value());
 
-    /**
-     * Parse an expression
-     *
-     * @return AST node representing the expression
-     */
-    private ExpressionNode parseExpression() {
-        return parseNullish();
+        throw new ParserException("Unexpected token in expression", peek(), pos);
     }
 
     /**
-     * Parse a block (if, each, etc.)
-     *
-     * @return AST node representing the block
+     * Parse a variable reference, including property access
+     * <pre>
+     *   $var
+     *   $var.property
+     *   $var.property.subproperty
+     * </pre>
      */
-    private Node parseBlock() {
-        var token = current();
+    private ExpressionNode parseVariable() {
+        advance(); // consume $
 
-        return switch (token.value()) {
-            case Symbols.SECTION_IF -> parseIfBlock();
-            case Symbols.SECTION_EACH -> parseEachBlock();
-            default -> throw new ParserException("Unknown token for block", token, pos);
-        };
-    }
+        var varName = joinTokens(Type.TEXT, Type.NUMBER, Type.COLON, Type.KEYWORD);
+        if (varName.isEmpty())
+            throw new ParserException("Expected variable name after '$'", peek(), pos);
 
-    /**
-     * Parse an `if` block
-     * <pre>{@code
-     * {{#if condition}}
-     *   ...
-     * {{else}}
-     *   ...
-     * {{/if}}
-     * }</pre>
-     */
-    private IfBlockNode parseIfBlock() {
-        expect(IDENTIFIER, Symbols.SECTION_IF);
-        var condition = parseExpression();
-        expect(EXPRESSION_CLOSE);
+        // Check for property access
+        ExpressionNode expr = new VariableNode(varName);
 
-        var thenBody = new ArrayList<Node>();
-        while (!(peek(EXPRESSION_OPEN) && (next().match(BLOCK_TAIL) || next().match(IDENTIFIER, Symbols.SECTION_ELSE))))
-            thenBody.add(parseNode());
+        while (match(Type.DOT)) {
+            advance(); // consume .
 
-        expect(EXPRESSION_OPEN);
+            var property = joinTokens(Type.TEXT, Type.NUMBER, Type.COLON, Type.KEYWORD);
+            if (property.isEmpty())
+                throw new ParserException("Expected property name after '.'", peek(), pos);
 
-        var elseBody = new ArrayList<Node>();
-        if (consume(IDENTIFIER, Symbols.SECTION_ELSE)) {
-            expect(EXPRESSION_CLOSE);
-
-            while (!(peek(EXPRESSION_OPEN) && next().match(BLOCK_TAIL)))
-                elseBody.add(parseNode());
-
-            expect(EXPRESSION_OPEN);
+            expr = new PropertyAccessNode(expr, property);
         }
 
-        expect(BLOCK_TAIL);
-        expect(IDENTIFIER, Symbols.SECTION_IF);
-        return new IfBlockNode(condition, thenBody, elseBody);
+        return expr;
     }
 
     /**
-     * Parse an `each` block.
-     * <pre>{@code
-     * {{#each $collection <item>}}
-     *   ...
-     * {{/each}}
-     * }</pre>
+     * Parse a number literal
      */
-    private EachBlockNode parseEachBlock() {
-        expect(IDENTIFIER, Symbols.SECTION_EACH);
-        var collection = parseExpression();
+    private LiteralNode parseNumberLiteral() {
+        var num = advance().value();
+        if (num.contains("."))
+            return new LiteralNode(Double.parseDouble(num));
 
-        var itemName = "item";
-        if (peek(IDENTIFIER))
-            itemName = expect(IDENTIFIER).value();
-
-        expect(EXPRESSION_CLOSE);
-
-        var body = new ArrayList<Node>();
-        while (!(peek(EXPRESSION_OPEN) && next().match(BLOCK_TAIL)))
-            body.add(parseNode());
-
-        expect(EXPRESSION_OPEN);
-        expect(BLOCK_TAIL);
-        expect(IDENTIFIER, Symbols.SECTION_EACH);
-
-        return new EachBlockNode(itemName, collection, body);
+        return new LiteralNode(Integer.parseInt(num));
     }
 
-    // ===== Component =====
+    /**
+     * Parse a string literal
+     */
+    private LiteralNode parseStringLiteral() {
+        advance(); // consume opening "
+
+        var builder = new StringBuilder();
+        while (!isAtEnd() && !match(Type.QUOTE)) {
+            consume(Type.BACK_SLASH);
+            builder.append(advance().value());
+        }
+
+        expect(Type.QUOTE, "Expected closing quote");
+
+        return new LiteralNode(builder.toString());
+    }
 
     /**
-     * Parse an HTML element
+     * Parse HTML/component tags
      */
-    private Node parseHtmlElement() {
-        expect(HTML_OPEN);
-        var identifier = exceptTagName();
+    private Node parseTag() {
+        advance(); // consume <
+
+        // Check for slot input syntax: <:name>
+        if (match(Type.COLON))
+            return parseSlotInput();
+
+        // Check for closing tag
+        if (match(Type.SLASH))
+            return parseClosingTag();
+
+        // Parse tag name
+        var tagName = joinTokens(Type.TEXT, Type.NUMBER, Type.KEYWORD);
+        if (tagName.isEmpty())
+            throw new ParserException("Expected tag name after '<'", peek(), pos);
+
+        // Check if it's a slot tag
+        if (tagName.equals("slot"))
+            return parseSlotOutput();
 
         // Parse attributes
-        var attributes = new ArrayList<AttributeValueNode>();
-        while (!peek(HTML_CLOSE) && !isAtEnd()) {
-            var attribute = parseAttribute();
-            if (attribute instanceof AttributeValueNode attrNode)
-                attributes.add(attrNode);
-            else {
-                // Loop / if / ...
-            }
+        var attributes = parseAttributes();
+
+        // Check for self-closing tag
+        if (consume(Type.SLASH)) {
+            expect(Type.CLOSE_ANGLE_BRACKET, "Expected '>' after '/'");
+
+            return new ComponentBlockNode(tagName, attributes, List.of());
         }
 
-        // Check for self-closing or regular close
-        var selfClosing = expect(HTML_CLOSE).match(Symbols.HTML_END_SELF);
-        var children = selfClosing ? new ArrayList<Node>() : parseHtmlChildren(identifier.value());
+        expect(Type.CLOSE_ANGLE_BRACKET, "Expected '>' after tag");
 
-        // Normalize slot name
-        if (identifier.match(SLOT)) {
-            var slotName = identifier.value();
-            if (slotName.equals(Symbols.HTML_SLOT_OUTPUT))
-                slotName += ":" + Symbols.HTML_SLOT_DEFAULT;
-
-            return new SlotBlockNode(slotName, attributes, children);
-        }
-
-        return new ComponentBlockNode(identifier.value(), attributes, children);
-    }
-
-    /**
-     * Parse an HTML attribute
-     */
-    private Node parseAttribute() {
-        var attribute = get(ATTRIBUTE);
-        if (attribute != null) {
-            var name = attribute.value();
-            if (!peek(ASSIGN))
-                return new FlagAttributeNode(name);
-
-            expect(ASSIGN);
-
-            var token = get(STRING);
-            if (token != null) {
-                return new StaticAttributeNode(name, token.value());
-            } else if (consume(EXPRESSION_OPEN)) {
-                var expr = parseExpression();
-                expect(EXPRESSION_CLOSE);
-
-                return new DynamicAttributeNode(name, expr);
-            }
-
-            throw new ParserException("Expected attribute value", current(), pos);
-        } else if (peek(EXPRESSION_OPEN))
-            return new ExpressionAttributeNode(parseExpressionOrBlock());
-
-        throw new ParserException("Unexpected non attribute token", current(), pos);
-    }
-
-    /**
-     * Parse the children of an HTML element until the closing tag
-     */
-    private List<Node> parseHtmlChildren(String parentTag) {
+        // Parse children
         var children = new ArrayList<Node>();
 
+        stack.push(children);
         while (!isAtEnd()) {
-            var startPos = pos;
+            // Check for closing tag
+            if (consume(Type.OPEN_ANGLE_BRACKET)) {
+                int savedPos = pos - 1;
 
-            // Detect closing tag
-            if (consume(HTML_OPEN, Symbols.HTML_END) && (consume(IDENTIFIER, parentTag) || consume(SLOT))) {
-                expect(HTML_CLOSE);
-                return children;
-            } else
-                pos = startPos;
+                if (consume(Type.SLASH)) {
+                    skipWhitespace();
 
-            // Parse children
-            Node child = parseNode();
+                    if (joinTokens(Type.TEXT, Type.NUMBER, Type.KEYWORD).equals(tagName)) {
+                        expect(Type.CLOSE_ANGLE_BRACKET, "Expected '>' after closing tag");
+                        break;
+                    }
+                }
+
+                pos = savedPos;
+            }
+
+            var child = parseNode();
             if (child != null)
                 children.add(child);
         }
+        stack.pop();
 
-        var last = tokens.getLast();
-        throw new ParserException("Unclosed tag <" + parentTag + ">", last, last.position());
-    }
-
-    // ===== Helpers =====
-
-    /**
-     * Get the current token
-     */
-    private Token current() {
-        return tokens.get(pos);
+        return new ComponentBlockNode(tagName, attributes, mergeTextNodes(children));
     }
 
     /**
-     * Get the previous token
+     * Parse slot output: <slot> or <slot:name>
      */
-    private Token previous() {
-        return tokens.get(pos - 1);
+    private Node parseSlotOutput() {
+        String slotName = HTML_SLOT_DEFAULT;
+
+        // Check for named slot: <slot:name>
+        if (consume(Type.COLON)) {
+            slotName = joinTokens(Type.TEXT, Type.NUMBER, Type.KEYWORD);
+            if (slotName.isEmpty())
+                expect(Type.TEXT, "Expected slot name after 'slot:'");
+        }
+
+        var attributes = parseAttributes();
+
+        // Check for self-closing
+        if (consume(Type.SLASH)) {
+            expect(Type.CLOSE_ANGLE_BRACKET, "Expected '>' after '/'");
+            return new SlotBlockNode(slotName, attributes, List.of(), true);
+        }
+
+        expect(Type.CLOSE_ANGLE_BRACKET, "Expected '>' after slot tag");
+
+        // Parse default content
+        var children = new ArrayList<Node>();
+
+        stack.push(children);
+        while (!isAtEnd()) {
+            if (consume(Type.OPEN_ANGLE_BRACKET)) {
+                int savedPos = pos - 1;
+
+                if (consume(Type.SLASH)) {
+                    skipWhitespace();
+
+                    if (consumeSymbol(Type.TEXT, "slot")) {
+                        if (consume(Type.COLON)) {
+                            var closeName = joinTokens(Type.TEXT, Type.NUMBER, Type.KEYWORD);
+                            if (closeName.equals(slotName)) {
+                                skipWhitespace();
+                                expect(Type.CLOSE_ANGLE_BRACKET, "Expected '>'");
+                                break;
+                            }
+                        } else {
+                            skipWhitespace();
+                            expect(Type.CLOSE_ANGLE_BRACKET, "Expected '>'");
+                            break;
+                        }
+                    }
+                }
+
+                pos = savedPos;
+            }
+
+            var child = parseNode();
+            if (child != null)
+                children.add(child);
+        }
+        stack.pop();
+
+        return new SlotBlockNode(slotName, attributes, mergeTextNodes(children), true);
     }
 
     /**
-     * Get the next token
+     * Parse slot input: <:name>content</:name>
      */
-    private Token next() {
-        return tokens.get(pos + 1);
+    private Node parseSlotInput() {
+        advance(); // consume :
+
+        // Allow for <:> as default slot input with no name
+        var slotName = joinTokens(Type.TEXT, Type.NUMBER, Type.KEYWORD);
+        if (slotName.isEmpty())
+            slotName = HTML_SLOT_DEFAULT;
+
+        var attributes = parseAttributes();
+
+        // Check for self-closing
+        if (consume(Type.SLASH)) {
+            expect(Type.CLOSE_ANGLE_BRACKET, "Expected '>'");
+            return new SlotBlockNode(slotName, attributes, List.of(), false);
+        }
+
+        expect(Type.CLOSE_ANGLE_BRACKET, "Expected '>'");
+
+        // Parse content
+        var children = new ArrayList<Node>();
+
+        stack.push(children);
+        while (!isAtEnd()) {
+            if (consume(Type.OPEN_ANGLE_BRACKET)) {
+                int savedPos = pos - 1;
+
+                if (consume(Type.SLASH)) {
+                    skipWhitespace();
+
+                    if (consume(Type.COLON)) {
+                        var closeName = joinTokens(Type.TEXT, Type.NUMBER, Type.KEYWORD);
+                        if (closeName.equals(slotName)) {
+                            skipWhitespace();
+                            expect(Type.CLOSE_ANGLE_BRACKET, "Expected '>'");
+                            break;
+                        }
+                    }
+                }
+
+                pos = savedPos;
+            }
+
+            var child = parseNode();
+            if (child != null)
+                children.add(child);
+        }
+        stack.pop();
+
+        return new SlotBlockNode(slotName, attributes, mergeTextNodes(children), false);
     }
 
     /**
-     * Consume the current token and return it
+     * Parse closing tag (removed from the AST)
      */
-    private Token skip() {
-        if (!isAtEnd()) pos++;
-        return current();
+    private Node parseClosingTag() {
+        advance(); // consume /
+        skipWhitespace();
+
+        if (joinTokens(Type.TEXT, Type.NUMBER, Type.KEYWORD).isEmpty()) {
+            if (consume(Type.COLON))
+                joinTokens(Type.TEXT, Type.NUMBER, Type.KEYWORD);
+        }
+
+        expect(Type.CLOSE_ANGLE_BRACKET, "Expected '>' after closing tag");
+        return null;
     }
 
     /**
-     * If the current token matches the given type and value, return true.
-     * Otherwise, return false.
-     *
-     * @param type   The token type to check
-     * @param values The token values to check
+     * Parse tag attributes
      */
-    private boolean peek(Type type, String... values) {
-        return current().match(type, values);
+    private List<AttributeValueNode> parseAttributes() {
+        var attributes = new ArrayList<AttributeValueNode>();
+        skipWhitespace();
+
+        while (!isAtEnd() && !match(Type.CLOSE_ANGLE_BRACKET, Type.SLASH)) {
+            // Check for dynamic attribute with curly braces
+            if (match(Type.OPEN_EXPRESSION)) {
+                var expr = parseMustacheExpression();
+                attributes.add(new ExpressionAttributeNode(expr));
+
+                skipWhitespace();
+                continue;
+            }
+
+            // Parse attribute name
+            var name = joinTokens(Type.TEXT, Type.NUMBER, Type.KEYWORD);
+            if (name.isEmpty())
+                break;
+
+            skipWhitespace();
+
+            // Check for attribute value
+            if (consume(Type.ASSIGN)) {
+                skipWhitespace();
+
+                // Dynamic attribute: attr={expr}
+                if (consume(Type.OPEN_EXPRESSION)) {
+                    var expr = parseExpression();
+
+                    skipWhitespace();
+                    expect(Type.CLOSE_EXPRESSION, "Expected '}}' after attribute expression");
+
+                    attributes.add(new DynamicAttributeNode(name, expr));
+                }
+
+                // mixed attribute: attr="value {{$expr}} value"
+                else if (consume(Type.QUOTE)) {
+                    var parts = new ArrayList<>();
+                    var builder = new StringBuilder();
+
+                    while (!isAtEnd() && !match(Type.QUOTE)) {
+                        if (consume(Type.OPEN_EXPRESSION)) {
+                            if (!builder.isEmpty()) {
+                                parts.add(builder.toString());
+                                builder.setLength(0);
+                            }
+
+                            parts.add(parseExpression());
+
+                            skipWhitespace();
+                            expect(Type.CLOSE_EXPRESSION, "Expected '}}' in attribute value");
+                        } else
+                            builder.append(advance().value());
+                    }
+
+                    // Remaining static part
+                    if (!builder.isEmpty())
+                        parts.add(builder.toString());
+
+                    expect(Type.QUOTE, "Expected closing quote");
+                    attributes.add(new MixedAttributeNode(name, parts));
+                }
+
+                // Unquoted value
+                else {
+                    var value = joinTokens(Type.TEXT, Type.NUMBER, Type.KEYWORD);
+                    attributes.add(new MixedAttributeNode(name, List.of(value)));
+                }
+            }
+
+            // Flag attribute
+            else
+                attributes.add(new FlagAttributeNode(name));
+
+            skipWhitespace();
+        }
+
+        return attributes;
     }
 
-    /**
-     * If the current token matches the given type, consume it and return true.
-     * Otherwise, return false.
-     *
-     * @param type   The token type to check
-     * @param values The token values to check
-     */
-    private boolean consume(Type type, String... values) {
-        if (current().match(type, values)) {
-            skip();
+    // ===== Navigation =====
+
+    private boolean isAtEnd() {
+        return pos >= tokens.size() || peek().match(Type.EOI);
+    }
+
+    private Token peek() {
+        return peek(pos);
+    }
+
+    private Token peek(int index) {
+        if (index < 0 || index >= tokens.size())
+            return null;
+
+        return tokens.get(index);
+    }
+
+    private Token advance() {
+        if (!isAtEnd())
+            return tokens.get(pos++);
+
+        return tokens.getLast();
+    }
+
+    private boolean consume(Type... type) {
+        if (match(type)) {
+            advance();
             return true;
         }
 
         return false;
     }
 
-    /**
-     * If the current token matches any of the values in the given types, consume it and return the value.
-     * Otherwise, return null.
-     *
-     * @param type   The token type to check
-     * @param values The token values to check
-     */
-    private Token get(Type type, String... values) {
-        var token = current();
-        if (token.match(type, values)) {
-            skip();
-            return token;
+    private boolean consumeSymbol(Type type, String... symbols) {
+        if (matchSymbol(type, symbols)) {
+            advance();
+            return true;
         }
 
-        return null;
+        return false;
     }
 
+    private boolean match(Type... types) {
+        if (isAtEnd())
+            return false;
+
+        for (var type : types)
+            if (peek().type() == type)
+                return true;
+
+        return false;
+    }
+
+    private boolean matchSymbol(Type type, String... symbols) {
+        if (isAtEnd() || !match(type))
+            return false;
+
+        return peek().match(symbols);
+    }
+
+    private Token expect(Type type, String message) {
+        if (!match(type))
+            throw new ParserException(message, peek(), pos);
+
+        return advance();
+    }
+
+    private Token expectSymbol(Type type, String symbol, String message) {
+        if (!matchSymbol(type, symbol))
+            throw new ParserException(message, peek(), pos);
+
+        return advance();
+    }
+
+    private void skipWhitespace() {
+        while (match(Type.SPACER))
+            advance();
+    }
+
+    // ===== Helper =====
+
     /**
-     * Except the token to match the given type and any of the given values, consuming it.
+     * Remove whitespace for standalone block tags.
+     * <p>
+     * If a block tag ({{if}}, {{/if}}, etc.) is alone on a line,
+     * remove the entire line including leading/trailing whitespace
      *
-     * @throws ParserException if the expected type or value do not match
+     * @return true if whitespace was removed, false otherwise
      */
-    private Token expect(Type type, String... values) {
-        var token = current();
-        if (token.match(type, values)) {
-            skip();
-            return token;
+    private boolean cleanStandaloneLineWhitespace() {
+        var list = stack.peek();
+
+        // Check previous nodes - look backwards for whitespace and newline
+        // Stop if we find any non-whitespace text before the block tag on the same line
+        var nodesToRemove = 0;
+        for (int i = list.size() - 1; i >= 0; i--) {
+            Node node = list.get(i);
+
+            if (node instanceof TextNode(String content)) {
+                if (content.matches("^[ \\t]+$"))
+                    nodesToRemove++;
+                else if (content.equals("\n"))
+                    break;
+                else
+                    return false;
+            } else if (node instanceof MarkerNode(String content, Node _)) {
+                if (content.equals(NEW_LINE))
+                    break;
+
+                return false;
+            } else
+                return false;
         }
 
-        throw new ParserException("Expected " + type + (values.length > 0 ? " with value \"" + String.join("/", values) + "\"" : ""), token, pos);
+        var checkPos = pos;
+        var tokensToSkip = 0;
+
+        // Check after the block tag using the tokens
+        while (checkPos < tokens.size()) {
+            Token token = tokens.get(checkPos);
+
+            if (token.match(Type.SPACER)) {
+                tokensToSkip++;
+                checkPos++;
+            } else if (token.match(Type.NEW_LINE)) {
+                tokensToSkip++;
+                break;
+            } else
+                return false;
+        }
+
+        // Remove the nodes from the list
+        for (var i = 0; i < nodesToRemove; i++)
+            list.removeLast();
+
+        // Skip the tokens after the block tag
+        pos += tokensToSkip;
+        return true;
     }
 
     /**
-     * Except the token to match either a SLOT or IDENTIFIER with the given value, consuming it.
-     *
-     * @throws ParserException if the expected type or value do not match
+     * Join consecutive tokens of the given types into a single string
      */
-    private Token exceptTagName() {
-        var token = current();
+    private String joinTokens(Type... tokens) {
+        var builder = new StringBuilder();
+        while (match(tokens))
+            builder.append(advance().value());
 
-        if (!token.match(SLOT) && !token.match(IDENTIFIER))
-            throw new ParserException("Expected identifier", token, pos);
-
-        skip();
-        return token;
+        return builder.toString();
     }
 
     /**
-     * Check if we have reached the end of the token list
+     * Merge consecutive TextNodes in the given list into single TextNodes
      */
-    private boolean isAtEnd() {
-        return current().match(EOF);
+    @SuppressWarnings("unchecked")
+    private <T extends Node> List<T> mergeTextNodes(List<T> nodes) {
+        if (nodes.isEmpty())
+            return nodes;
+
+        var merged = new ArrayList<T>();
+        var textBuilder = new StringBuilder();
+        for (var node : nodes) {
+            if (node instanceof TextNode(String content))
+                textBuilder.append(content);
+            else {
+                if (!textBuilder.isEmpty()) {
+                    merged.add((T) new TextNode(textBuilder.toString()));
+                    textBuilder.setLength(0);
+                }
+
+                merged.add(node);
+            }
+        }
+
+        if (!textBuilder.isEmpty())
+            merged.add((T) new TextNode(textBuilder.toString()));
+
+        nodes.clear();
+        nodes.addAll(merged);
+
+        return nodes;
     }
 }

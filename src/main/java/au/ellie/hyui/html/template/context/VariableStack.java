@@ -162,10 +162,6 @@ public class VariableStack {
 
     public static class VariableScope {
 
-        public static final String COMPONENT_SCOPE_PREFIX = "component:";
-        public static final String ROOT_SCOPE_NAME = "root";
-        public static final String EACH_SCOPE_NAME = "each";
-
         private final Map<String, Object> content;
         private final Set<String> keys;
         private final String name;

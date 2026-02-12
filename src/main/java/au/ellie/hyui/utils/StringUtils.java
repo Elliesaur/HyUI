@@ -61,6 +61,15 @@ public class StringUtils {
     }
 
     /**
+     * Check if the character is an ASCII letter (a-z or A-Z).
+     *
+     * @param c The character to check
+     */
+    public static boolean isAsciiLetter(char c) {
+        return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z';
+    }
+
+    /**
      * Capitalize the first letter of the string
      * without checking for null or empty.
      *

@@ -30,13 +30,14 @@ import au.ellie.hyui.html.template.item.Node.AttributeValueNode;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode.DynamicAttributeNode;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode.ExpressionAttributeNode;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode.FlagAttributeNode;
-import au.ellie.hyui.html.template.item.Node.AttributeValueNode.StaticAttributeNode;
+import au.ellie.hyui.html.template.item.Node.AttributeValueNode.MixedAttributeNode;
 import au.ellie.hyui.html.template.item.Node.BlockNode.ComponentBlockNode;
 import au.ellie.hyui.html.template.item.Node.BlockNode.EachBlockNode;
 import au.ellie.hyui.html.template.item.Node.BlockNode.IfBlockNode;
 import au.ellie.hyui.html.template.item.Node.BlockNode.SlotBlockNode;
 import au.ellie.hyui.html.template.item.Node.ExpressionNode;
 import au.ellie.hyui.html.template.item.Node.ExpressionNode.*;
+import au.ellie.hyui.html.template.item.Node.MarkerNode;
 import au.ellie.hyui.html.template.item.Symbols;
 import au.ellie.hyui.utils.NumericUtils;
 import au.ellie.hyui.utils.ReflectionUtils;
@@ -44,8 +45,8 @@ import au.ellie.hyui.utils.ReflectionUtils;
 import java.util.*;
 import java.util.function.Supplier;
 
-import static au.ellie.hyui.html.template.context.VariableStack.VariableScope.COMPONENT_SCOPE_PREFIX;
-import static au.ellie.hyui.html.template.context.VariableStack.VariableScope.EACH_SCOPE_NAME;
+import static au.ellie.hyui.html.template.item.Symbols.SCOPE_COMPONENT_PREFIX;
+import static au.ellie.hyui.html.template.item.Symbols.SCOPE_EACH_NAME;
 import static au.ellie.hyui.utils.ObjectUtils.toBoolean;
 import static au.ellie.hyui.utils.ObjectUtils.toIterable;
 
@@ -85,6 +86,11 @@ public class Evaluator {
      */
     private String evaluateNode(Node node) {
         return switch (node) {
+            case MarkerNode marker -> {
+                if (marker.inside() != null)
+                    yield evaluateNode(marker.inside());
+                yield "";
+            }
             case TextNode text -> text.content();
             case ExpressionNode expr -> {
                 var value = evaluateExpression(expr);
@@ -168,9 +174,9 @@ public class Evaluator {
             case Symbols.GREATER_THAN_EQUALS -> evaluateComparison(node, left, right.get()) >= 0;
             case Symbols.AND -> toBoolean(left) && toBoolean(right.get());
             case Symbols.OR -> toBoolean(left) || toBoolean(right.get());
-            case Symbols.IN -> evaluateIn(left, right.get());
-            case Symbols.NOT_IN -> !evaluateIn(left, right.get());
-            default -> throw new EvaluationException("Unknown operator", node);
+            case Symbols.KEYWORD_IN -> evaluateIn(left, right.get());
+            case Symbols.KEYWORD_NOT_IN -> !evaluateIn(left, right.get());
+            default -> throw new EvaluationException("Unknown operator " + node.operator(), node);
         };
     }
 
@@ -288,7 +294,7 @@ public class Evaluator {
         var result = new StringBuilder();
 
         for (Object item : items) {
-            var scope = new VariableScope(EACH_SCOPE_NAME);
+            var scope = new VariableScope(SCOPE_EACH_NAME);
             scope.putKeyed(node.itemName(), item);
 
             contextStack.pushScope(scope);
@@ -321,8 +327,20 @@ public class Evaluator {
             switch (attribute) {
                 case DynamicAttributeNode dynamicAttributeNode ->
                         context.put(attribute.getName(), evaluateExpression(dynamicAttributeNode.expression()));
-                case StaticAttributeNode staticAttributeNode ->
-                        context.put(attribute.getName(), staticAttributeNode.value());
+                case MixedAttributeNode mixedAttr -> {
+                    var builder = new StringBuilder();
+                    for (var part : mixedAttr.parts()) {
+                        if (part instanceof String text)
+                            builder.append(text);
+                        else if (part instanceof ExpressionNode expr) {
+                            var value = evaluateExpression(expr);
+                            if (value != null)
+                                builder.append(value);
+                        }
+                    }
+
+                    context.put(mixedAttr.name(), builder.toString());
+                }
                 case ExpressionAttributeNode expressionAttributeNode -> {
                     var evaluatedValue = evaluateNode(expressionAttributeNode.expressions());
                     if (!evaluatedValue.isEmpty())
@@ -333,13 +351,11 @@ public class Evaluator {
         }
 
         // Children
-        var scope = new VariableScope(COMPONENT_SCOPE_PREFIX + componentDef, context);
+        var scope = new VariableScope(SCOPE_COMPONENT_PREFIX + componentDef, context);
         for (var child : component.children()) {
             var slotName = Symbols.HTML_SLOT_DEFAULT;
-            if (child instanceof SlotBlockNode slot) {
-                if (slot.name().startsWith(Symbols.HTML_SLOT_INPUT))
-                    slotName = slot.name().substring(Symbols.HTML_SLOT_INPUT.length());
-            }
+            if (child instanceof SlotBlockNode slot)
+                slotName = slot.name();
 
             // Saved as "slot.{slotName}" in component scope
             scope.computeIfAbsent(Symbols.HTML_SLOT_KEY + slotName, key -> {
@@ -348,8 +364,8 @@ public class Evaluator {
             }).add(child);
         }
 
-        contextStack.pushScope(scope);
         STACK.push(componentDef);
+        contextStack.pushScope(scope);
         try {
             var cachedComponent = components.get(componentDef);
             return evaluate(cachedComponent.getAst());
@@ -366,12 +382,12 @@ public class Evaluator {
      */
     private String evaluateSlotBlock(SlotBlockNode slotBlockNode) {
         var slotName = slotBlockNode.name();
-        if (slotName.startsWith(Symbols.HTML_SLOT_OUTPUT))
-            slotName = slotName.substring(Symbols.HTML_SLOT_OUTPUT.length() + 1);
 
-        var content = contextStack.getVariable(Symbols.HTML_SLOT_KEY + slotName, () -> null);
-        if (content != null)
-            return content.toString();
+        if (slotBlockNode.output()) {
+            var content = contextStack.getVariable(Symbols.HTML_SLOT_KEY + slotName, () -> null);
+            if (content != null)
+                return content.toString();
+        }
 
         return evaluate(slotBlockNode.children());
     }
@@ -387,7 +403,7 @@ public class Evaluator {
         sb.append("<").append(component.tag());
 
         for (var attribute : component.attributes()) {
-            var attrStr = evaluateAttributeString(attribute);
+            var attrStr = evaluateAttributeString(attribute).trim();
             if (!attrStr.isEmpty())
                 sb.append(" ").append(attrStr);
         }
@@ -417,8 +433,20 @@ public class Evaluator {
         switch (attributeValueNode) {
             case DynamicAttributeNode dynamic ->
                     sb.append(dynamic.getName()).append("=\"").append(evaluateNode(dynamic.expression())).append("\"");
-            case StaticAttributeNode staticNode ->
-                    sb.append(staticNode.getName()).append("=\"").append(staticNode.value()).append("\"");
+            case MixedAttributeNode mixedAttr -> {
+                var builder = new StringBuilder();
+                for (var part : mixedAttr.parts()) {
+                    if (part instanceof String text)
+                        builder.append(text);
+                    else if (part instanceof ExpressionNode expr) {
+                        var value = evaluateExpression(expr);
+                        if (value != null)
+                            builder.append(value);
+                    }
+                }
+
+                sb.append(mixedAttr.getName()).append("=\"").append(builder).append("\"");
+            }
             case FlagAttributeNode flag -> sb.append(flag.getName());
             case ExpressionAttributeNode expression -> sb.append(evaluateNode(expression.expressions()));
         }

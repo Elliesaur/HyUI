@@ -18,21 +18,17 @@
 
 package au.ellie.hyui.html.template;
 
-import au.ellie.hyui.html.template.item.Symbols;
 import au.ellie.hyui.html.template.item.Token;
 import au.ellie.hyui.html.template.item.Token.Type;
+import au.ellie.hyui.utils.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import static au.ellie.hyui.html.template.item.Symbols.*;
 
 public class Lexer {
     private final String input;
-
-    private int lineStart = 0;
-    private int line = 1;
     private int pos = 0;
 
     public Lexer(String input) {
@@ -45,170 +41,62 @@ public class Lexer {
     public List<Token> tokenize() {
         var tokens = new ArrayList<Token>();
 
+        outer:
         while (pos < input.length()) {
-            if (peek(EXPRESSION_OPEN))
-                tokenizeExpressionOrBlock(tokens);
-            else if (isHtml()) {
-                var startPos = pos;
-                var executed = peek(HTML_END) ?
-                        tokenizeEndComponent(tokens) :
-                        tokenizeStartComponent(tokens);
-
-                if (!executed) {
-                    pos = startPos;
-                    tokenizeText(tokens);
-                }
-            } else
-                tokenizeText(tokens);
-        }
-
-        tokens.add(new Token(Type.EOF, "", pos));
-
-        return tokens;
-    }
-
-    /**
-     * Tokenize expressions and blocks
-     *
-     * @param tokens The list to add tokens to
-     */
-    private void tokenizeExpressionOrBlock(List<Token> tokens) {
-        var blockStartPos = pos;
-        var isBlock = true;
-
-        expect(EXPRESSION_OPEN);
-        tokens.add(new Token(Type.EXPRESSION_OPEN, EXPRESSION_OPEN, pos - EXPRESSION_OPEN.length()));
-
-        skipWhitespace();
-
-        if (consume(BLOCK_START)) {
-            tokens.add(new Token(Type.BLOCK_HEAD, BLOCK_START, pos - BLOCK_START.length()));
-            tokens.add(tokenizeIdentifier(Type.IDENTIFIER));
-            skipWhitespace();
-        } else if (consume(BLOCK_END)) {
-            tokens.add(new Token(Type.BLOCK_TAIL, BLOCK_END, pos - BLOCK_END.length()));
-            tokens.add(tokenizeIdentifier(Type.IDENTIFIER));
-            skipWhitespace();
-        } else
-            isBlock = false;
-
-        tokenizeExpression(tokens);
-
-        expect(EXPRESSION_CLOSE);
-        tokens.add(new Token(Type.EXPRESSION_CLOSE, EXPRESSION_CLOSE, pos - EXPRESSION_CLOSE.length()));
-
-        if (isBlock && isStandaloneLine(blockStartPos, pos))
-            consumeStandaloneLine(tokens);
-    }
-
-    /**
-     * Tokenize an expression until the closing "}}"
-     *
-     * @param tokens The list to add tokens to
-     */
-    private void tokenizeExpression(List<Token> tokens) {
-        skipWhitespace();
-
-        while (pos < input.length()) {
-            if (peek(EXPRESSION_CLOSE))
-                break;
-
-            var current = current();
-
-            if (peek(QUOTE)) {
-                tokens.add(tokenizeString());
-            } else if (peek(VARIABLE)) {
-                tokens.add(tokenizeVariable());
-            } else if (peek(DOT)) {
-                tokens.add(new Token(Type.VARIABLE_DOT, DOT, pos));
-                skip(DOT);
-            } else if (isNumberType()) {
+            if (isNumberType())
                 tokens.add(tokenizeNumber());
-            } else {
-                var comparator = filter(COMPARATORS);
+            else {
+                var comparator = tokenizeArray(COMPARATORS, Type.COMPARATOR);
                 if (comparator != null) {
-                    tokens.add(new Token(Type.COMPARATOR, comparator, pos));
-                    skip(comparator);
-                } else {
-                    var operator = filter(OPERATORS);
-                    if (operator != null) {
-                        tokens.add(new Token(Type.OPERATOR, operator, pos));
-                        skip(operator);
-                    } else if (Character.isLetter(current))
-                        tokens.add(tokenizeIdentifier());
-                    else
-                        throwError("Unexpected character: " + current(), pos);
+                    tokens.add(comparator);
+                    continue;
                 }
+
+                var operator = tokenizeArray(OPERATORS, Type.OPERATOR);
+                if (operator != null) {
+                    tokens.add(operator);
+                    continue;
+                }
+
+                var keyword = tokenizeArray(KEYWORDS, Type.KEYWORD);
+                if (keyword != null) {
+                    tokens.add(keyword);
+                    continue;
+                }
+
+                for (var entry : Token.TOKEN_MAPPER.entrySet()) {
+                    if (peek(entry.getKey())) {
+                        tokens.add(new Token(entry.getValue(), entry.getKey(), pos));
+                        skip(entry.getKey());
+                        continue outer;
+                    }
+                }
+
+                if (peek(" "))
+                    tokens.add(tokenizeSpacer());
+                else
+                    tokens.add(tokenizeText());
             }
 
-            skipWhitespace();
-        }
-    }
 
-    /**
-     * Tokenize a string literal
-     */
-    private Token tokenizeString() {
-        var start = pos;
-        expect(QUOTE);
-
-        var current = current();
-        var builder = new StringBuilder();
-        while (pos < input.length() && !peek(QUOTE)) {
-            if (current == '\\' && pos + 1 < input.length()) {
-                current = skip();
-
-                switch (current) {
-                    case 'n' -> builder.append('\n');
-                    case 't' -> builder.append('\t');
-                    case '"' -> builder.append('"');
-                    case '\\' -> builder.append('\\');
-                    default -> builder.append(current);
-                }
-            } else
-                builder.append(current);
-
-            current = skip();
         }
 
-        expect(QUOTE);
-        return new Token(Type.STRING, builder.toString(), start);
-    }
+        tokens.add(new Token(Type.EOI, "\0", pos));
 
-    /**
-     * Tokenize a variable (starts with $)
-     */
-    private Token tokenizeVariable() {
-        var start = pos;
-        expect(VARIABLE);
-
-        var current = current();
-        var builder = new StringBuilder();
-        while (pos < input.length() && (Character.isLetterOrDigit(current) || current == '_' || current == '-' || current == ':')) {
-            builder.append(current);
-            current = skip();
-        }
-
-        return new Token(Type.VARIABLE, builder.toString(), start);
+        return tokens;
     }
 
     /**
      * Tokenize a number (integer or decimal)
      */
     private Token tokenizeNumber() {
+        var start = pos;
         var current = current();
+
         var builder = new StringBuilder();
         if (current == '-') {
             builder.append(current());
             current = skip();
-        }
-
-        // Must have at least one digit after the sign
-        var start = pos;
-        if (!Character.isDigit(current)) {
-            pos = start;
-
-            throwError("Expected digit after '-'", pos);
         }
 
         var hasDecimal = false;
@@ -228,169 +116,52 @@ public class Lexer {
     }
 
     /**
-     * Tokenize an identifier or keyword
+     * Tokenize a comparator operator
      */
-    private Token tokenizeIdentifier() {
-        return tokenizeIdentifier(null);
+    private Token tokenizeArray(String[] symbols, Type type) {
+        var symbol = filter(symbols);
+        if (symbol != null) {
+            var token = new Token(type, symbol, pos);
+            skip(symbol);
+            return token;
+        }
+
+        return null;
     }
 
     /**
-     * Tokenize an identifier or keyword with specified type
+     * Tokenize a spacer (sequence of spaces/tabs)
      */
-    private Token tokenizeIdentifier(Type type) {
+    private Token tokenizeSpacer() {
         var start = pos;
-
-        var current = current();
         var builder = new StringBuilder();
-        while (pos < input.length() && (Character.isLetterOrDigit(current) || current == '_' || current == '-')) {
-            builder.append(current);
-            current = skip();
+
+        while (pos < input.length() && (current() == ' ' || current() == '\t')) {
+            builder.append(current());
+            skip();
         }
 
-        var value = builder.toString();
-        if (type == null) {
-            type = switch (value) {
-                case "true", "false" -> Type.BOOLEAN;
-                default -> Type.IDENTIFIER;
-            };
-        }
-
-        return new Token(type, value, start);
+        return new Token(Type.SPACER, builder.toString(), start);
     }
-
-    // ===== Components =====
 
     /**
      * Tokenize plain text until the next expression or HTML tag
-     *
-     * @param tokens The list to add tokens to
      */
-    private void tokenizeText(List<Token> tokens) {
-        var start = pos;
-
-        var builder = new StringBuilder();
-        while (pos < input.length() && !peek(EXPRESSION_OPEN) && !isHtml()) {
-            var current = current();
-            builder.append(current);
-            skip();
-
-            if (current == '\n')
-                break;
-        }
-
-        if (!builder.isEmpty())
-            tokens.add(new Token(Type.TEXT, builder.toString(), start));
-    }
-
-    /**
-     * Tokenize an HTML start tag: "<tagname attr="value" --custom />"
-     *
-     * @param tokens The list to add tokens to
-     */
-    private boolean tokenizeStartComponent(List<Token> tokens) {
-        expect(HTML_OPEN);
-        tokens.add(new Token(Type.HTML_OPEN, HTML_OPEN, pos - HTML_OPEN.length()));
-
-        // Identifier
-        tokens.add(tokenizeComponentName());
-        skipWhitespace();
-
-        // Attributes
-        while (pos < input.length() && !peek(HTML_CLOSE, HTML_END_SELF)) {
-            // Attribute name
-            if (Character.isLetter(current()))
-                tokens.add(tokenizeComponentAttributeName());
-
-            skipWhitespace();
-
-            // Check for = and value
-            if (consume(ASSIGN)) {
-                tokens.add(new Token(Type.ASSIGN, ASSIGN, pos - ASSIGN.length()));
-                skipWhitespace();
-
-                if (peek(EXPRESSION_OPEN))
-                    tokenizeExpressionOrBlock(tokens);
-                else if (peek(QUOTE))
-                    tokens.add(tokenizeString());
-                else if (isNumberType())
-                    tokens.add(tokenizeNumber());
-                else
-                    throwError("Unexpected character in attribute value: " + current(), pos);
-            } else if (peek(EXPRESSION_OPEN))
-                tokenizeExpressionOrBlock(tokens);
-            else
-                throwError("Unexpected character in attribute value: " + current(), pos);
-
-            skipWhitespace();
-        }
-
-        // Self-closing or normal close
-        var close = filter(HTML_CLOSE, HTML_END_SELF);
-        if (close != null) {
-            tokens.add(new Token(Type.HTML_CLOSE, close, pos));
-            skip(close);
-        } else
-            throwError("Expected '" + HTML_CLOSE + "' or '" + HTML_END_SELF + "' to close tag", pos);
-
-        return true;
-    }
-
-    /**
-     * Tokenize an HTML end tag: </tagname>
-     */
-    private boolean tokenizeEndComponent(List<Token> tokens) {
-        expect(HTML_END);
-        tokens.add(new Token(Type.HTML_OPEN, HTML_END, pos - HTML_OPEN.length()));
-
-        // Identifier
-        tokens.add(tokenizeComponentName());
-        skipWhitespace();
-
-        if (consume(HTML_CLOSE))
-            tokens.add(new Token(Type.HTML_CLOSE, HTML_CLOSE, pos - HTML_CLOSE.length()));
-        else
-            throwError("Expected '" + HTML_CLOSE + "' to close end tag", pos);
-
-        return true;
-    }
-
-    /**
-     * Tokenize an HTML attribute string value
-     */
-    private Token tokenizeComponentAttributeName() {
+    private Token tokenizeText() {
         var start = pos;
 
         var current = current();
         var builder = new StringBuilder();
-        while (pos < input.length() && (Character.isLetterOrDigit(current) || current == '-' || current == ':')) {
+
+        do {
             builder.append(current);
             current = skip();
-        }
+        } while (pos < input.length() && StringUtils.isAsciiLetter(current));
 
-        return new Token(Type.ATTRIBUTE, builder.toString(), start);
+        return new Token(Type.TEXT, builder.toString(), start);
     }
 
-    /**
-     * Tokenize an HTML attribute name
-     */
-    private Token tokenizeComponentName() {
-        var start = pos;
-
-        var current = current();
-        var builder = new StringBuilder();
-        while (pos < input.length() && (Character.isLetterOrDigit(current) || current == '-' || current == ':')) {
-            builder.append(current);
-            current = skip();
-        }
-
-        var identifier = builder.toString();
-        var type = isSlotIdentifier(identifier) ?
-                Type.SLOT : Type.IDENTIFIER;
-
-        return new Token(type, identifier, start);
-    }
-
-    // ===== Helpers =====
+    // ===== Navigation =====
 
     /**
      * Returns the current character or '\0' if at the end of input
@@ -434,46 +205,6 @@ public class Lexer {
     }
 
     /**
-     * Move the current position forward by the length of the given symbol
-     *
-     * @param str The string(s) to consume
-     */
-    private boolean consume(String... str) {
-        for (var s : str) {
-            if (input.startsWith(s, pos)) {
-                skip(s);
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Expect the next characters to match the given string
-     *
-     * @param str The string to expect
-     */
-    private void expect(String str) {
-        expect(str, "Expected " + str + ", got '" + (pos < input.length() ? input.charAt(pos) : "EOF") + "'");
-    }
-
-    /**
-     * Expect the next characters to match the given string
-     *
-     * @param str     The string to expect
-     * @param message The error message to use
-     */
-    private void expect(String str, String message) {
-        if (input.startsWith(str, pos)) {
-            skip(str);
-            return;
-        }
-
-        throwError(message, pos);
-    }
-
-    /**
      * Move the current position forward by one character
      */
     private char skip() {
@@ -495,17 +226,13 @@ public class Lexer {
      * @param count Number of characters to advance
      */
     private char skip(int count) {
-        for (var i = 0; i < count && pos < input.length(); i++) {
-            if (input.charAt(pos) == '\n') {
-                lineStart = pos + 1;
-                line++;
-            }
-
+        for (var i = 0; i < count && pos < input.length(); i++)
             pos++;
-        }
 
         return current();
     }
+
+    // ===== Helper =====
 
     /**
      * Check if the current position starts a number
@@ -514,141 +241,5 @@ public class Lexer {
         var current = current();
         return Character.isDigit(current) ||
                 (current == '-' && Character.isDigit(next()));
-    }
-
-    /**
-     * Check if the given identifier is a slot name
-     * <pre>
-     * - Start with {@link Symbols#HTML_SLOT_OUTPUT} for output slots
-     * - Start with {@link Symbols#HTML_SLOT_INPUT} for input slots
-     * </pre>
-     *
-     * @param id The identifier to check
-     */
-    private boolean isSlotIdentifier(String id) {
-        return id.equals(HTML_SLOT_OUTPUT)
-                || id.startsWith(HTML_SLOT_OUTPUT + HTML_SLOT_INPUT)
-                || id.startsWith(HTML_SLOT_INPUT);
-    }
-
-    /**
-     * Check if current position starts an HTML tag
-     * and not just a less-than operator
-     */
-    private boolean isHtml() {
-        if (!peek(HTML_OPEN))
-            return false;
-
-        var next = next();
-        return next == '/' || next == ':' || Character.isLetter(next);
-    }
-
-    // === Whitespace ===
-
-    /**
-     * Skip whitespace characters
-     */
-    private void skipWhitespace() {
-        var current = current();
-        while (pos < input.length() && Character.isWhitespace(current))
-            current = skip();
-    }
-
-    /**
-     * Check if the block between blockStart and blockEnd is on a line by itself
-     *
-     * @param blockStart The start position of the block (inclusive)
-     * @param blockEnd   The end position of the block (exclusive)
-     */
-    private boolean isStandaloneLine(int blockStart, int blockEnd) {
-        // Check if there's only whitespace before the block on this line
-        for (var i = lineStart; i < blockStart; i++) {
-            var c = input.charAt(i);
-            if (c != ' ' && c != '\t')
-                return false;
-        }
-
-        // Check if there's only whitespace after the block until newline
-        var i = blockEnd;
-        while (i < input.length()) {
-            var c = input.charAt(i);
-            if (c == '\n' || c == '\r')
-                return true;
-
-            if (c != ' ' && c != '\t')
-                return false;
-
-            i++;
-        }
-
-        return true;
-    }
-
-    /**
-     * Consume the rest of the line after a standalone block
-     */
-    private void consumeStandaloneLine(List<Token> tokens) {
-        var index = tokens.size() - 1;
-        while (index >= 0) {
-            var token = tokens.get(index);
-            if (token.type() == Type.TEXT) {
-                if (!Objects.equals(token.value(), "\n") && token.value().isBlank())
-                    tokens.remove(index);
-
-                break;
-            }
-
-            index--;
-        }
-
-        // Skip trailing spaces/tabs on the same line
-        while (pos < input.length()) {
-            var c = input.charAt(pos);
-            if (c == ' ' || c == '\t')
-                pos++;
-            else
-                break;
-        }
-
-        // Skip the newline character(s)
-        if (pos < input.length()) {
-            var c = input.charAt(pos);
-            if (c == '\r') {
-                pos++;
-                if (pos < input.length() && input.charAt(pos) == '\n')
-                    pos++;
-                lineStart = pos;
-                line++;
-            } else if (c == '\n') {
-                pos++;
-                lineStart = pos;
-                line++;
-            }
-        }
-    }
-
-    // === Errors ===
-
-    private String getLine(int lineNumber) {
-        var lines = input.split("\\R", -1); // handles \n,\t,\r\n, etc.
-        if (lineNumber < 1 || lineNumber > lines.length)
-            return "";
-
-        return lines[lineNumber - 1];
-    }
-
-    private void throwError(String message, int errorPos) {
-        int column = errorPos - lineStart;
-        var arrow = " ".repeat(Math.max(0, column)) +
-                "↳ " + message;
-
-        String formattedMessage = String.format("""
-                An error occurred when parsing the input at line %d, column %d
-                %s
-                %s
-                """, line, column, getLine(line), arrow
-        );
-
-        throw new RuntimeException(formattedMessage);
     }
 }
