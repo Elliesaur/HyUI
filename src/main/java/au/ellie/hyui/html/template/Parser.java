@@ -22,6 +22,8 @@ import au.ellie.hyui.html.template.exception.ParserException;
 import au.ellie.hyui.html.template.item.Attribute;
 import au.ellie.hyui.html.template.item.Attribute.ConditionAttribute;
 import au.ellie.hyui.html.template.item.Attribute.ControlAttribute;
+import au.ellie.hyui.html.template.item.Attribute.ElseAttribute;
+import au.ellie.hyui.html.template.item.Attribute.ElseIfAttribute;
 import au.ellie.hyui.html.template.item.Attribute.ParsedAttributes;
 import au.ellie.hyui.html.template.item.Node;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode;
@@ -68,6 +70,7 @@ public class Parser {
         }
 
         mergeTextNodes(nodes);
+        groupConditionalChains(nodes);
         return stack.pop();
     }
 
@@ -246,7 +249,7 @@ public class Parser {
 
         // Clean whitespace for standalone tags
         var indent = cleanStandaloneLineWhitespace();
-        var node = new EachBlockNode(control.itemName(), control.collection(), mergeTextNodes(body));
+        var node = new EachBlockNode(control.itemName(), control.indexName(), control.collection(), mergeTextNodes(body));
 
         stack.pop();
         return indent ? new MarkerNode(NEW_LINE, node) : node;
@@ -686,6 +689,12 @@ public class Parser {
                     continue;
                 }
 
+                // Flow attributes: else-if="$condition"
+                if (name.equals(KEYWORD_ELSE_IF) && consume(Type.QUOTE)) {
+                    flowAttributes.add(parseElseIfAttributeValue(Type.QUOTE));
+                    continue;
+                }
+
                 // Dynamic attribute: attr={expr}
                 if (consume(Type.OPEN_EXPRESSION)) {
                     var expr = parseExpression();
@@ -732,8 +741,14 @@ public class Parser {
             }
 
             // Flag attribute
-            else
-                attributes.add(new FlagAttributeNode(name));
+            else {
+                // Flow attributes: else (flag attribute)
+                if (name.equals(KEYWORD_ELSE)) {
+                    flowAttributes.add(new ElseAttribute());
+                } else {
+                    attributes.add(new FlagAttributeNode(name));
+                }
+            }
 
             skipWhitespace();
         }
@@ -743,25 +758,85 @@ public class Parser {
 
     /**
      * Parse the value of an "each" block
+     * Supports three syntaxes:
+     * - each="$items" (item name defaults to "item", no index)
+     * - each="$item in $items" (custom item name, no index)
+     * - each="$item, $index in $items" (custom item name and index name)
      *
      * @param delimiter The expected delimiter type to end the attribute value
      */
     private ControlAttribute parseEachAttributeValue(Type delimiter) {
         skipWhitespace();
 
-        // Parse collection name
-        var collection = parseVariable();
-        skipWhitespace();
-
-        // Parse item name (optional, defaults to "item")
+        // Check if we have the old syntax: "{{each $collection itemName}}" or new syntax
+        var firstToken = peek();
         var itemName = "item";
-        if (match(Type.TEXT)) {
-            itemName = joinTokens(Type.TEXT, Type.NUMBER, Type.KEYWORD);
+        var indexName = (String) null;
+        ExpressionNode collection;
+
+        // Try to detect if this is "$item in $collection" or "$item, $index in $collection" syntax
+        if (match(Type.VARIABLE)) {
+            var firstVar = parseVariable();
             skipWhitespace();
+
+            // Check for comma (indicates index is present)
+            if (consume(Type.COMMA)) {
+                skipWhitespace();
+
+                // Parse index variable
+                if (!match(Type.VARIABLE))
+                    throw new ParserException("Expected index variable after comma in each block", peek(), pos);
+
+                var indexVar = parseVariable();
+                if (!(indexVar instanceof VariableNode indexVarNode))
+                    throw new ParserException("Expected variable for index in each block", peek(), pos);
+
+                indexName = indexVarNode.name();
+                skipWhitespace();
+
+                // Expect "in" keyword
+                if (!consumeSymbol(Type.KEYWORD, KEYWORD_IN))
+                    throw new ParserException("Expected 'in' keyword in each block", peek(), pos);
+
+                skipWhitespace();
+
+                // Parse collection
+                collection = parseExpression();
+
+                // Extract item name from first variable
+                if (!(firstVar instanceof VariableNode itemVarNode))
+                    throw new ParserException("Expected variable for item in each block", peek(), pos);
+                itemName = itemVarNode.name();
+            }
+            // Check for "in" keyword
+            else if (consumeSymbol(Type.KEYWORD, KEYWORD_IN)) {
+                skipWhitespace();
+
+                // Parse collection
+                collection = parseExpression();
+
+                // Extract item name from first variable
+                if (!(firstVar instanceof VariableNode itemVarNode))
+                    throw new ParserException("Expected variable for item in each block", peek(), pos);
+                itemName = itemVarNode.name();
+            }
+            // Old syntax or just collection: "{{each $collection}}" or "{{each $collection itemName}}"
+            else {
+                collection = firstVar;
+
+                // Check for optional item name (old syntax)
+                if (match(Type.TEXT)) {
+                    itemName = joinTokens(Type.TEXT, Type.NUMBER, Type.KEYWORD);
+                    skipWhitespace();
+                }
+            }
+        } else {
+            throw new ParserException("Expected variable in each block", peek(), pos);
         }
 
+        skipWhitespace();
         expect(delimiter, "Expected delimiter around `each` block");
-        return new ControlAttribute(collection, itemName);
+        return new ControlAttribute(collection, itemName, indexName);
     }
 
     /**
@@ -778,6 +853,22 @@ public class Parser {
 
         expect(delimiter, "Expected delimiter around `if` block");
         return new ConditionAttribute(condition);
+    }
+
+    /**
+     * Parse the value of an "else-if" block
+     *
+     * @param delimiter The expected delimiter type to end the attribute value
+     */
+    private ElseIfAttribute parseElseIfAttributeValue(Type delimiter) {
+        skipWhitespace();
+
+        // Parse condition expression
+        var condition = parseExpression();
+        skipWhitespace();
+
+        expect(delimiter, "Expected delimiter around `else-if` block");
+        return new ElseIfAttribute(condition);
     }
 
     // ===== Navigation =====
@@ -922,6 +1013,163 @@ public class Parser {
             builder.append(advance().value());
 
         return builder.toString();
+    }
+
+    /**
+     * Group consecutive if/else-if/else elements into proper conditional chains.
+     * This ensures that only the first matching condition renders.
+     * Also recursively processes nested blocks.
+     */
+    private void groupConditionalChains(List<Node> nodes) {
+        if (nodes.isEmpty())
+            return;
+
+        var result = new ArrayList<Node>();
+        var i = 0;
+
+        while (i < nodes.size()) {
+            var node = nodes.get(i);
+
+            // Recursively process nested blocks first
+            node = processNodeRecursively(node);
+
+            // Check if this is the start of an if/else-if/else chain
+            if (isIfNode(node)) {
+                var chain = new ArrayList<Node>();
+                chain.add(node);
+                i++;
+
+                // Collect consecutive else-if and else nodes
+                while (i < nodes.size()) {
+                    var next = nodes.get(i);
+
+                    // Skip whitespace/newline text nodes between conditional elements
+                    if (next instanceof TextNode textNode && textNode.content().trim().isEmpty()) {
+                        i++;
+                        continue;
+                    }
+
+                    // Recursively process before checking
+                    next = processNodeRecursively(next);
+
+                    if (isElseIfNode(next) || isElseNode(next)) {
+                        chain.add(next);
+                        i++;
+                    } else {
+                        break;
+                    }
+                }
+
+                // If we have a chain (if followed by else-if/else), group them
+                if (chain.size() > 1) {
+                    result.add(buildConditionalChain(chain));
+                } else {
+                    result.add(node);
+                }
+            } else {
+                result.add(node);
+                i++;
+            }
+        }
+
+        nodes.clear();
+        nodes.addAll(result);
+    }
+
+    /**
+     * Recursively process a node to group conditional chains in nested blocks
+     */
+    private Node processNodeRecursively(Node node) {
+        return switch (node) {
+            case IfBlockNode ifNode -> {
+                var thenBody = new ArrayList<>(ifNode.thenBody());
+                var elseBody = new ArrayList<>(ifNode.elseBody());
+                groupConditionalChains(thenBody);
+                groupConditionalChains(elseBody);
+                yield new IfBlockNode(ifNode.condition(), thenBody, elseBody);
+            }
+            case EachBlockNode eachNode -> {
+                var body = new ArrayList<>(eachNode.body());
+                groupConditionalChains(body);
+                yield new EachBlockNode(eachNode.itemName(), eachNode.indexName(), eachNode.collection(), body);
+            }
+            case ComponentBlockNode componentNode -> {
+                var children = new ArrayList<>(componentNode.children());
+                groupConditionalChains(children);
+                yield new ComponentBlockNode(componentNode.tag(), componentNode.attributes(), children);
+            }
+            case SlotBlockNode slotNode -> {
+                var children = new ArrayList<>(slotNode.children());
+                groupConditionalChains(children);
+                yield new SlotBlockNode(slotNode.name(), slotNode.attributes(), children, slotNode.output());
+            }
+            default -> node;
+        };
+    }
+
+    /**
+     * Check if a node is an if block (wrapping an element with if attribute)
+     */
+    private boolean isIfNode(Node node) {
+        return node instanceof IfBlockNode ifNode &&
+               ifNode.elseBody().isEmpty() &&
+               ifNode.thenBody().size() == 1;
+    }
+
+    /**
+     * Check if a node is an else-if block (wrapping an element with else-if attribute)
+     */
+    private boolean isElseIfNode(Node node) {
+        // else-if is represented as an IfBlockNode created from ElseIfAttribute
+        return node instanceof IfBlockNode ifNode &&
+               ifNode.elseBody().isEmpty() &&
+               ifNode.thenBody().size() == 1;
+    }
+
+    /**
+     * Check if a node is an else block (wrapping an element with else attribute)
+     */
+    private boolean isElseNode(Node node) {
+        // else is represented as an IfBlockNode with condition=true
+        if (!(node instanceof IfBlockNode ifNode))
+            return false;
+
+        return ifNode.condition() instanceof LiteralNode literal &&
+               Boolean.TRUE.equals(literal.value()) &&
+               ifNode.elseBody().isEmpty() &&
+               ifNode.thenBody().size() == 1;
+    }
+
+    /**
+     * Build a proper conditional chain from a list of if/else-if/else nodes
+     */
+    private Node buildConditionalChain(List<Node> chain) {
+        if (chain.isEmpty())
+            throw new IllegalArgumentException("Chain cannot be empty");
+
+        // Start from the end and build backwards
+        Node result = null;
+
+        for (int i = chain.size() - 1; i >= 0; i--) {
+            var node = chain.get(i);
+
+            if (!(node instanceof IfBlockNode ifNode))
+                continue;
+
+            if (i == 0) {
+                // First node (the if) - use its condition and set the elseBody to the accumulated chain
+                List<Node> thenBody = new ArrayList<>(ifNode.thenBody());
+                List<Node> elseBody = result != null ? List.of(result) : List.of();
+                result = new IfBlockNode(ifNode.condition(), thenBody, elseBody);
+            } else {
+                // else-if or else nodes - wrap in if block with accumulated chain as else
+                List<Node> thenBody = new ArrayList<>(ifNode.thenBody());
+                List<Node> elseBody = result != null ? List.of(result) : List.of();
+                result = new IfBlockNode(ifNode.condition(), thenBody, elseBody);
+            }
+        }
+
+        return result;
     }
 
     /**

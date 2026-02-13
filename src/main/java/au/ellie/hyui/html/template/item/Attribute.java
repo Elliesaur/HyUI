@@ -22,6 +22,7 @@ import au.ellie.hyui.html.template.item.Node.AttributeValueNode;
 import au.ellie.hyui.html.template.item.Node.BlockNode.EachBlockNode;
 import au.ellie.hyui.html.template.item.Node.BlockNode.IfBlockNode;
 import au.ellie.hyui.html.template.item.Node.ExpressionNode;
+import au.ellie.hyui.html.template.item.Node.ExpressionNode.LiteralNode;
 import au.ellie.hyui.utils.StringReader;
 
 import java.util.List;
@@ -32,13 +33,25 @@ public interface Attribute {
     /**
      * Hold extracted loop/conditional attributes from HTML elements
      */
-    record ControlAttribute(ExpressionNode collection, String itemName) implements Attribute {
+    record ControlAttribute(ExpressionNode collection, String itemName, String indexName) implements Attribute {
     }
 
     /**
      * Hold extracted condition attribute from HTML elements
      */
     record ConditionAttribute(ExpressionNode condition) implements Attribute {
+    }
+
+    /**
+     * Hold extracted else-if attribute from HTML elements
+     */
+    record ElseIfAttribute(ExpressionNode condition) implements Attribute {
+    }
+
+    /**
+     * Hold extracted else attribute from HTML elements
+     */
+    record ElseAttribute() implements Attribute {
     }
 
     /**
@@ -67,6 +80,7 @@ public interface Attribute {
 
         /**
          * Build a node with the parsed attributes and control flow attributes
+         * Handles grouping of if/else-if/else chains
          *
          * @param base The base node to wrap with control flow nodes
          * @return The final node with all control flow nodes applied
@@ -75,10 +89,14 @@ public interface Attribute {
             Node result = base;
 
             for (var attr : sortedFlowAttributes()) {
-                if (attr instanceof ControlAttribute(ExpressionNode collection, String itemName))
-                    result = new EachBlockNode(itemName, collection, List.of(result));
+                if (attr instanceof ControlAttribute(ExpressionNode collection, String itemName, String indexName))
+                    result = new EachBlockNode(itemName, indexName, collection, List.of(result));
                 else if (attr instanceof ConditionAttribute(ExpressionNode condition))
                     result = new IfBlockNode(condition, List.of(result), List.of());
+                else if (attr instanceof ElseIfAttribute(ExpressionNode condition))
+                    result = new IfBlockNode(condition, List.of(result), List.of());
+                else if (attr instanceof ElseAttribute())
+                    result = new IfBlockNode(new LiteralNode(true), List.of(result), List.of());
             }
 
             return result;

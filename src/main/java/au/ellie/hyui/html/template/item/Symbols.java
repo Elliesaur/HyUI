@@ -32,6 +32,7 @@ public class Symbols {
     public final static String VARIABLE = "$";
     public final static String ASSIGN = "=";
     public final static String COLON = ":";
+    public final static String COMMA = ",";
     public final static String QUOTE = "\"";
     public final static String SLASH = "/";
     public final static String PIPE = "|";
@@ -70,6 +71,7 @@ public class Symbols {
     public final static String KEYWORD_IN = "in";
 
     public final static String KEYWORD_EACH = "each";
+    public final static String KEYWORD_ELSE_IF = "else-if";
     public final static String KEYWORD_ELSE = "else";
     public final static String KEYWORD_IF = "if";
 
@@ -81,6 +83,7 @@ public class Symbols {
             KEYWORD_NOT_IN,
             KEYWORD_IN,
             KEYWORD_EACH,
+            KEYWORD_ELSE_IF,
             KEYWORD_ELSE,
             KEYWORD_IF,
             KEYWORD_FALSE,

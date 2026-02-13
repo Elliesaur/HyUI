@@ -712,6 +712,167 @@ class TemplateProcessorTest {
 
             assertEquals(expected, processor.process().trim());
         }
+
+        @Test
+        @DisplayName("Should render only first matching element in if/else-if/else chain")
+        void elseIfChainRendersOnlyFirst() {
+            processor.setVariable("score", 85);
+
+            processor.setTemplate(normalize("""
+                    <div if="$score >= 90">A</div>
+                    <div else-if="$score >= 80">B</div>
+                    <div else-if="$score >= 70">C</div>
+                    <div else>F</div>
+                    """));
+
+            String result = processor.process();
+            assertFalse(result.contains(">A<"));
+            assertTrue(result.contains(">B<"));
+            assertFalse(result.contains(">C<"));
+            assertFalse(result.contains(">F<"));
+        }
+
+        @Test
+        @DisplayName("Should render else when all conditions in chain fail")
+        void elseInChainWhenAllFail() {
+            processor.setVariable("score", 65);
+
+            processor.setTemplate(normalize("""
+                    <div if="$score >= 90">A</div>
+                    <div else-if="$score >= 80">B</div>
+                    <div else-if="$score >= 70">C</div>
+                    <div else>F</div>
+                    """));
+
+            String result = processor.process();
+            assertFalse(result.contains(">A<"));
+            assertFalse(result.contains(">B<"));
+            assertFalse(result.contains(">C<"));
+            assertTrue(result.contains(">F<"));
+        }
+
+        @Test
+        @DisplayName("Should render first condition in chain when it matches")
+        void ifChainFirstMatches() {
+            processor.setVariable("value", 100);
+
+            processor.setTemplate(normalize("""
+                    <p if="$value > 90">Excellent</p>
+                    <p else-if="$value > 70">Good</p>
+                    <p else-if="$value > 50">Average</p>
+                    <p else>Poor</p>
+                    """));
+
+            String result = processor.process();
+            assertTrue(result.contains("Excellent"));
+            assertFalse(result.contains("Good"));
+            assertFalse(result.contains("Average"));
+            assertFalse(result.contains("Poor"));
+        }
+
+        @Test
+        @DisplayName("Should render middle else-if in chain when it's first match")
+        void ifChainMiddleMatches() {
+            processor.setVariable("value", 75);
+
+            processor.setTemplate(normalize("""
+                    <p if="$value > 90">Excellent</p>
+                    <p else-if="$value > 70">Good</p>
+                    <p else-if="$value > 50">Average</p>
+                    <p else>Poor</p>
+                    """));
+
+            String result = processor.process();
+            assertFalse(result.contains("Excellent"));
+            assertTrue(result.contains("Good"));
+            assertFalse(result.contains("Average"));
+            assertFalse(result.contains("Poor"));
+        }
+
+        @Test
+        @DisplayName("Should handle complex conditions in else-if chain")
+        void complexElseIfChain() {
+            processor.setVariable("age", 25);
+            processor.setVariable("member", true);
+
+            processor.setTemplate(normalize("""
+                    <p if="$age < 18">Child ticket</p>
+                    <p else-if="$age >= 65">Senior ticket</p>
+                    <p else-if="$member">Member ticket</p>
+                    <p else>Regular ticket</p>
+                    """));
+
+            String result = processor.process();
+            assertFalse(result.contains("Child"));
+            assertFalse(result.contains("Senior"));
+            assertTrue(result.contains("Member"));
+            assertFalse(result.contains("Regular"));
+        }
+
+        @Test
+        @DisplayName("Should handle if/else-if/else chains within each loops")
+        void ifElseIfChainInEach() {
+            processor.setVariable("scores", List.of(95, 85, 75, 65));
+
+            processor.setTemplate(normalize("""
+                    {{each $score, $idx in $scores}}
+                    <div if="$score >= 90">{{$idx}}: A</div>
+                    <div else-if="$score >= 80">{{$idx}}: B</div>
+                    <div else-if="$score >= 70">{{$idx}}: C</div>
+                    <div else>{{$idx}}: F</div>
+                    {{/each}}
+                    """));
+
+            String result = processor.process();
+            assertTrue(result.contains("0: A"));
+            assertTrue(result.contains("1: B"));
+            assertTrue(result.contains("2: C"));
+            assertTrue(result.contains("3: F"));
+            // Ensure no duplicates
+            assertEquals(1, result.split("0:").length - 1);
+            assertEquals(1, result.split("1:").length - 1);
+            assertEquals(1, result.split("2:").length - 1);
+            assertEquals(1, result.split("3:").length - 1);
+        }
+
+        @Test
+        @DisplayName("Should handle standalone if without chain")
+        void standaloneIfWithoutChain() {
+            processor.setVariable("show", true);
+
+            processor.setTemplate("<div if=\"$show\">Content</div>");
+
+            String result = processor.process();
+            assertTrue(result.contains("Content"));
+        }
+
+        @Test
+        @DisplayName("Should handle standalone else-if (acts like if when not in chain)")
+        void standaloneElseIf() {
+            processor.setVariable("score", 85);
+
+            processor.setTemplate("<div else-if=\"$score >= 80\">B</div>");
+
+            String result = processor.process();
+            assertTrue(result.contains(">B<"));
+        }
+
+        @Test
+        @DisplayName("Should handle if/else-if without final else")
+        void ifElseIfWithoutElse() {
+            processor.setVariable("score", 85);
+
+            processor.setTemplate(normalize("""
+                    <div if="$score >= 90">A</div>
+                    <div else-if="$score >= 80">B</div>
+                    <div else-if="$score >= 70">C</div>
+                    """));
+
+            String result = processor.process();
+            assertFalse(result.contains(">A<"));
+            assertTrue(result.contains(">B<"));
+            assertFalse(result.contains(">C<"));
+        }
     }
 
     // ========== EACH BLOCKS ==========
@@ -810,6 +971,87 @@ class TemplateProcessorTest {
 
             processor.setTemplate("{{each $items}}{{$item}},{{/each}}");
             assertEquals("A,,C,", processor.process());
+        }
+
+        @Test
+        @DisplayName("Should iterate with new syntax: $item in $items")
+        void iterateWithNewSyntaxItemIn() {
+            processor.setVariable("items", List.of("A", "B", "C"));
+
+            processor.setTemplate("{{each $elem in $items}}{{$elem}} {{/each}}");
+            assertEquals("A B C ", processor.process());
+        }
+
+        @Test
+        @DisplayName("Should iterate with new syntax: $item, $index in $items")
+        void iterateWithNewSyntaxItemIndexIn() {
+            processor.setVariable("items", List.of("A", "B", "C"));
+
+            processor.setTemplate("{{each $elem, $i in $items}}{{$i}}:{{$elem}} {{/each}}");
+            assertEquals("0:A 1:B 2:C ", processor.process());
+        }
+
+        @Test
+        @DisplayName("Should iterate with index using default item name")
+        void iterateWithIndexDefaultName() {
+            processor.setVariable("items", List.of("X", "Y", "Z"));
+
+            processor.setTemplate("{{each $item, $idx in $items}}[{{$idx}}]={{$item}} {{/each}}");
+            assertEquals("[0]=X [1]=Y [2]=Z ", processor.process());
+        }
+
+        @Test
+        @DisplayName("Should support index in nested loops")
+        void indexInNestedLoops() {
+            processor.setVariable("categories", List.of(
+                    new Category("A", List.of("a1", "a2")),
+                    new Category("B", List.of("b1", "b2"))
+            ));
+
+            processor.setTemplate(normalize("""
+                    {{each $cat, $i in $categories}}
+                    {{$i}}.{{$cat.name}}:
+                    {{each $item, $j in $cat.items}}
+                      {{$i}}.{{$j}}: {{$item}}
+                    {{/each}}
+                    {{/each}}
+                    """));
+
+            assertEquals(normalize("""
+                    0.A:
+                      0.0: a1
+                      0.1: a2
+                    1.B:
+                      1.0: b1
+                      1.1: b2
+                    """), processor.process());
+        }
+
+        @Test
+        @DisplayName("Should support new syntax in attributes: each=\"$item in $items\"")
+        void attributeSyntaxItemIn() {
+            processor.setVariable("items", List.of("A", "B", "C"));
+
+            processor.setTemplate("<div each=\"$elem in $items\">{{$elem}}</div>");
+            assertEquals("<div>A</div><div>B</div><div>C</div>", processor.process());
+        }
+
+        @Test
+        @DisplayName("Should support new syntax in attributes: each=\"$item, $index in $items\"")
+        void attributeSyntaxItemIndexIn() {
+            processor.setVariable("items", List.of("A", "B", "C"));
+
+            processor.setTemplate("<div each=\"$elem, $i in $items\">{{$i}}:{{$elem}}</div>");
+            assertEquals("<div>0:A</div><div>1:B</div><div>2:C</div>", processor.process());
+        }
+
+        @Test
+        @DisplayName("Should support shorthand syntax in attributes: each=\"$items\"")
+        void attributeSyntaxShorthand() {
+            processor.setVariable("items", List.of("A", "B", "C"));
+
+            processor.setTemplate("<div each=\"$items\">{{$item}}</div>");
+            assertEquals("<div>A</div><div>B</div><div>C</div>", processor.process());
         }
     }
 
@@ -1122,6 +1364,179 @@ class TemplateProcessorTest {
                         <h1>Button A</h1><h1>Button B <hidden>secret</hidden></h1><h1>Button C</h1>
                     </div>
                     """), processor.process());
+        }
+    }
+
+    // ========== TEMPLATE TAG ==========
+
+    @Nested
+    @DisplayName("Template Tag (Renderless Wrapper)")
+    class TemplateTag {
+
+        @Test
+        @DisplayName("Should render template tag children without wrapper element")
+        void renderChildrenWithoutWrapper() {
+            processor.setTemplate("<template><div>Content</div></template>");
+            assertEquals("<div>Content</div>", processor.process());
+        }
+
+        @Test
+        @DisplayName("Should use template tag with if attribute")
+        void templateWithIf() {
+            processor.setVariable("show", true);
+
+            processor.setTemplate("<template if=\"$show\"><div>Visible</div></template>");
+            assertEquals("<div>Visible</div>", processor.process());
+
+            processor.setVariable("show", false);
+            assertEquals("", processor.process());
+        }
+
+        @Test
+        @DisplayName("Should use template tag with if/else-if/else chain")
+        void templateWithConditionalChain() {
+            processor.setVariable("status", "warning");
+
+            processor.setTemplate(normalize("""
+                    <template if="$status == warning">
+                        <div class="success">Success!</div>
+                    </template>
+                    <template else-if="$status == success">
+                        <div class="warning">Warning!</div>
+                    </template>
+                    <template else>
+                        <div class="error">Error!</div>
+                    </template>
+                    """));
+
+            String result = processor.process();
+            assertTrue(result.contains("Success"));
+            assertFalse(result.contains("Warning"));
+            assertFalse(result.contains("Error"));
+            assertFalse(result.contains("<template"));
+        }
+
+        @Test
+        @DisplayName("Should use template tag with each attribute")
+        void templateWithEach() {
+            processor.setVariable("items", List.of("A", "B", "C"));
+
+            processor.setTemplate("<template each=\"$items\"><span>{{$item}}</span></template>");
+            assertEquals("<span>A</span><span>B</span><span>C</span>", processor.process());
+        }
+
+        @Test
+        @DisplayName("Should use template tag with each and index")
+        void templateWithEachAndIndex() {
+            processor.setVariable("items", List.of("X", "Y", "Z"));
+
+            processor.setTemplate("<template each=\"$item, $idx in $items\"><p>{{$idx}}:{{$item}}</p></template>");
+            assertEquals("<p>0:X</p><p>1:Y</p><p>2:Z</p>", processor.process());
+        }
+
+        @Test
+        @DisplayName("Should use template tag for multiple children without wrapper")
+        void templateWithMultipleChildren() {
+            processor.setVariable("show", true);
+
+            processor.setTemplate(normalize("""
+                    <template if="$show">
+                        <h1>Title</h1>
+                        <p>Paragraph</p>
+                        <span>Span</span>
+                    </template>
+                    """));
+
+            String result = processor.process();
+            assertTrue(result.contains("<h1>Title</h1>"));
+            assertTrue(result.contains("<p>Paragraph</p>"));
+            assertTrue(result.contains("<span>Span</span>"));
+            assertFalse(result.contains("<template"));
+        }
+
+        @Test
+        @DisplayName("Should nest template tags")
+        void nestedTemplateTags() {
+            processor.setVariable("outer", true);
+            processor.setVariable("inner", true);
+
+            processor.setTemplate(normalize("""
+                    <template if="$outer">
+                        <div>Outer</div>
+                        <template if="$inner">
+                            <div>Inner</div>
+                        </template>
+                    </template>
+                    """));
+
+            String result = processor.process();
+            assertTrue(result.contains("<div>Outer</div>"));
+            assertTrue(result.contains("<div>Inner</div>"));
+            assertFalse(result.contains("<template"));
+        }
+
+        @Test
+        @DisplayName("Should use template tag in each loop for conditional rendering")
+        void templateInEachLoop() {
+            processor.setVariable("items", List.of(
+                    new Item("First", true, null, 0),
+                    new Item("Second", false, null, 0),
+                    new Item("Third", true, null, 0)
+            ));
+
+            processor.setTemplate(normalize("""
+                    {{each $item in $items}}
+                    <template if="$item.active">
+                        <div>{{$item.name}}</div>
+                    </template>
+                    {{/each}}
+                    """));
+
+            String result = processor.process();
+            assertTrue(result.contains("First"));
+            assertFalse(result.contains("Second"));
+            assertTrue(result.contains("Third"));
+            assertFalse(result.contains("<template"));
+        }
+
+        @Test
+        @DisplayName("Should combine template tag with each and conditional chain")
+        void templateWithEachAndConditionalChain() {
+            processor.setVariable("scores", List.of(95, 85, 75));
+
+            processor.setTemplate(normalize("""
+                    <template each="$score, $idx in $scores">
+                        <template if="$score >= 90">
+                            <div class="a">{{$idx}}: A</div>
+                        </template>
+                        <template else-if="$score >= 80">
+                            <div class="b">{{$idx}}: B</div>
+                        </template>
+                        <template else>
+                            <div class="c">{{$idx}}: C</div>
+                        </template>
+                    </template>
+                    """));
+
+            String result = processor.process();
+            assertTrue(result.contains("0: A"));
+            assertTrue(result.contains("1: B"));
+            assertTrue(result.contains("2: C"));
+            assertFalse(result.contains("<template"));
+        }
+
+        @Test
+        @DisplayName("Should handle empty template tag")
+        void emptyTemplate() {
+            processor.setTemplate("<template></template>");
+            assertEquals("", processor.process());
+        }
+
+        @Test
+        @DisplayName("Should handle self-closing template tag")
+        void selfClosingTemplate() {
+            processor.setTemplate("<template/>");
+            assertEquals("", processor.process());
         }
     }
 

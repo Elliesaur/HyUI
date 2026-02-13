@@ -80,7 +80,7 @@ public interface Node {
         /**
          * Represents an `each` control structure
          */
-        record EachBlockNode(String itemName, ExpressionNode collection, List<Node> body) implements BlockNode {
+        record EachBlockNode(String itemName, String indexName, ExpressionNode collection, List<Node> body) implements BlockNode {
         }
 
         /**

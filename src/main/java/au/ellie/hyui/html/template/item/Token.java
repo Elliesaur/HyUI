@@ -70,6 +70,7 @@ public record Token(Type type, String value, int position) {
         VARIABLE,
         ASSIGN,
         COLON,
+        COMMA,
         QUOTE,
         SLASH,
         PIPE,
@@ -97,6 +98,7 @@ public record Token(Type type, String value, int position) {
         put(Symbols.VARIABLE, VARIABLE);
         put(Symbols.ASSIGN, ASSIGN);
         put(Symbols.COLON, COLON);
+        put(Symbols.COMMA, COMMA);
         put(Symbols.QUOTE, QUOTE);
         put(Symbols.SLASH, SLASH);
         put(Symbols.PIPE, PIPE);

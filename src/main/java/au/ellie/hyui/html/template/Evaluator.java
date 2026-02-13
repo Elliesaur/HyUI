@@ -296,10 +296,15 @@ public class Evaluator {
 
         var items = toIterable(collectionValue);
         var result = new StringBuilder();
+        var index = 0;
 
         for (Object item : items) {
             var scope = new VariableScope(SCOPE_EACH_NAME);
             scope.putKeyed(node.itemName(), item);
+
+            // Add index if indexName is provided
+            if (node.indexName() != null)
+                scope.putKeyed(node.indexName(), index);
 
             contextStack.pushScope(scope);
             try {
@@ -308,6 +313,8 @@ public class Evaluator {
             } finally {
                 contextStack.popScope();
             }
+
+            index++;
         }
 
         return result.toString();
@@ -321,6 +328,14 @@ public class Evaluator {
      */
     private String evaluateComponent(ComponentBlockNode component) {
         var componentDef = component.tag();
+
+        // Handle <template> tag as renderless wrapper - just render children
+        if (componentDef.equals("template")) {
+            var result = new StringBuilder();
+            for (Node child : component.children())
+                result.append(evaluateNode(child));
+            return result.toString();
+        }
 
         if (!components.containsKey(componentDef) || STACK.contains(componentDef))
             return evaluateComponentString(component);
