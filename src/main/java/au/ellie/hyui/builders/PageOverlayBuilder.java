@@ -24,6 +24,7 @@ import au.ellie.hyui.elements.ScrollbarStyleSupported;
 import au.ellie.hyui.elements.UIElements;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
+import java.util.Set;
 
 /**
  * Builder for the PageOverlay UI element.
@@ -94,12 +95,21 @@ public class PageOverlayBuilder extends UIElementBuilder<PageOverlayBuilder> imp
     }
 
     @Override
+    protected boolean isStyleWhitelist() {
+        return true;
+    }
+
+    @Override
+    protected Set<String> getSupportedStyleProperties() {
+        return Set.of();
+    }
+
+    @Override
     protected void onBuild(UICommandBuilder commands, UIEventBuilder events) {
         String selector = getSelector();
         if (selector == null) return;
 
         applyLayoutMode(commands, selector);
-        applyBackground(commands, selector);
         applyScrollbarStyle(commands, selector);
     }
 }

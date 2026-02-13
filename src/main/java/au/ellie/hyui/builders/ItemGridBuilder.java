@@ -23,6 +23,8 @@ import au.ellie.hyui.elements.BackgroundSupported;
 import au.ellie.hyui.elements.LayoutModeSupported;
 import au.ellie.hyui.elements.ScrollbarStyleSupported;
 import au.ellie.hyui.elements.UIElements;
+import au.ellie.hyui.events.UIEventActions;
+import au.ellie.hyui.types.ItemGridInfoDisplayMode;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.ui.ItemGridSlot;
@@ -53,6 +55,11 @@ public class ItemGridBuilder extends UIElementBuilder<ItemGridBuilder> implement
     private Boolean keepScrollPosition;
     private Boolean showScrollbar;
     private Integer slotsPerRow;
+    private ItemGridInfoDisplayMode infoDisplay;
+    private Integer adjacentInfoPaneGridWidth;
+    private Integer inventorySectionId;
+    private Boolean allowMaxStackDraggableItems;
+    private Boolean displayItemQuantity;
     private final List<ItemGridSlot> slots = new ArrayList<>();
     private static final Field ITEM_STACK_FIELD;
     private static final boolean ITEM_STACK_FIELD_AVAILABLE;
@@ -141,6 +148,31 @@ public class ItemGridBuilder extends UIElementBuilder<ItemGridBuilder> implement
         return this;
     }
 
+    public ItemGridBuilder withInfoDisplay(ItemGridInfoDisplayMode infoDisplay) {
+        this.infoDisplay = infoDisplay;
+        return this;
+    }
+
+    public ItemGridBuilder withAdjacentInfoPaneGridWidth(int adjacentInfoPaneGridWidth) {
+        this.adjacentInfoPaneGridWidth = adjacentInfoPaneGridWidth;
+        return this;
+    }
+
+    public ItemGridBuilder withInventorySectionId(int inventorySectionId) {
+        this.inventorySectionId = inventorySectionId;
+        return this;
+    }
+
+    public ItemGridBuilder withAllowMaxStackDraggableItems(boolean allowMaxStackDraggableItems) {
+        this.allowMaxStackDraggableItems = allowMaxStackDraggableItems;
+        return this;
+    }
+
+    public ItemGridBuilder withDisplayItemQuantity(boolean displayItemQuantity) {
+        this.displayItemQuantity = displayItemQuantity;
+        return this;
+    }
+
     public ItemGridBuilder withSlots(List<ItemGridSlot> slots) {
         this.slots.clear();
         if (slots != null) {
@@ -186,7 +218,35 @@ public class ItemGridBuilder extends UIElementBuilder<ItemGridBuilder> implement
         }
         return this.slots.get(index);
     }
-    
+
+    /**
+     * Adds an event listener for the SlotDoubleClicking event.
+     */
+    public ItemGridBuilder onSlotDoubleClicking(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.SlotDoubleClicking, Void.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the DragCancelled event.
+     */
+    public ItemGridBuilder onDragCancelled(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.DragCancelled, Void.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the SlotMouseEntered event.
+     */
+    public ItemGridBuilder onSlotMouseEntered(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.SlotMouseEntered, Void.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the SlotMouseExited event.
+     */
+    public ItemGridBuilder onSlotMouseExited(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.SlotMouseExited, Void.class, v -> callback.run());
+    }
+
     @Override
     protected boolean supportsStyling() {
         return true;
@@ -196,24 +256,26 @@ public class ItemGridBuilder extends UIElementBuilder<ItemGridBuilder> implement
     protected boolean isStyleWhitelist() { return true; }
 
     protected Set<String> getSupportedStyleProperties() {
-        return Set.of(
-                "SlotSpacing",
-                "SlotSize",
-                "SlotIconSize",
-                "SlotBackground",
-                "QuantityPopupSlotOverlay",
-                "BrokenSlotBackgroundOverlay",
-                "BrokenSlotIconOverlay",
-                "DefaultItemIcon",
-                "DurabilityBar",
-                "DurabilityBarBackground",
-                "DurabilityBarAnchor",
-                "DurabilityBarColorStart",
-                "DurabilityBarColorEnd",
-                "CursedIconPatch",
-                "CursedIconAnchor",
-                "ItemStackHoveredSound",
-                "ItemStackActivateSound"
+        return StylePropertySets.merge(
+                StylePropertySets.ANCHOR,
+                StylePropertySets.PADDING,
+                StylePropertySets.PATCH_STYLE,
+                StylePropertySets.SOUND_STYLE,
+                Set.of(
+                        "SlotSpacing",
+                        "SlotSize",
+                        "SlotIconSize",
+                        "SlotBackground",
+                        "QuantityPopupSlotOverlay",
+                        "BrokenSlotBackgroundOverlay",
+                        "BrokenSlotIconOverlay",
+                        "DefaultItemIcon",
+                        "DurabilityBar",
+                        "DurabilityBarBackground",
+                        "DurabilityBarColorStart",
+                        "DurabilityBarColorEnd",
+                        "CursedIconPatch"
+                )
         );
     }
 
@@ -223,7 +285,6 @@ public class ItemGridBuilder extends UIElementBuilder<ItemGridBuilder> implement
         if (selector == null) return;
 
         applyLayoutMode(commands, selector);
-        applyBackground(commands, selector);
         applyScrollbarStyle(commands, selector);
         
         if (backgroundMode != null) {
@@ -253,11 +314,31 @@ public class ItemGridBuilder extends UIElementBuilder<ItemGridBuilder> implement
             HyUIPlugin.getLog().logFinest("Setting SlotsPerRow: " + slotsPerRow + " for " + selector);
             commands.set(selector + ".SlotsPerRow", slotsPerRow);
         }
+        if (infoDisplay != null) {
+            HyUIPlugin.getLog().logFinest("Setting InfoDisplay: " + infoDisplay + " for " + selector);
+            commands.set(selector + ".InfoDisplay", infoDisplay.name());
+        }
+        if (adjacentInfoPaneGridWidth != null) {
+            HyUIPlugin.getLog().logFinest("Setting AdjacentInfoPaneGridWidth: " + adjacentInfoPaneGridWidth + " for " + selector);
+            commands.set(selector + ".AdjacentInfoPaneGridWidth", adjacentInfoPaneGridWidth);
+        }
+        if (inventorySectionId != null) {
+            HyUIPlugin.getLog().logFinest("Setting InventorySectionId: " + inventorySectionId + " for " + selector);
+            commands.set(selector + ".InventorySectionId", inventorySectionId);
+        }
+        if (allowMaxStackDraggableItems != null) {
+            HyUIPlugin.getLog().logFinest("Setting AllowMaxStackDraggableItems: " + allowMaxStackDraggableItems + " for " + selector);
+            commands.set(selector + ".AllowMaxStackDraggableItems", allowMaxStackDraggableItems);
+        }
+        if (displayItemQuantity != null) {
+            HyUIPlugin.getLog().logFinest("Setting DisplayItemQuantity: " + displayItemQuantity + " for " + selector);
+            commands.set(selector + ".DisplayItemQuantity", displayItemQuantity);
+        }
         if (!slots.isEmpty()) {
             HyUIPlugin.getLog().logFinest("Setting Slots for " + selector);
             commands.set(selector + ".Slots", slots);
         }
-        
+
         listeners.forEach(listener -> {
             CustomUIEventBindingType type = listener.type();
             if (type == CustomUIEventBindingType.Activating 

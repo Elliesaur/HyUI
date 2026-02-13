@@ -28,7 +28,7 @@ public final class DroppedEventData {
     private final Integer itemStackQuantity;
     private final Integer pressedMouseButton;
     private final String itemStackId;
-    private final String sourceInventorySectionId;
+    private final Integer sourceInventorySectionId;
     
     private final Integer slotIndex;
 
@@ -41,7 +41,7 @@ public final class DroppedEventData {
                             Integer itemStackQuantity,
                             Integer pressedMouseButton,
                             String itemStackId,
-                            String sourceInventorySectionId,
+                            Integer sourceInventorySectionId,
                             Integer slotIndex) {
         this.sourceItemGridIndex = sourceItemGridIndex;
         this.sourceSlotId = sourceSlotId;
@@ -72,7 +72,7 @@ public final class DroppedEventData {
         return itemStackId;
     }
 
-    public String getSourceInventorySectionId() {
+    public Integer getSourceInventorySectionId() {
         return sourceInventorySectionId;
     }
 
@@ -83,7 +83,7 @@ public final class DroppedEventData {
                 DynamicPageDataReader.getInt(data, "ItemStackQuantity"),
                 DynamicPageDataReader.getInt(data, "PressedMouseButton"),
                 DynamicPageDataReader.getString(data, "ItemStackId"),
-                DynamicPageDataReader.getString(data, "SourceInventorySectionId"),
+                DynamicPageDataReader.getInt(data, "SourceInventorySectionId"),
                 DynamicPageDataReader.getInt(data, "SlotIndex")
         );
     }

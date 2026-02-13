@@ -49,16 +49,20 @@ public class DynamicPageData {
             // Used for: Dropped, SlotMouseDragCompleted.
             .addField(new KeyedCodec<>("ItemStackId", Codec.STRING), (data, s) -> data.values.put("ItemStackId", s), data -> data.values.get("ItemStackId"))
             // Seems null always, maybe used in multiple item grid situations where you're transferring from container to container?
-            .addField(new KeyedCodec<>("SourceInventorySectionId", Codec.STRING), (data, s) -> data.values.put("SourceInventorySectionId", s), data -> data.values.get("SourceInventorySectionId"))
+            .addField(new KeyedCodec<>("SourceInventorySectionId", Codec.INTEGER), (data, s) -> data.values.put("SourceInventorySectionId", String.valueOf(s)), data -> Integer.parseInt(data.values.get("SourceInventorySectionId")))
             // Used for: SlotClickPressWhileDragging
             .addField(new KeyedCodec<>("DragItemStackId", Codec.STRING), (data, s) -> data.values.put("DragItemStackId", s), data -> data.values.get("DragItemStackId"))
             .addField(new KeyedCodec<>("DragItemStackQuantity", Codec.INTEGER), (data, s) -> data.values.put("DragItemStackQuantity", String.valueOf(s)), data -> Integer.parseInt(data.values.get("DragItemStackQuantity")))
-            .addField(new KeyedCodec<>("DragSourceInventorySectionId", Codec.STRING), (data, s) -> data.values.put("DragSourceInventorySectionId", s), data -> data.values.get("DragSourceInventorySectionId"))
+            .addField(new KeyedCodec<>("DragSourceInventorySectionId", Codec.INTEGER), (data, s) -> data.values.put("DragSourceInventorySectionId", String.valueOf(s)), data -> Integer.parseInt(data.values.get("DragSourceInventorySectionId")))
             .addField(new KeyedCodec<>("DragSourceItemGridIndex", Codec.INTEGER), (data, s) -> data.values.put("DragSourceItemGridIndex", String.valueOf(s)), data -> Integer.parseInt(data.values.get("DragSourceItemGridIndex")))
             .addField(new KeyedCodec<>("DragSourceSlotId", Codec.INTEGER), (data, s) -> data.values.put("DragSourceSlotId", String.valueOf(s)), data -> Integer.parseInt(data.values.get("DragSourceSlotId")))
             .addField(new KeyedCodec<>("DragPressedMouseButton", Codec.INTEGER), (data, s) -> data.values.put("DragPressedMouseButton", String.valueOf(s)), data -> Integer.parseInt(data.values.get("DragPressedMouseButton")))
             .addField(new KeyedCodec<>("ClickMouseButton", Codec.INTEGER), (data, s) -> data.values.put("ClickMouseButton", String.valueOf(s)), data -> Integer.parseInt(data.values.get("ClickMouseButton")))
             .addField(new KeyedCodec<>("ClickCount", Codec.INTEGER), (data, s) -> data.values.put("ClickCount", String.valueOf(s)), data -> Integer.parseInt(data.values.get("ClickCount")))
+            // Used for: SelectedTabChanged
+            .addField(new KeyedCodec<>("SelectedTab", Codec.STRING), (data, s) -> data.values.put("SelectedTab", String.valueOf(s)), data -> data.values.get("SelectedTab"))
+            // Used for Activating in reality.
+            .addField(new KeyedCodec<>("ShiftHeld", Codec.BOOLEAN), (data, s) -> data.values.put("ShiftHeld", String.valueOf(s)), data -> Boolean.parseBoolean(data.values.get("ShiftHeld")))
             .build();
 
     public String action;

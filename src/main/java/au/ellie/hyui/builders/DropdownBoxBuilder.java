@@ -32,6 +32,7 @@ import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -40,12 +41,18 @@ import java.util.function.Consumer;
  */
 public class DropdownBoxBuilder extends UIElementBuilder<DropdownBoxBuilder> {
     private String value;
+    private List<String> selectedValues;
     private Boolean allowUnselection;
     private Integer maxSelection;
     private Integer entryHeight;
     private Boolean showLabel;
     private String noItemsText;
     private String panelTitleText;
+    private Boolean disabled;
+    private Boolean isReadOnly;
+    private Boolean showSearchInput;
+    private String forcedLabel;
+    private Boolean displayNonExistingValue;
     private List<DropdownEntryInfo> entries = new ArrayList<>();
 
     public DropdownBoxBuilder() {
@@ -106,6 +113,36 @@ public class DropdownBoxBuilder extends UIElementBuilder<DropdownBoxBuilder> {
 
     public DropdownBoxBuilder withPanelTitleText(String panelTitleText) {
         this.panelTitleText = panelTitleText;
+        return this;
+    }
+
+    public DropdownBoxBuilder withSelectedValues(List<String> selectedValues) {
+        this.selectedValues = selectedValues;
+        return this;
+    }
+
+    public DropdownBoxBuilder withDisabled(boolean disabled) {
+        this.disabled = disabled;
+        return this;
+    }
+
+    public DropdownBoxBuilder withIsReadOnly(boolean isReadOnly) {
+        this.isReadOnly = isReadOnly;
+        return this;
+    }
+
+    public DropdownBoxBuilder withShowSearchInput(boolean showSearchInput) {
+        this.showSearchInput = showSearchInput;
+        return this;
+    }
+
+    public DropdownBoxBuilder withForcedLabel(String forcedLabel) {
+        this.forcedLabel = forcedLabel;
+        return this;
+    }
+
+    public DropdownBoxBuilder withDisplayNonExistingValue(boolean displayNonExistingValue) {
+        this.displayNonExistingValue = displayNonExistingValue;
         return this;
     }
 
@@ -170,42 +207,50 @@ public class DropdownBoxBuilder extends UIElementBuilder<DropdownBoxBuilder> {
 
     @Override
     protected java.util.Set<String> getSupportedStyleProperties() {
-        return java.util.Set.of(
-                "DefaultBackground",
-                "HoveredBackground",
-                "PressedBackground",
-                "DefaultArrowTexturePath",
-                "HoveredArrowTexturePath",
-                "PressedArrowTexturePath",
-                "ArrowWidth",
-                "ArrowHeight",
-                "LabelStyle",
-                "EntryLabelStyle",
-                "NoItemsLabelStyle",
-                "SelectedEntryLabelStyle",
-                "HorizontalPadding",
-                "PanelScrollbarStyle",
-                "PanelBackground",
-                "PanelPadding",
-                "PanelWidth",
-                "PanelAlign",
-                "PanelOffset",
-                "EntryHeight",
-                "EntryIconWidth",
-                "EntryIconHeight",
-                "EntriesInViewport",
-                "HorizontalEntryPadding",
-                "HoveredEntryBackground",
-                "PressedEntryBackground",
-                "Sounds",
-                "EntrySounds",
-                "FocusOutlineSize",
-                "FocusOutlineColor",
-                "PanelTitleLabelStyle",
-                "SelectedEntryIconBackground",
-                "IconTexturePath",
-                "IconWidth",
-                "IconHeight"
+        return StylePropertySets.merge(
+                StylePropertySets.ANCHOR,
+                StylePropertySets.PADDING,
+                StylePropertySets.PATCH_STYLE,
+                StylePropertySets.LABEL_STYLE,
+                StylePropertySets.INPUT_FIELD_STYLE,
+                StylePropertySets.INPUT_FIELD_ICON,
+                StylePropertySets.INPUT_FIELD_BUTTON,
+                StylePropertySets.SOUND_STYLE,
+                StylePropertySets.SCROLLBAR_STYLE,
+                Set.of(
+                        "DefaultBackground",
+                        "HoveredBackground",
+                        "PressedBackground",
+                        "DisabledBackground",
+                        "DefaultArrowTexturePath",
+                        "HoveredArrowTexturePath",
+                        "PressedArrowTexturePath",
+                        "DisabledArrowTexturePath",
+                        "ArrowWidth",
+                        "ArrowHeight",
+                        "HorizontalPadding",
+                        "PanelBackground",
+                        "PanelPadding",
+                        "PanelWidth",
+                        "PanelAlign",
+                        "PanelOffset",
+                        "EntryHeight",
+                        "EntryIconWidth",
+                        "EntryIconHeight",
+                        "EntriesInViewport",
+                        "HorizontalEntryPadding",
+                        "EntryIconBackground",
+                        "SelectedEntryIconBackground",
+                        "HoveredEntryBackground",
+                        "PressedEntryBackground",
+                        "FocusOutlineSize",
+                        "FocusOutlineColor",
+                        "IconTexturePath",
+                        "IconWidth",
+                        "IconHeight",
+                        "PlaceholderText",
+                        "Background"
+                )
         );
     }
 
@@ -241,6 +286,30 @@ public class DropdownBoxBuilder extends UIElementBuilder<DropdownBoxBuilder> {
         if (panelTitleText != null) {
             HyUIPlugin.getLog().logFinest("Setting PanelTitleText: " + panelTitleText + " for " + selector);
             commands.set(selector + ".PanelTitleText", panelTitleText);
+        }
+        if (selectedValues != null) {
+            HyUIPlugin.getLog().logFinest("Setting SelectedValues: " + selectedValues + " for " + selector);
+            commands.set(selector + ".SelectedValues", selectedValues);
+        }
+        if (disabled != null) {
+            HyUIPlugin.getLog().logFinest("Setting Disabled: " + disabled + " for " + selector);
+            commands.set(selector + ".Disabled", disabled);
+        }
+        if (isReadOnly != null) {
+            HyUIPlugin.getLog().logFinest("Setting IsReadOnly: " + isReadOnly + " for " + selector);
+            commands.set(selector + ".IsReadOnly", isReadOnly);
+        }
+        if (showSearchInput != null) {
+            HyUIPlugin.getLog().logFinest("Setting ShowSearchInput: " + showSearchInput + " for " + selector);
+            commands.set(selector + ".ShowSearchInput", showSearchInput);
+        }
+        if (forcedLabel != null) {
+            HyUIPlugin.getLog().logFinest("Setting ForcedLabel: " + forcedLabel + " for " + selector);
+            commands.set(selector + ".ForcedLabel", forcedLabel);
+        }
+        if (displayNonExistingValue != null) {
+            HyUIPlugin.getLog().logFinest("Setting DisplayNonExistingValue: " + displayNonExistingValue + " for " + selector);
+            commands.set(selector + ".DisplayNonExistingValue", displayNonExistingValue);
         }
         if (!entries.isEmpty()) {
             HyUIPlugin.getLog().logFinest("Setting Entries for " + selector);

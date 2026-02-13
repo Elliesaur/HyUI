@@ -25,6 +25,7 @@ import au.ellie.hyui.elements.ScrollbarStyleSupported;
 import au.ellie.hyui.elements.UIElements;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
+import java.util.Set;
 
 /**
  * Builder for the Container UI element.
@@ -128,7 +129,17 @@ public class ContainerBuilder extends UIElementBuilder<ContainerBuilder> impleme
     
     @Override
     protected boolean supportsStyling() {
+        return false;
+    }
+
+    @Override
+    protected boolean isStyleWhitelist() {
         return true;
+    }
+
+    @Override
+    protected Set<String> getSupportedStyleProperties() {
+        return Set.of();
     }
 
     @Override
@@ -137,7 +148,6 @@ public class ContainerBuilder extends UIElementBuilder<ContainerBuilder> impleme
         if (selector == null) return;
 
         applyLayoutMode(commands, selector);
-        applyBackground(commands, selector);
         applyScrollbarStyle(commands, selector);
         
         if (titleText != null) {

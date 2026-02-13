@@ -18,10 +18,13 @@
 
 package au.ellie.hyui.html.handlers;
 
+import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.builders.ItemGridBuilder;
 import au.ellie.hyui.builders.UIElementBuilder;
 import au.ellie.hyui.html.HtmlParser;
 import au.ellie.hyui.html.TagHandler;
+import au.ellie.hyui.types.ItemGridInfoDisplayMode;
+import au.ellie.hyui.utils.ParseUtils;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.ui.ItemGridSlot;
 import com.hypixel.hytale.server.core.ui.PatchStyle;
@@ -61,6 +64,28 @@ public class ItemGridHandler implements TagHandler {
             try {
                 builder.withSlotsPerRow(Integer.parseInt(element.attr("data-hyui-slots-per-row")));
             } catch (NumberFormatException ignored) {}
+        }
+        if (element.hasAttr("data-hyui-info-display")) {
+            String infoDisplayValue = element.attr("data-hyui-info-display");
+            try {
+                builder.withInfoDisplay(ItemGridInfoDisplayMode.valueOf(infoDisplayValue));
+            } catch (IllegalArgumentException e) {
+                HyUIPlugin.getLog().logFinest("Invalid ItemGridInfoDisplayMode: " + infoDisplayValue);
+            }
+        }
+        if (element.hasAttr("data-hyui-adjacent-info-pane-grid-width")) {
+            builder.withAdjacentInfoPaneGridWidth(ParseUtils.parseInt(element.attr("data-hyui-adjacent-info-pane-grid-width")).orElse(0));
+        }
+        if (element.hasAttr("data-hyui-inventory-section-id")) {
+            builder.withInventorySectionId(ParseUtils.parseInt(element.attr("data-hyui-inventory-section-id")).orElse(0));
+        }
+        if (element.hasAttr("data-hyui-allow-max-stack-draggable-items")) {
+            builder.withAllowMaxStackDraggableItems(Boolean.parseBoolean(
+                    element.attr("data-hyui-allow-max-stack-draggable-items")));
+        }
+        if (element.hasAttr("data-hyui-display-item-quantity")) {
+            builder.withDisplayItemQuantity(Boolean.parseBoolean(
+                    element.attr("data-hyui-display-item-quantity")));
         }
 
         applyCommonAttributes(builder, element);

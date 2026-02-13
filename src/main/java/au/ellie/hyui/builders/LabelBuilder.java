@@ -22,18 +22,25 @@ import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.elements.BackgroundSupported;
 import au.ellie.hyui.elements.UIElements;
 import au.ellie.hyui.theme.Theme;
+import au.ellie.hyui.types.LabelSpan;
 import au.ellie.hyui.utils.PropertyBatcher;
+import com.hypixel.hytale.codec.EmptyExtraInfo;
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
+import org.bson.BsonArray;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 /**
  * Builder for creating label UI elements. 
  * Labels are used to display text or other static content.
  */
-public class LabelBuilder extends UIElementBuilder<LabelBuilder> implements BackgroundSupported<LabelBuilder> {
+public class LabelBuilder extends UIElementBuilder<LabelBuilder> {
     private String text;
-    private HyUIPatchStyle background;
+    private List<Message> textSpans;
 
     /**
      * Constructs a new instance of {@code LabelBuilder} for creating label UI elements.
@@ -72,19 +79,35 @@ public class LabelBuilder extends UIElementBuilder<LabelBuilder> implements Back
         return this;
     }
 
-    public String getText() {
-        return text;
-    }
-
-    @Override
-    public LabelBuilder withBackground(HyUIPatchStyle background) {
-        this.background = background;
+    /**
+     * Sets the text spans to be displayed by the label.
+     * TextSpans allow for rich text formatting with different styles per span.
+     *
+     * @param textSpans The list of Message objects defining formatted text sections.
+     * @return The current instance of the {@code LabelBuilder} for method chaining.
+     */
+    public LabelBuilder withTextSpans(List<Message> textSpans) {
+        this.textSpans = textSpans;
         return this;
     }
 
-    @Override
-    public HyUIPatchStyle getBackground() {
-        return this.background;
+    /**
+     * Adds a single text span to the label.
+     * TextSpans allow for rich text formatting with different styles per span.
+     *
+     * @param textSpan The Message object to add.
+     * @return The current instance of the {@code LabelBuilder} for method chaining.
+     */
+    public LabelBuilder addTextSpan(Message textSpan) {
+        if (this.textSpans == null) {
+            this.textSpans = new ArrayList<>();
+        }
+        this.textSpans.add(textSpan);
+        return this;
+    }
+
+    public String getText() {
+        return text;
     }
 
     @Override
@@ -99,19 +122,22 @@ public class LabelBuilder extends UIElementBuilder<LabelBuilder> implements Back
 
     @Override
     protected Set<String> getSupportedStyleProperties() {
-        return Set.of(
-                "FontSize",
-                "RenderBold",
-                "RenderUppercase",
-                "TextColor",
-                "HorizontalAlignment",
-                "VerticalAlignment",
-                "Alignment",
-                "RenderItalics",
-                "FontName",
-                "Wrap",
-                "LetterSpacing",
-                "OutlineColor"
+        return StylePropertySets.merge(
+                StylePropertySets.PADDING, 
+                Set.of(
+                    "HorizontalAlignment",
+                    "VerticalAlignment",
+                    "Wrap",
+                    "FontName",
+                    "FontSize",
+                    "TextColor",
+                    "OutlineColor",
+                    "LetterSpacing",
+                    "RenderUppercase",
+                    "RenderBold",
+                    "RenderItalics",
+                    "RenderUnderlined",
+                    "Alignment")
         );
     }
 
@@ -129,29 +155,31 @@ public class LabelBuilder extends UIElementBuilder<LabelBuilder> implements Back
         }
         sb.append(" { ");
 
-        if (this instanceof BackgroundSupported<?> bgSupported) {
-            HyUIPatchStyle bg = bgSupported.getBackground();
-            if (bg != null && bg.getTexturePath() == null && bg.getColor() != null && bg.getColor().contains("(")) {
-                sb.append("Background: ").append(bg.getColor()).append("; ");
-            }
+        // Not really necessary from what I can gather, we already override this with the .Background request.
+        // But might as well have it just in case.
+        HyUIPatchStyle bg = this.getBackground();
+        if (bg != null && bg.getTexturePath() == null && bg.getColor() != null && bg.getColor().contains("(")) {
+            sb.append("Background: ").append(bg.getColor()).append("; ");
         }
 
+        // Restore padding like prior versions, why did I delete this?? I think I was trying to remove
+        // BackgroundSupported interface implementations.
         if (padding != null) {
             StringBuilder paddingMarkup = new StringBuilder();
             if (padding.getLeft() != null) paddingMarkup.append("Left: ").append(padding.getLeft());
             if (padding.getTop() != null) {
-                if (paddingMarkup.length() > 0) paddingMarkup.append(", ");
+                if (!paddingMarkup.isEmpty()) paddingMarkup.append(", ");
                 paddingMarkup.append("Top: ").append(padding.getTop());
             }
             if (padding.getRight() != null) {
-                if (paddingMarkup.length() > 0) paddingMarkup.append(", ");
+                if (!paddingMarkup.isEmpty()) paddingMarkup.append(", ");
                 paddingMarkup.append("Right: ").append(padding.getRight());
             }
             if (padding.getBottom() != null) {
-                if (paddingMarkup.length() > 0) paddingMarkup.append(", ");
+                if (!paddingMarkup.isEmpty()) paddingMarkup.append(", ");
                 paddingMarkup.append("Bottom: ").append(padding.getBottom());
             }
-            if (paddingMarkup.length() > 0) {
+            if (!paddingMarkup.isEmpty()) {
                 sb.append("Padding: (").append(paddingMarkup).append("); ");
             }
         }
@@ -160,23 +188,24 @@ public class LabelBuilder extends UIElementBuilder<LabelBuilder> implements Back
         return sb.toString();
     }
 
+
     @Override
     protected void onBuild(UICommandBuilder commands, UIEventBuilder events) {
         String selector = getSelector();
         if (selector == null) return;
 
-        applyBackground(commands, selector);
-
         if (text != null) {
             HyUIPlugin.getLog().logFinest("Setting Text: " + text + " for " + selector);
             commands.set(selector + ".Text", text);
         }
-
+        if (textSpans != null && !textSpans.isEmpty()) {
+            HyUIPlugin.getLog().logFinest("Setting TextSpans for " + selector);
+            Message finalMessage = Message.empty().insertAll(textSpans);
+            commands.set(selector + ".TextSpans", finalMessage);
+        }
         if ( hyUIStyle == null && typedStyle == null  && style != null) {
             HyUIPlugin.getLog().logFinest("Setting Raw Style: " + style + " for " + selector);
             commands.set(selector + ".Style", style);
-        } else if (hyUIStyle == null && typedStyle != null) {
-            PropertyBatcher.endSet(selector + ".Style", typedStyle.toBsonDocument(), commands);
         }
     }
 }

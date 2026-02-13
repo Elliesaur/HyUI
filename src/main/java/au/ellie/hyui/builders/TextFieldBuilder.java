@@ -19,7 +19,9 @@
 package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
+import au.ellie.hyui.events.MouseEventData;
 import au.ellie.hyui.events.UIContext;
+import au.ellie.hyui.events.UIEventActions;
 import au.ellie.hyui.elements.BackgroundSupported;
 import au.ellie.hyui.elements.ScrollbarStyleSupported;
 import au.ellie.hyui.elements.UIElements;
@@ -42,7 +44,7 @@ import java.util.function.Consumer;
  * Builder for creating text field UI elements. Also known as Text Input elements.
  */
 public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
-        implements BackgroundSupported<TextFieldBuilder>, ScrollbarStyleSupported<TextFieldBuilder> {
+        implements ScrollbarStyleSupported<TextFieldBuilder> {
     private String value;
     private String placeholderText;
     private Integer maxLength;
@@ -51,7 +53,6 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
     private Boolean password;
     private String passwordChar;
     private Boolean autoGrow;
-    private HyUIPatchStyle background;
     private String backgroundStyleReference;
     private String backgroundStyleDocument;
     private String scrollbarStyleReference;
@@ -62,6 +63,8 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
     private boolean isCompact;
     private Integer collapsedWidth;
     private Integer expandedWidth;
+    private HyUIStyle placeholderStyle;
+    private InputFieldStyle placeholderTypedStyle;
 
     /**
      * DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING.
@@ -263,6 +266,7 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
      * @return This TextFieldBuilder instance for method chaining.
      */
     @Override
+    @SuppressWarnings("unchecked")
     public TextFieldBuilder withBackground(HyUIPatchStyle background) {
         if (!isMultiline) return this;
         this.background = background;
@@ -362,6 +366,27 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
         return addEventListenerWithContext(type, String.class, callback);
     }
 
+    /**
+     * Adds an event listener for the RightClicking event.
+     */
+    public TextFieldBuilder onRightClicking(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the RightClicking event.
+     */
+    public TextFieldBuilder onRightClicking(Consumer<MouseEventData> callback) {
+        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the RightClicking event with context.
+     */
+    public TextFieldBuilder onRightClicking(BiConsumer<MouseEventData, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
+    }
+
     @Override
     protected void applyRuntimeValue(Object value) {
         if (value != null) {
@@ -388,12 +413,14 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
 
     @Override
     protected Set<String> getSupportedStyleProperties() {
-        return Set.of(
-                "TextColor",
-                "FontSize",
-                "RenderBold",
-                "RenderItalics",
-                "RenderUppercase"
+        return StylePropertySets.merge(
+                StylePropertySets.ANCHOR,
+                StylePropertySets.PADDING,
+                StylePropertySets.PATCH_STYLE,
+                StylePropertySets.INPUT_FIELD_STYLE,
+                StylePropertySets.INPUT_FIELD_ICON,
+                StylePropertySets.INPUT_FIELD_BUTTON,
+                StylePropertySets.INPUT_FIELD_DECORATION_STATE
         );
     }
 
@@ -410,7 +437,19 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
         if (placeholderText != null) {
             commands.set(selector + ".PlaceholderText", placeholderText);
         }
-        
+
+        if (placeholderStyle != null) {
+            BsonDocumentHelper doc = PropertyBatcher.beginSet();
+            applyStyle(commands, selector + ".PlaceholderStyle", placeholderStyle, doc);
+            PropertyBatcher.endSet(selector + ".PlaceholderStyle", doc, commands);
+            applyRawStyleProperties(commands, selector + ".PlaceholderStyle", placeholderStyle);
+        } else if (placeholderTypedStyle != null) {
+            BsonDocumentHelper doc = PropertyBatcher.beginSet();
+            placeholderTypedStyle.applyTo(doc);
+            filterStyleDocument(doc.getDocument());
+            PropertyBatcher.endSet(selector + ".PlaceholderStyle", doc, commands);
+        }
+
         if (maxLength != null) {
             commands.set(selector + ".MaxLength", maxLength);
         }
@@ -444,15 +483,14 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
         if (decoration != null) {
             BsonDocumentHelper decorationDoc = PropertyBatcher.beginSet();
             decoration.applyTo(decorationDoc);
+            filterStyleDocument(decorationDoc.getDocument());
             PropertyBatcher.endSet(selector + ".Decoration", decorationDoc, commands);
         }
 
         if (backgroundStyleReference != null && backgroundStyleDocument != null) {
             commands.set(selector + ".Background", Value.ref(backgroundStyleDocument, backgroundStyleReference));
-        } else {
-            applyBackground(commands, selector);
         }
-
+        
         applyScrollbarStyle(commands, selector);
 
         if (contentPadding != null) {
@@ -466,7 +504,7 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
             HyUIPlugin.getLog().logFinest("Setting Style: " + style + " for " + selector);
             commands.set(selector + ".Style", style);
         } else if (hyUIStyle == null && typedStyle != null) {
-            PropertyBatcher.endSet(selector + ".Style", typedStyle.toBsonDocument(), commands);
+            PropertyBatcher.endSet(selector + ".Style", filterStyleDocument(typedStyle.toBsonDocument()), commands);
         }
         if (listeners.isEmpty()) {
             // To handle data back to the .getValue, we need to add at least one listener.
@@ -489,6 +527,13 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
                         EventData.of("@Value", selector + ".Value")
                                 .append("Target", eventId)
                                 .append("Action", listener.type().name()),
+                        false);
+            } else if (listener.type() == CustomUIEventBindingType.RightClicking) {
+                String eventId = getEffectiveId();
+                HyUIPlugin.getLog().logFinest("Adding RightClicking event binding for " + selector);
+                events.addEventBinding(CustomUIEventBindingType.RightClicking, selector,
+                        EventData.of("Action", UIEventActions.RIGHT_CLICKING)
+                                .append("Target", eventId),
                         false);
             }
         });

@@ -16,9 +16,10 @@
  *
  */
 
-package au.ellie.hyui.builders;
+package au.ellie.hyui.events;
 
-public enum ColorFormat {
-    Rgb,
-    Rgba
+public record MouseEventData(Boolean shiftHeld) {
+    public static MouseEventData from(DynamicPageData data) {
+        return new MouseEventData(DynamicPageDataReader.getBool(data, "ShiftHeld"));
+    }
 }

@@ -30,7 +30,13 @@ final class DynamicPageDataReader {
         }
         return ParseUtils.parseInt(value).orElse(null);
     }
-
+    static Boolean getBool(DynamicPageData data, String key) {
+        String value = data.getValue(key);
+        if (value == null) {
+            return null;
+        }
+        return Boolean.parseBoolean(value);
+    }
     static String getString(DynamicPageData data, String key) {
         return data.getValue(key);
     }

@@ -18,9 +18,7 @@
 
 package au.ellie.hyui.elements;
 
-import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.builders.HyUIPatchStyle;
-import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 
 /**
  * Interface for UI elements that support backgrounds.
@@ -41,20 +39,4 @@ public interface BackgroundSupported<T extends BackgroundSupported<T>> {
      * @return The PatchStyle, or null if not set.
      */
     HyUIPatchStyle getBackground();
-
-    /**
-     * Default implementation to apply the background to the UICommandBuilder.
-     * 
-     * @param commands The UICommandBuilder to use.
-     * @param selector The selector for the element.
-     */
-    default void applyBackground(UICommandBuilder commands, String selector) {
-        HyUIPatchStyle background = getBackground();
-        if (background != null && selector != null) {
-            HyUIPlugin.getLog().logFinest("Setting Background for " + selector);
-            HyUIPlugin.getLog().logFinest("Setting Background for " + background.getTexturePath());
-            
-            commands.setObject(selector + ".Background", background.getHytalePatchStyle());
-        }
-    }
 }

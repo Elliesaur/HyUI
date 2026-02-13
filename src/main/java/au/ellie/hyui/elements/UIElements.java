@@ -48,6 +48,7 @@ public class UIElements {
     public static final String SLIDER_NUMBER_FIELD = "SliderNumberField";
     public static final String BLOCK_SELECTOR = "BlockSelector";
     public static final String REORDERABLE_LIST_GRIP = "ReorderableListGrip";
+    public static final String REORDERABLE_LIST = "ReorderableList";
     public static final String TAB_BUTTON = "TabButton";
     public static final String FLOAT_SLIDER_NUMBER_FIELD = "FloatSliderNumberField";
     public static final String ACTION_BUTTON = "ActionButton";
@@ -56,6 +57,11 @@ public class UIElements {
     public static final String PLAYER_PREVIEW_COMPONENT = "PlayerPreviewComponent";
     public static final String HOTKEY_LABEL = "HotkeyLabel";
     public static final String MENU_ITEM = "MenuItem";
+    public static final String DYNAMIC_PANE_CONTAINER = "DynamicPaneContainer";
+    public static final String DYNAMIC_PANE = "DynamicPane";
+    public static final String NATIVE_TAB_BUTTON = "NativeTabButton";
+    public static final String NATIVE_TAB_NAVIGATION = "NativeTabNavigation";
+    public static final String NATIVE_TIMER_LABEL = "NativeTimerLabel";
 
     // Macros (Common.ui)
     public static final String PAGE_OVERLAY = "PageOverlay";
@@ -108,6 +114,7 @@ public class UIElements {
             ACTION_BUTTON,
             BLOCK_SELECTOR,
             REORDERABLE_LIST_GRIP,
+            REORDERABLE_LIST,
             BACKGROUND_IMAGE,
             SCENE_BLUR,
             ITEM_PREVIEW_COMPONENT,
@@ -116,7 +123,12 @@ public class UIElements {
             HOTKEY_LABEL,
             MENU_ITEM,
             PANEL,
-            LABELED_CHECK_BOX
+            LABELED_CHECK_BOX,
+            DYNAMIC_PANE_CONTAINER,
+            DYNAMIC_PANE,
+            NATIVE_TAB_BUTTON,
+            NATIVE_TAB_NAVIGATION,
+            NATIVE_TIMER_LABEL
     );
 
     public static final Set<String> MACRO_ELEMENTS = Set.of(

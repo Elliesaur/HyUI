@@ -18,17 +18,24 @@
 
 package au.ellie.hyui.builders;
 
+import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.elements.BackgroundSupported;
 import au.ellie.hyui.elements.UIElements;
+import au.ellie.hyui.events.UIContext;
+import au.ellie.hyui.events.UIEventActions;
+import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
+import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
+
+import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * Builder for Panel UI elements.
  */
-public class PanelBuilder extends UIElementBuilder<PanelBuilder> implements BackgroundSupported<PanelBuilder> {
-    private HyUIPatchStyle background;
-
+public class PanelBuilder extends UIElementBuilder<PanelBuilder> {
     public PanelBuilder() {
         super(UIElements.PANEL, "#HyUIPanel");
         withUiFile("Pages/Elements/Panel.ui");
@@ -39,15 +46,32 @@ public class PanelBuilder extends UIElementBuilder<PanelBuilder> implements Back
         return new PanelBuilder();
     }
 
-    @Override
-    public PanelBuilder withBackground(HyUIPatchStyle background) {
-        this.background = background;
-        return this;
+    /**
+     * Adds an event listener for the Validating event.
+     */
+    public PanelBuilder onValidating(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.Validating, Void.class, v -> callback.run());
     }
 
-    @Override
-    public HyUIPatchStyle getBackground() {
-        return this.background;
+    /**
+     * Adds an event listener for the Dismissing event.
+     */
+    public PanelBuilder onDismissing(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.Dismissing, Void.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the Scrolled event.
+     */
+    public PanelBuilder onScrolled(Consumer<Float> callback) {
+        return addEventListener(CustomUIEventBindingType.ValueChanged, Float.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the Scrolled event with context.
+     */
+    public PanelBuilder onScrolled(BiConsumer<Float, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.ValueChanged, Float.class, callback);
     }
 
     @Override
@@ -56,10 +80,40 @@ public class PanelBuilder extends UIElementBuilder<PanelBuilder> implements Back
     }
 
     @Override
+    protected boolean isStyleWhitelist() {
+        return true;
+    }
+
+    @Override
+    protected Set<String> getSupportedStyleProperties() {
+        return Set.of();
+    }
+
+    @Override
     protected void onBuild(UICommandBuilder commands, UIEventBuilder events) {
         String selector = getSelector();
         if (selector == null) return;
 
-        applyBackground(commands, selector);
+        // Register event listeners
+        listeners.forEach(listener -> {
+            String eventId = getEffectiveId();
+            if (listener.type() == CustomUIEventBindingType.Validating) {
+                HyUIPlugin.getLog().logFinest("Adding Validating event binding for " + selector);
+                events.addEventBinding(CustomUIEventBindingType.Validating, selector,
+                        EventData.of("Action", UIEventActions.VALIDATING)
+                            .append("Target", eventId), false);
+            } else if (listener.type() == CustomUIEventBindingType.Dismissing) {
+                HyUIPlugin.getLog().logFinest("Adding Dismissing event binding for " + selector);
+                events.addEventBinding(CustomUIEventBindingType.Dismissing, selector,
+                        EventData.of("Action", UIEventActions.DISMISSING)
+                            .append("Target", eventId), false);
+            } else if (listener.type() == CustomUIEventBindingType.ValueChanged) {
+                // Scrolled event uses ValueChanged type
+                HyUIPlugin.getLog().logFinest("Adding Scrolled event binding for " + selector);
+                events.addEventBinding(CustomUIEventBindingType.ValueChanged, selector,
+                        EventData.of("Action", UIEventActions.SCROLLED)
+                            .append("Target", eventId), false);
+            }
+        });
     }
 }

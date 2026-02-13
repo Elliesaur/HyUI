@@ -22,6 +22,7 @@ import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.elements.UIElements;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
+import java.util.Set;
 
 /**
  * Builder for the ItemIcon UI element.
@@ -58,6 +59,16 @@ public class ItemIconBuilder extends UIElementBuilder<ItemIconBuilder> {
     @Override
     protected boolean supportsStyling() {
         return false;
+    }
+
+    @Override
+    protected boolean isStyleWhitelist() {
+        return true;
+    }
+
+    @Override
+    protected Set<String> getSupportedStyleProperties() {
+        return Set.of();
     }
 
     @Override

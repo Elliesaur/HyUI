@@ -63,6 +63,7 @@ public class HtmlParser {
         registerHandler(new HotkeyLabelHandler());
         registerHandler(new MenuItemHandler());
         registerHandler(new ReorderableListGripHandler());
+        registerHandler(new ReorderableListHandler());
         registerHandler(new SceneBlurHandler());
     }
 

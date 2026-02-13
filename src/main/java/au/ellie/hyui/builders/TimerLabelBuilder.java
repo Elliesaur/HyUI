@@ -25,6 +25,7 @@ import au.ellie.hyui.theme.Theme;
 import au.ellie.hyui.utils.PropertyBatcher;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
+import java.util.Set;
 
 import java.util.concurrent.TimeUnit;
 
@@ -35,7 +36,7 @@ import java.util.concurrent.TimeUnit;
  * This is a specialized Label that provides time formatting utilities.
  * The actual timer logic should be handled externally (e.g., via a TickingSystem).
  */
-public class TimerLabelBuilder extends UIElementBuilder<TimerLabelBuilder> implements BackgroundSupported<TimerLabelBuilder> {
+public class TimerLabelBuilder extends UIElementBuilder<TimerLabelBuilder> {
 
     public enum TimerFormat {
         /** Display as HH:MM:SS (e.g., "01:23:45") */
@@ -127,17 +128,6 @@ public class TimerLabelBuilder extends UIElementBuilder<TimerLabelBuilder> imple
         return this;
     }
 
-    @Override
-    public TimerLabelBuilder withBackground(HyUIPatchStyle background) {
-        this.background = background;
-        return this;
-    }
-
-    @Override
-    public HyUIPatchStyle getBackground() {
-        return this.background;
-    }
-
     /**
      * Formats the time value according to the current format setting.
      */
@@ -187,11 +177,33 @@ public class TimerLabelBuilder extends UIElementBuilder<TimerLabelBuilder> imple
     }
 
     @Override
+    protected boolean isStyleWhitelist() {
+        return true;
+    }
+
+    @Override
+    protected Set<String> getSupportedStyleProperties() {
+        return Set.of(
+                "HorizontalAlignment",
+                "VerticalAlignment",
+                "Wrap",
+                "FontName",
+                "FontSize",
+                "TextColor",
+                "OutlineColor",
+                "LetterSpacing",
+                "RenderUppercase",
+                "RenderBold",
+                "RenderItalics",
+                "RenderUnderlined",
+                "Alignment"
+        );
+    }
+
+    @Override
     protected void onBuild(UICommandBuilder commands, UIEventBuilder events) {
         String selector = getSelector();
         if (selector == null) return;
-
-        applyBackground(commands, selector);
 
         String displayText = getDisplayText();
         HyUIPlugin.getLog().logFinest("Setting Timer Text: " + displayText + " for " + selector);
@@ -201,7 +213,7 @@ public class TimerLabelBuilder extends UIElementBuilder<TimerLabelBuilder> imple
             HyUIPlugin.getLog().logFinest("Setting Raw Style: " + style + " for " + selector);
             commands.set(selector + ".Style", style);
         } else if (hyUIStyle == null && typedStyle != null) {
-            PropertyBatcher.endSet(selector + ".Style", typedStyle.toBsonDocument(), commands);
+            PropertyBatcher.endSet(selector + ".Style", filterStyleDocument(typedStyle.toBsonDocument()), commands);
         }
     }
 }

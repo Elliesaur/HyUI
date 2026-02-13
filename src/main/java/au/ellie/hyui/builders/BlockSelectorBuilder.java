@@ -20,6 +20,8 @@ package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.elements.UIElements;
+import au.ellie.hyui.types.BlockSelectorStyle;
+import au.ellie.hyui.utils.PropertyBatcher;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 
@@ -30,6 +32,8 @@ import java.util.Set;
  */
 public class BlockSelectorBuilder extends UIElementBuilder<BlockSelectorBuilder> {
     private Integer capacity;
+    private String value;
+    private BlockSelectorStyle blockSelectorStyle;
 
     public BlockSelectorBuilder() {
         super(UIElements.BLOCK_SELECTOR, "#HyUIBlockSelector");
@@ -46,6 +50,16 @@ public class BlockSelectorBuilder extends UIElementBuilder<BlockSelectorBuilder>
         return this;
     }
 
+    public BlockSelectorBuilder withValue(String value) {
+        this.value = value;
+        return this;
+    }
+
+    public BlockSelectorBuilder withStyle(BlockSelectorStyle blockSelectorStyle) {
+        this.blockSelectorStyle = blockSelectorStyle;
+        return this;
+    }
+
     @Override
     protected boolean supportsStyling() {
         return true;
@@ -58,11 +72,29 @@ public class BlockSelectorBuilder extends UIElementBuilder<BlockSelectorBuilder>
 
     @Override
     protected Set<String> getSupportedStyleProperties() {
-        return Set.of(
-                "ItemGridStyle",
-                "SlotDropIcon",
-                "SlotDeleteIcon",
-                "SlotHoverOverlay"
+        return StylePropertySets.merge(
+                StylePropertySets.ANCHOR,
+                StylePropertySets.PADDING,
+                StylePropertySets.PATCH_STYLE,
+                StylePropertySets.SOUND_STYLE,
+                Set.of(
+                        "SlotDropIcon",
+                        "SlotDeleteIcon",
+                        "SlotHoverOverlay",
+                        "SlotSize",
+                        "SlotIconSize",
+                        "SlotSpacing",
+                        "DurabilityBarBackground",
+                        "DurabilityBar",
+                        "DurabilityBarColorStart",
+                        "DurabilityBarColorEnd",
+                        "CursedIconPatch",
+                        "SlotBackground",
+                        "QuantityPopupSlotOverlay",
+                        "BrokenSlotBackgroundOverlay",
+                        "BrokenSlotIconOverlay",
+                        "DefaultItemIcon"
+                )
         );
     }
 
@@ -74,6 +106,14 @@ public class BlockSelectorBuilder extends UIElementBuilder<BlockSelectorBuilder>
         if (capacity != null) {
             HyUIPlugin.getLog().logFinest("Setting Capacity: " + capacity + " for " + selector);
             commands.set(selector + ".Capacity", capacity);
+        }
+        if (value != null) {
+            HyUIPlugin.getLog().logFinest("Setting Value: " + value + " for " + selector);
+            commands.set(selector + ".Value", value);
+        }
+        if (blockSelectorStyle != null) {
+            HyUIPlugin.getLog().logFinest("Setting Style: " + blockSelectorStyle + " for " + selector);
+            PropertyBatcher.endSet(selector + ".Style", filterStyleDocument(blockSelectorStyle.toBsonDocument()), commands);
         }
     }
 }

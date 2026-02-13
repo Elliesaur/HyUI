@@ -44,6 +44,12 @@ public class BlockSelectorHandler implements TagHandler {
                     .ifPresent(builder::withCapacity);
         }
 
+        if (element.hasAttr("data-hyui-value")) {
+            builder.withValue(element.attr("data-hyui-value"));
+        } else if (element.hasAttr("value")) {
+            builder.withValue(element.attr("value"));
+        }
+
         applyCommonAttributes(builder, element);
         return builder;
     }

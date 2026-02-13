@@ -33,8 +33,12 @@ import au.ellie.hyui.utils.ParseUtils;
 import au.ellie.hyui.utils.StyleUtils;
 import com.hypixel.hytale.server.core.Message;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Node;
+import org.jsoup.nodes.TextNode;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -69,7 +73,10 @@ public interface TagHandler {
             builder.withId(element.attr("id"));
         }
 
-        if (element.hasAttr("data-hyui-tooltiptext")) {
+        List<Message> tooltipSpans = parseTooltipTextSpans(element);
+        if (tooltipSpans != null && !tooltipSpans.isEmpty()) {
+            builder.withTooltipTextSpans(tooltipSpans);
+        } else if (element.hasAttr("data-hyui-tooltiptext")) {
             builder.withTooltipTextSpan(Message.raw(element.attr("data-hyui-tooltiptext")));
         }
 
@@ -459,14 +466,14 @@ public interface TagHandler {
                     }
                     break;
                 case "background-image":
-                    if (builder instanceof BackgroundSupported) {
+                    if (builder != null) {
                         StyleUtils.BackgroundParts parts = StyleUtils.parseBackgroundParts(value, true);
                         String realUrl = parts.value();
-                        HyUIPatchStyle background = ((BackgroundSupported<?>) builder).getBackground();
+                        HyUIPatchStyle background = builder.getBackground();
                         if (background == null) {
                             HyUIPatchStyle bg = new HyUIPatchStyle().setTexturePath(realUrl);
                             StyleUtils.applyBorders(bg, parts);
-                            ((BackgroundSupported<?>) builder).withBackground(bg);
+                            builder.withBackground(bg);
                         } else {
                             background.setTexturePath(realUrl);
                             StyleUtils.applyBorders(background, parts);
@@ -474,14 +481,14 @@ public interface TagHandler {
                     }
                     break;
                 case "background-color":
-                    if (builder instanceof BackgroundSupported) {
+                    if (builder != null) {
                         StyleUtils.BackgroundParts parts = StyleUtils.parseBackgroundParts(value, false);
                         String normalizedColor = StyleUtils.normalizeBackgroundColor(parts.value());
-                        HyUIPatchStyle background = ((BackgroundSupported<?>) builder).getBackground();
+                        HyUIPatchStyle background = builder.getBackground();
                         if (background == null) {
                             HyUIPatchStyle bg = new HyUIPatchStyle().setColor(normalizedColor);
                             StyleUtils.applyBorders(bg, parts);
-                            ((BackgroundSupported<?>) builder).withBackground(bg);
+                            builder.withBackground(bg);
                         } else {
                             background.setColor(normalizedColor);
                             StyleUtils.applyBorders(background, parts);
@@ -664,5 +671,88 @@ public interface TagHandler {
     private String capitalize(String str) {
         if (str == null || str.isEmpty()) return str;
         return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
+    }
+
+    private List<Message> parseTooltipTextSpans(Element element) {
+        Element tooltip = findTooltipElement(element);
+        if (tooltip == null) {
+            return null;
+        }
+        return parseMessageSpansFromChildren(tooltip, false);
+    }
+
+    private Element findTooltipElement(Element element) {
+        for (Node child : element.childNodes()) {
+            if (child instanceof Element childElement) {
+                String tag = childElement.tagName().toLowerCase();
+                if (tag.equals("tooltip") || tag.equals("tooltip-text") || tag.equals("tooltiptext")) {
+                    return childElement;
+                }
+            }
+        }
+        return null;
+    }
+
+    default List<Message> parseMessageSpansFromChildren(Element element, boolean requireSpanElements) {
+        boolean hasSpanElements = false;
+        for (Node child : element.childNodes()) {
+            if (child instanceof Element childElement) {
+                if (isTextSpanElement(childElement)) {
+                    hasSpanElements = true;
+                    break;
+                }
+            }
+        }
+        if (requireSpanElements && !hasSpanElements) {
+            return List.of();
+        }
+        List<Message> spans = new ArrayList<>();
+        for (Node child : element.childNodes()) {
+            if (child instanceof Element childElement) {
+                if (!isTextSpanElement(childElement)) {
+                    continue;
+                }
+                Message span = buildMessageSpan(childElement);
+                if (span != null) {
+                    spans.add(span);
+                }
+            } else if (child instanceof TextNode textNode) {
+                String text = textNode.text();
+                if (!text.isBlank()) {
+                    spans.add(Message.raw(text));
+                }
+            }
+        }
+        return spans;
+    }
+
+    default Message buildMessageSpan(Element element) {
+        String text = element.text();
+        if (text == null || text.isBlank()) {
+            return null;
+        }
+        Message message = Message.raw(text);
+        if (element.hasAttr("data-hyui-bold")) {
+            message.bold(Boolean.parseBoolean(element.attr("data-hyui-bold")));
+        }
+        if (element.hasAttr("data-hyui-italic")) {
+            message.italic(Boolean.parseBoolean(element.attr("data-hyui-italic")));
+        }
+        if (element.hasAttr("data-hyui-monospace")) {
+            message.monospace(Boolean.parseBoolean(element.attr("data-hyui-monospace")));
+        }
+        if (element.hasAttr("data-hyui-color")) {
+            // TODO: ADD PROPER COLOR HANDLING :( :(
+            message.color(element.attr("data-hyui-color"));
+        }
+        if (element.hasAttr("data-hyui-link")) {
+            message.link(element.attr("data-hyui-link"));
+        }
+        return message;
+    }
+
+    private boolean isTextSpanElement(Element element) {
+        String tag = element.tagName().toLowerCase();
+        return tag.equals("span") || tag.equals("text-span");
     }
 }

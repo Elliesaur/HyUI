@@ -94,7 +94,6 @@ public class TabContentBuilder extends UIElementBuilder<TabContentBuilder>
         if (selector == null) return;
 
         applyLayoutMode(commands, selector);
-        applyBackground(commands, selector);
     }
 
     @Override

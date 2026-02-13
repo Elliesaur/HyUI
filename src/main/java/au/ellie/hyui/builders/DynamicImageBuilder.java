@@ -28,16 +28,15 @@ import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public class DynamicImageBuilder extends UIElementBuilder<DynamicImageBuilder> 
-        implements BackgroundSupported<DynamicImageBuilder>, 
-        ScrollbarStyleSupported<DynamicImageBuilder>, 
+        implements ScrollbarStyleSupported<DynamicImageBuilder>, 
         LayoutModeSupported<DynamicImageBuilder> {
     private static final String DEFAULT_TEXTURE_PATH = "UI/Custom/Pages/Elements/DynamicImage1.png";
 
     private String layoutMode;
-    private HyUIPatchStyle background;
     private String scrollbarStyleReference;
     private String scrollbarStyleDocument;
     private String imageUrl;
@@ -134,17 +133,6 @@ public class DynamicImageBuilder extends UIElementBuilder<DynamicImageBuilder>
     }
 
     @Override
-    public DynamicImageBuilder withBackground(HyUIPatchStyle background) {
-        this.background = background;
-        return this;
-    }
-
-    @Override
-    public HyUIPatchStyle getBackground() {
-        return this.background;
-    }
-
-    @Override
     public DynamicImageBuilder withScrollbarStyle(String document, String styleReference) {
         this.scrollbarStyleDocument = document;
         this.scrollbarStyleReference = styleReference;
@@ -172,13 +160,22 @@ public class DynamicImageBuilder extends UIElementBuilder<DynamicImageBuilder>
             HyUIPlugin.getLog().logFinest("Building dynamic image from path: " + this.background.getTexturePath());
         }
         applyLayoutMode(commands, selector);
-        applyBackground(commands, selector);
         applyScrollbarStyle(commands, selector);
     }
 
     @Override
     protected boolean supportsStyling() {
         return false;
+    }
+
+    @Override
+    protected boolean isStyleWhitelist() {
+        return true;
+    }
+
+    @Override
+    protected Set<String> getSupportedStyleProperties() {
+        return Set.of();
     }
 
     private static UUID normalizePlayerUuid(UUID playerUuid) {

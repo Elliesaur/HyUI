@@ -19,6 +19,7 @@
 package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
+import au.ellie.hyui.types.ColorFormat;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventActions;
 import au.ellie.hyui.elements.UIElements;
@@ -38,6 +39,8 @@ import java.util.function.Consumer;
 public class ColorPickerBuilder extends UIElementBuilder<ColorPickerBuilder> {
     private String value;
     private ColorFormat format;
+    private Boolean displayTextField;
+    private Boolean resetTransparencyWhenChangingColor;
 
     /**
      * Constructs a new instance of {@code ColorPickerBuilder}, initializing it with
@@ -77,6 +80,28 @@ public class ColorPickerBuilder extends UIElementBuilder<ColorPickerBuilder> {
      */
     public ColorPickerBuilder withFormat(ColorFormat format) {
         this.format = format;
+        return this;
+    }
+
+    /**
+     * Sets whether to display the text field in the color picker.
+     *
+     * @param displayTextField true to display the text field, false to hide it
+     * @return the {@code ColorPickerBuilder} instance for method chaining.
+     */
+    public ColorPickerBuilder withDisplayTextField(boolean displayTextField) {
+        this.displayTextField = displayTextField;
+        return this;
+    }
+
+    /**
+     * Sets whether to reset transparency when changing color.
+     *
+     * @param resetTransparencyWhenChangingColor true to reset transparency, false to preserve it
+     * @return the {@code ColorPickerBuilder} instance for method chaining.
+     */
+    public ColorPickerBuilder withResetTransparencyWhenChangingColor(boolean resetTransparencyWhenChangingColor) {
+        this.resetTransparencyWhenChangingColor = resetTransparencyWhenChangingColor;
         return this;
     }
 
@@ -132,13 +157,20 @@ public class ColorPickerBuilder extends UIElementBuilder<ColorPickerBuilder> {
 
     @Override
     protected Set<String> getSupportedStyleProperties() {
-        return Set.of(
-                "OpacitySelectorBackground",
-                "ButtonBackground",
-                "ButtonFill",
-                "TextFieldDecoration",
-                "TextFieldPadding",
-                "TextFieldHeight"
+        return StylePropertySets.merge(
+                StylePropertySets.ANCHOR,
+                StylePropertySets.PADDING,
+                StylePropertySets.PATCH_STYLE,
+                StylePropertySets.INPUT_FIELD_STYLE,
+                StylePropertySets.INPUT_FIELD_ICON,
+                StylePropertySets.INPUT_FIELD_BUTTON,
+                StylePropertySets.INPUT_FIELD_DECORATION_STATE,
+                Set.of(
+                        "OpacitySelectorBackground",
+                        "ButtonBackground",
+                        "ButtonFill",
+                        "TextFieldHeight"
+                )
         );
     }
 
@@ -155,12 +187,20 @@ public class ColorPickerBuilder extends UIElementBuilder<ColorPickerBuilder> {
             HyUIPlugin.getLog().logFinest("Setting Format: " + format + " for " + selector);
             commands.set(selector + ".Format", format.name());
         }
+        if (displayTextField != null) {
+            HyUIPlugin.getLog().logFinest("Setting DisplayTextField: " + displayTextField + " for " + selector);
+            commands.set(selector + ".DisplayTextField", displayTextField);
+        }
+        if (resetTransparencyWhenChangingColor != null) {
+            HyUIPlugin.getLog().logFinest("Setting ResetTransparencyWhenChangingColor: " + resetTransparencyWhenChangingColor + " for " + selector);
+            commands.set(selector + ".ResetTransparencyWhenChangingColor", resetTransparencyWhenChangingColor);
+        }
 
         if ( hyUIStyle == null && typedStyle == null  && style != null) {
             HyUIPlugin.getLog().logFinest("Setting Style: " + style + " for " + selector);
             commands.set(selector + ".Style", style);
         } else if (hyUIStyle == null && typedStyle != null) {
-            PropertyBatcher.endSet(selector + ".Style", typedStyle.toBsonDocument(), commands);
+            PropertyBatcher.endSet(selector + ".Style", filterStyleDocument(typedStyle.toBsonDocument()), commands);
         }
         if (listeners.isEmpty()) {
             // To handle data back to the .getValue, we need to add at least one listener.

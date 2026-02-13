@@ -18,11 +18,17 @@
 
 package au.ellie.hyui.utils;
 
+import com.hypixel.hytale.protocol.packets.interface_.CustomUICommand;
+import com.hypixel.hytale.protocol.packets.interface_.CustomUICommandType;
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 
 import java.lang.reflect.Method;
+import java.util.List;
 
 /**
  * Utility for applying set() calls in bulk to Hytale UI elements using BSON-based property setting.
@@ -30,11 +36,12 @@ import java.lang.reflect.Method;
 public final class PropertyBatcher {
 
     private static final Method INTERNAL_SETTER;
-
+    
     static {
         try {
             INTERNAL_SETTER = UICommandBuilder.class.getDeclaredMethod("setBsonValue", String.class, BsonValue.class);
             INTERNAL_SETTER.setAccessible(true);
+            
         } catch (NoSuchMethodException e) {
             throw new RuntimeException("Hytale UI internals incompatible with this version of PropertyBatcher", e);
         }
@@ -66,6 +73,41 @@ public final class PropertyBatcher {
             INTERNAL_SETTER.invoke(builder, targetSelector, bsonDocument);
         } catch (Exception e) {
             throw new RuntimeException("Failed to apply BSON styles to " + targetSelector, e);
+        }
+    }
+
+    public static void setBsonValue(String targetSelector, BsonValue value, UICommandBuilder builder) {
+        if (value == null) {
+            return;
+        }
+        try {
+            INTERNAL_SETTER.invoke(builder, targetSelector, value);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to apply BSON value to " + targetSelector, e);
+        }
+    }
+    
+    public static void addArrayCommand(String selector, List<Message> messages, UICommandBuilder builder) {
+        if (messages == null) {
+            return;
+        }
+        try {
+            var fieldVal = UICommandBuilder.class.getDeclaredField("commands");
+            fieldVal.setAccessible(true);
+            
+            ObjectArrayList<CustomUICommand> arrayList = (ObjectArrayList<CustomUICommand>) fieldVal.get(builder);
+            
+            BsonDocument wrapper = new BsonDocument();
+            for (int i = 0; i < messages.size(); i++) {
+                var item = messages.get(i);
+                wrapper.put(String.valueOf(i), Message.CODEC.encode(item));
+            }
+            arrayList.add(
+                    new CustomUICommand(
+                            CustomUICommandType.Set, selector, wrapper.toJson(), null)
+                    );
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to apply BSON value to " + selector, e);
         }
     }
 }

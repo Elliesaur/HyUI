@@ -21,6 +21,7 @@ package au.ellie.hyui.builders;
 import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.elements.BackgroundSupported;
 import au.ellie.hyui.elements.LayoutModeSupported;
+import au.ellie.hyui.events.MouseEventData;
 import au.ellie.hyui.events.UIEventActions;
 import au.ellie.hyui.elements.UIElements;
 import au.ellie.hyui.events.UIContext;
@@ -271,6 +272,90 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
         return addEventListenerWithContext(type, Void.class, callback);
     }
 
+    /**
+     * Adds an event listener for the DoubleClicking event.
+     */
+    public ButtonBuilder onDoubleClicking(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the DoubleClicking event.
+     */
+    public ButtonBuilder onDoubleClicking(Consumer<MouseEventData> callback) {
+        return addEventListener(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the DoubleClicking event with context.
+     */
+    public ButtonBuilder onDoubleClicking(BiConsumer<MouseEventData, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the RightClicking event.
+     */
+    public ButtonBuilder onRightClicking(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the RightClicking event.
+     */
+    public ButtonBuilder onRightClicking(Consumer<MouseEventData> callback) {
+        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the RightClicking event with context.
+     */
+    public ButtonBuilder onRightClicking(BiConsumer<MouseEventData, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the MouseEntered event.
+     */
+    public ButtonBuilder onMouseEntered(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.MouseEntered, MouseEventData.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the MouseEntered event.
+     */
+    public ButtonBuilder onMouseEntered(Consumer<MouseEventData> callback) {
+        return addEventListener(CustomUIEventBindingType.MouseEntered, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the MouseEntered event with context.
+     */
+    public ButtonBuilder onMouseEntered(BiConsumer<MouseEventData, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseEntered, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the MouseExited event.
+     */
+    public ButtonBuilder onMouseExited(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.MouseExited, MouseEventData.class, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the MouseExited event.
+     */
+    public ButtonBuilder onMouseExited(Consumer<MouseEventData> callback) {
+        return addEventListener(CustomUIEventBindingType.MouseExited, MouseEventData.class, callback);
+    }
+
+    /**
+     * Adds an event listener for the MouseExited event with context.
+     */
+    public ButtonBuilder onMouseExited(BiConsumer<MouseEventData, UIContext> callback) {
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseExited, MouseEventData.class, callback);
+    }
+
     @Override
     protected boolean supportsStyling() {
         return !isBackButton();
@@ -303,19 +388,24 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
         if (isBackButton()) {
             return Set.of();
         }
-        Set<String> supported = new HashSet<>(Set.of(
-                "FontSize",
-                "RenderBold",
-                "RenderUppercase",
-                "TextColor",
-                "HorizontalAlignment",
-                "VerticalAlignment",
-                "Alignment",
-                "RenderItalics",
-                "FontName",
-                "Wrap",
-                "LetterSpacing",
-                "OutlineColor"
+        Set<String> supported = new HashSet<>(StylePropertySets.merge(
+                StylePropertySets.PATCH_STYLE,
+                StylePropertySets.ANCHOR,
+                StylePropertySets.PADDING,
+                Set.of(
+                        "FontSize",
+                        "RenderBold",
+                        "RenderUppercase",
+                        "TextColor",
+                        "HorizontalAlignment",
+                        "VerticalAlignment",
+                        "Alignment",
+                        "RenderItalics",
+                        "FontName",
+                        "Wrap",
+                        "LetterSpacing",
+                        "OutlineColor"
+                )
         ));
         if (this.theme == Theme.GAME_THEME) {
             supported.remove("FontSize");
@@ -337,8 +427,6 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
         // Make sure we apply the layout mode to the wrapping group, not the button itself.
         applyLayoutMode(commands, "#" + getEffectiveId());
         
-        applyBackground(commands, selector);
-
         if (text != null && isTextButtonElement()) {
             HyUIPlugin.getLog().logFinest("Setting Text: " + text + " for " + selector);
             commands.set(selector + ".Text", text);
@@ -357,9 +445,7 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
         if ( hyUIStyle == null && typedStyle == null  && style != null && !isBackButton()) {
             HyUIPlugin.getLog().logFinest("Setting Style: " + style + " for " + selector);
             commands.set(selector + ".Style", style);
-        } /*else if (hyUIStyle == null && typedStyle != null && !isBackButton()) {
-            PropertyBatcher.endSet(selector + ".Style", typedStyle.toBsonDocument(), commands);
-        }*/
+        }
 
         listeners.forEach(listener -> {
             if (listener.type() == CustomUIEventBindingType.Activating) {
@@ -369,6 +455,30 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
                         EventData.of("Action", UIEventActions.BUTTON_CLICKED)
                             .append("Target", eventId), 
                         false);
+            } else if (listener.type() == CustomUIEventBindingType.DoubleClicking && !isBackButton()) {
+                String eventId = getEffectiveId();
+                HyUIPlugin.getLog().logFinest("Adding DoubleClicking event binding for " + selector);
+                events.addEventBinding(CustomUIEventBindingType.DoubleClicking, selector,
+                        EventData.of("Action", UIEventActions.DOUBLE_CLICKING)
+                            .append("Target", eventId), false);
+            } else if (listener.type() == CustomUIEventBindingType.RightClicking && !isBackButton()) {
+                String eventId = getEffectiveId();
+                HyUIPlugin.getLog().logFinest("Adding RightClicking event binding for " + selector);
+                events.addEventBinding(CustomUIEventBindingType.RightClicking, selector,
+                        EventData.of("Action", UIEventActions.RIGHT_CLICKING)
+                            .append("Target", eventId), false);
+            } else if (listener.type() == CustomUIEventBindingType.MouseEntered  && !isBackButton()) {
+                String eventId = getEffectiveId();
+                HyUIPlugin.getLog().logFinest("Adding MouseEntered event binding for " + selector);
+                events.addEventBinding(CustomUIEventBindingType.MouseEntered, selector,
+                        EventData.of("Action", UIEventActions.MOUSE_ENTERED)
+                            .append("Target", eventId), false);
+            } else if (listener.type() == CustomUIEventBindingType.MouseExited  && !isBackButton()) {
+                String eventId = getEffectiveId();
+                HyUIPlugin.getLog().logFinest("Adding MouseExited event binding for " + selector);
+                events.addEventBinding(CustomUIEventBindingType.MouseExited, selector,
+                        EventData.of("Action", UIEventActions.MOUSE_EXITED)
+                            .append("Target", eventId), false);
             }
         });
     }
@@ -380,6 +490,6 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
     }
 
     private boolean isBackButton() {
-        return UIElements.BACK_BUTTON.equals(elementPath);
+        return elementPath.contains(UIElements.BACK_BUTTON);
     }
 }

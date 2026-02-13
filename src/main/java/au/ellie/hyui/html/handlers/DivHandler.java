@@ -47,9 +47,13 @@ public class DivHandler implements TagHandler {
             builder = PageOverlayBuilder.pageOverlay();
         } else if (element.hasClass("panel")) {
             builder = PanelBuilder.panel();
+        } else if (element.hasClass("dynamic-pane-container")) {
+            builder = DynamicPaneContainerBuilder.dynamicPaneContainer();
+        } else if (element.hasClass("dynamic-pane")) {
+            builder = DynamicPaneBuilder.dynamicPane();
         } else if (element.hasClass("container") || element.hasClass("decorated-container")) {
-            builder = element.hasClass("decorated-container") ? 
-                    ContainerBuilder.decoratedContainer() 
+            builder = element.hasClass("decorated-container") ?
+                    ContainerBuilder.decoratedContainer()
                     : ContainerBuilder.container();
             if (element.hasAttr("data-hyui-title")) {
                 ((ContainerBuilder) builder).withTitleText(element.attr("data-hyui-title"));

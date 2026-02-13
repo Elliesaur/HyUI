@@ -107,7 +107,7 @@ public class SliderNumberFieldBuilder extends UIElementBuilder<SliderNumberField
     @Override
     protected Object parseValue(String rawValue) {
         try {
-            return Double.parseDouble(rawValue);
+            return Integer.parseInt(rawValue);
         } catch (NumberFormatException e) {
             return null;
         }
@@ -120,7 +120,7 @@ public class SliderNumberFieldBuilder extends UIElementBuilder<SliderNumberField
 
     @Override
     protected boolean supportsStyling() {
-        return true;
+        return false;
     }
 
     @Override
@@ -130,12 +130,19 @@ public class SliderNumberFieldBuilder extends UIElementBuilder<SliderNumberField
 
     @Override
     protected Set<String> getSupportedStyleProperties() {
-        return Set.of(
-                "TextColor",
-                "FontSize",
-                "RenderBold",
-                "RenderItalics",
-                "RenderUppercase"
+        return StylePropertySets.merge(
+                StylePropertySets.ANCHOR,
+                StylePropertySets.PADDING,
+                StylePropertySets.PATCH_STYLE,
+                StylePropertySets.SOUND_STYLE,
+                StylePropertySets.INPUT_FIELD_STYLE,
+                Set.of(
+                        "Background",
+                        "Fill",
+                        "Handle",
+                        "HandleWidth",
+                        "HandleHeight"
+                )
         );
     }
 
@@ -168,7 +175,7 @@ public class SliderNumberFieldBuilder extends UIElementBuilder<SliderNumberField
                 String eventId = getEffectiveId();
                 HyUIPlugin.getLog().logFinest("Adding ValueChanged event binding for " + selector + " with eventId: " + eventId);
                 events.addEventBinding(CustomUIEventBindingType.ValueChanged, selector,
-                        EventData.of("@ValueDouble", selector + ".Value")
+                        EventData.of("@ValueInt", selector + ".Value")
                                 .append("Target", eventId)
                                 .append("Action", UIEventActions.VALUE_CHANGED),
                         false);

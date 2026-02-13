@@ -19,10 +19,18 @@
 package au.ellie.hyui.html.handlers;
 
 import au.ellie.hyui.builders.LabelBuilder;
+import au.ellie.hyui.builders.NativeTimerLabelBuilder;
 import au.ellie.hyui.builders.UIElementBuilder;
 import au.ellie.hyui.html.HtmlParser;
 import au.ellie.hyui.html.TagHandler;
+import au.ellie.hyui.types.TimerDirection;
+import au.ellie.hyui.utils.ParseUtils;
+import com.hypixel.hytale.server.core.Message;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Node;
+import org.jsoup.nodes.TextNode;
+
+import java.util.List;
 
 public class LabelHandler implements TagHandler {
     @Override
@@ -33,8 +41,56 @@ public class LabelHandler implements TagHandler {
 
     @Override
     public UIElementBuilder<?> handle(Element element, HtmlParser parser) {
-        LabelBuilder builder = LabelBuilder.label().withText(element.text());
+        // Check if this is a native timer label
+        if (element.hasClass("native-timer-label")) {
+            NativeTimerLabelBuilder builder = NativeTimerLabelBuilder.nativeTimerLabel();
+
+            if (element.hasAttr("data-hyui-seconds")) {
+                ParseUtils.parseInt(element.attr("data-hyui-seconds"))
+                        .ifPresent(builder::withSeconds);
+            }
+            if (element.hasAttr("data-hyui-direction")) {
+                try {
+                    TimerDirection direction = TimerDirection.valueOf(element.attr("data-hyui-direction"));
+                    builder.withDirection(direction);
+                } catch (IllegalArgumentException e) {
+                    // Invalid direction, ignore
+                }
+            }
+            if (element.hasAttr("data-hyui-paused")) {
+                builder.withPaused(Boolean.parseBoolean(element.attr("data-hyui-paused")));
+            }
+            if (!element.text().isEmpty()) {
+                builder.withText(element.text());
+            }
+
+            applyCommonAttributes(builder, element);
+            return builder;
+        }
+
+        // Regular label
+        LabelBuilder builder = LabelBuilder.label();
+        List<Message> spans = parseMessageSpansFromChildren(element, true);
+        if (spans != null && !spans.isEmpty()) {
+            builder.withTextSpans(spans);
+        } else {
+            builder.withText(readDirectText(element));
+        }
         applyCommonAttributes(builder, element);
         return builder;
+    }
+
+    private String readDirectText(Element element) {
+        StringBuilder sb = new StringBuilder();
+        for (Node child : element.childNodes()) {
+            if (child instanceof TextNode textNode) {
+                String text = textNode.text();
+                if (!text.isBlank()) {
+                    sb.append(text);
+                }
+            }
+        }
+        String text = sb.toString().trim();
+        return text.isEmpty() ? element.ownText() : text;
     }
 }
