@@ -313,6 +313,9 @@ public class HyUIHud extends CustomUIHud implements UIContext {
      */
     @Override
     public void updatePage(boolean shouldClear) {}
+
+    @Override
+    public void updatePageThreadsafe(Player playerComponent, boolean shouldClear) {}
     
     private void setVisibilityOnFirstElement(boolean value, boolean unsafe) {
         for (UIElementBuilder<?> element : delegate.getElements()) {

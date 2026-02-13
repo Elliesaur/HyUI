@@ -198,6 +198,38 @@ public class PageBuilder extends InterfaceBuilder<PageBuilder> {
         return this.lastPage;
     }
 
+    public HyUIPage openThreadsafe(@Nonnull PlayerRef playerRefParam, Player playerComponent) {
+        PageManager pageManager = playerComponent.getPageManager();
+        this.lastPage = new HyUIPage(
+                playerRefParam,
+                lifetime,
+                uiFile,
+                getTopLevelElements(),
+                editCallbacks,
+                templateHtml,
+                templateProcessor,
+                runtimeTemplateUpdatesEnabled,
+                onDismissListener);
+        this.lastPage.setRefreshRateMs(refreshRateMs);
+        this.lastPage.setRefreshListener(refreshListener);
+        pageManager.openCustomPage(playerRefParam.getReference(), playerRefParam.getReference().getStore(), this.lastPage);
+        if (asyncImageLoadingEnabled) {
+            HyUIPage openedPage = this.lastPage;
+            var world = playerRef.getReference().getStore().getExternalData().getWorld();
+            sendDynamicImageIfNeededAsync(playerRefParam, dynamicImage -> {
+                String id = dynamicImage.getId();
+                if (id == null || id.isBlank() || openedPage == null) {
+                    return;
+                }
+                world.execute(() -> openedPage.reloadImage(id, false, false));
+            });
+        } else {
+            sendDynamicImageIfNeeded(playerRefParam);
+        }
+        return this.lastPage;
+    }
+
+
     /**
      * Retrieves the list of logged UI commands from the last opened page.
      * @return A list of strings representing the logged commands, or an empty list if no page has been opened.

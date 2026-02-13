@@ -22,6 +22,7 @@ import au.ellie.hyui.builders.HyUIHud;
 import au.ellie.hyui.builders.HyUIPage;
 import au.ellie.hyui.builders.LabelBuilder;
 import au.ellie.hyui.builders.UIElementBuilder;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 
 import java.util.List;
 import java.util.Optional;
@@ -78,6 +79,14 @@ public interface UIContext {
      * @param shouldClear Whether to clear the page before rebuilding.
      */
     void updatePage(boolean shouldClear);
+
+
+    /**
+     * Updates the page associated with this context in a thread-safe manner, rebuilding it if necessary.
+     * @param playerComponent
+     * @param shouldClear
+     */
+    void updatePageThreadsafe(Player playerComponent, boolean shouldClear);
 
     /**
      * Retrieves the builder for a particular element, cast to the specified builder.

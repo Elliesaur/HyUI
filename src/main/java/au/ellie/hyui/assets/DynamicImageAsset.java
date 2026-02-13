@@ -3,6 +3,7 @@ package au.ellie.hyui.assets;
 import au.ellie.hyui.HyUIPlugin;
 import com.hypixel.hytale.common.util.ArrayUtil;
 import com.hypixel.hytale.protocol.Packet;
+import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.packets.setup.AssetFinalize;
 import com.hypixel.hytale.protocol.packets.setup.AssetInitialize;
 import com.hypixel.hytale.protocol.packets.setup.AssetPart;
@@ -122,7 +123,7 @@ public class DynamicImageAsset extends CommonAsset {
     public static void sendToPlayer(PacketHandler handler, CommonAsset asset) {
         byte[] allBytes = asset.getBlob().join();
         byte[][] parts = ArrayUtil.split(allBytes, 2621440);
-        Packet[] packets = new Packet[2 + parts.length];
+        ToClientPacket[] packets = new ToClientPacket[2 + parts.length];
         packets[0] = new AssetInitialize(asset.toPacket(), allBytes.length);
 
         for(int partIndex = 0; partIndex < parts.length; ++partIndex) {

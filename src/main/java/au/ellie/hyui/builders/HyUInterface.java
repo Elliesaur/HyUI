@@ -25,6 +25,7 @@ import au.ellie.hyui.html.TemplateProcessor;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -92,6 +93,10 @@ public abstract class HyUInterface implements UIContext {
 
     @Override
     public void updatePage(boolean shouldClose) {}
+
+
+    @Override
+    public void updatePageThreadsafe(Player playerComponent, boolean shouldClear) {}
     
     public void build(@Nonnull Ref<EntityStore> ref,
                       @Nonnull UICommandBuilder uiCommandBuilder,
