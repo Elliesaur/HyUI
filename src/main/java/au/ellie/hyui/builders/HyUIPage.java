@@ -133,7 +133,7 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
             onDismissListener.accept(this, true);
         }
     }
-    
+
     @Override
     public void updatePage(boolean shouldClear) {
         Ref<EntityStore> ref = this.playerRef.getReference();
@@ -146,6 +146,19 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
             playerComponent.getPageManager().updateCustomPage(new CustomPage(this.getClass().getName(), false, shouldClear, this.lifetime, commandBuilder.getCommands(), eventBuilder.getEvents()));
         }
     }
+
+    @Override
+    public void updatePageThreadsafe(Player playerComponent, boolean shouldClear) {
+        Ref<EntityStore> ref = this.playerRef.getReference();
+        if (ref != null) {
+            Store<EntityStore> store = ref.getStore();
+            UICommandBuilder commandBuilder = new UICommandBuilder();
+            UIEventBuilder eventBuilder = new UIEventBuilder();
+            delegate.build(ref, commandBuilder, eventBuilder, ref.getStore(), !shouldClear);
+            playerComponent.getPageManager().updateCustomPage(new CustomPage(this.getClass().getName(), false, shouldClear, this.lifetime, commandBuilder.getCommands(), eventBuilder.getEvents()));
+        }
+    }
+
 
     public long getRefreshRateMs() {
         return refreshRateMs;
