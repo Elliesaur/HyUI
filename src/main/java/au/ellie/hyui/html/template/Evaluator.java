@@ -102,7 +102,7 @@ public class Evaluator {
             case ComponentBlockNode component -> evaluateComponent(component);
             case AttributeValueNode attributeValueNode -> evaluateAttributeString(attributeValueNode);
 
-            default -> throw new IllegalStateException("Unexpected value: " + node);
+            default -> throw new EvaluationException("Unexpected value", node);
         };
     }
 
@@ -122,6 +122,10 @@ public class Evaluator {
             case DefaultNode def -> evaluateDefault(def);
             case VariableNode var -> contextStack.getVariable(var.name(), () -> {
                 for (String key : contextStack.getScopeKeys()) {
+                    // Prevent accessing variables from scopes
+                    if (key.startsWith(Symbols.HTML_SLOT_KEY))
+                        continue;
+
                     try {
                         return ReflectionUtils.getObjectProperty(contextStack.getVariable(key), var.name());
                     } catch (Exception _) {

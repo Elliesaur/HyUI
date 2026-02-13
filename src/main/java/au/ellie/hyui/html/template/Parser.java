@@ -19,6 +19,10 @@
 package au.ellie.hyui.html.template;
 
 import au.ellie.hyui.html.template.exception.ParserException;
+import au.ellie.hyui.html.template.item.Attribute;
+import au.ellie.hyui.html.template.item.Attribute.ConditionAttribute;
+import au.ellie.hyui.html.template.item.Attribute.ControlAttribute;
+import au.ellie.hyui.html.template.item.Attribute.ParsedAttributes;
 import au.ellie.hyui.html.template.item.Node;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode.DynamicAttributeNode;
@@ -99,9 +103,9 @@ public class Parser {
 
         // Parse control flow blocks
         if (match(Type.KEYWORD)) {
-            if (matchSymbol(Type.KEYWORD, KEYWORD_IF))
+            if (consumeSymbol(Type.KEYWORD, KEYWORD_IF))
                 return parseIfBlock();
-            else if (matchSymbol(Type.KEYWORD, KEYWORD_EACH))
+            else if (consumeSymbol(Type.KEYWORD, KEYWORD_EACH))
                 return parseEachBlock();
         }
 
@@ -121,15 +125,8 @@ public class Parser {
      * </pre>
      */
     private Node parseIfBlock() {
-        advance(); // consume 'if'
-        skipWhitespace();
-
-        var condition = parseExpression();
-
-        skipWhitespace();
-        expect(Type.CLOSE_EXPRESSION, "Expected '}}' after if condition");
-
-        // Clean whitespace for standalone tags
+        // Parse control attribute
+        var control = parseIfAttributeValue(Type.CLOSE_EXPRESSION);
         cleanStandaloneLineWhitespace();
 
         // Parse then body
@@ -202,11 +199,11 @@ public class Parser {
         expect(Type.CLOSE_EXPRESSION, "Expected '}}' after closing if tag");
 
         // Clean whitespace for standalone tags
-        var clean = cleanStandaloneLineWhitespace();
-        var node = new IfBlockNode(condition, mergeTextNodes(thenBody), mergeTextNodes(elseBody));
+        var indent = cleanStandaloneLineWhitespace();
+        var node = new IfBlockNode(control.condition(), mergeTextNodes(thenBody), mergeTextNodes(elseBody));
 
         stack.pop();
-        return clean ? new MarkerNode(NEW_LINE, node) : node;
+        return indent ? new MarkerNode(NEW_LINE, node) : node;
     }
 
     /**
@@ -216,22 +213,8 @@ public class Parser {
      * </pre>
      */
     private Node parseEachBlock() {
-        advance(); // consume 'each'
-        skipWhitespace();
-
-        var collection = parseVariable();
-
-        skipWhitespace();
-
-        var itemName = "item";
-        if (match(Type.TEXT)) {
-            itemName = joinTokens(Type.TEXT, Type.NUMBER, Type.KEYWORD);
-            skipWhitespace();
-        }
-
-        expect(Type.CLOSE_EXPRESSION, "Expected '}}' after each expression");
-
-        // Clean whitespace for standalone tags
+        // Parse control attribute
+        var control = parseEachAttributeValue(Type.CLOSE_EXPRESSION);
         cleanStandaloneLineWhitespace();
 
         // Parse body
@@ -262,11 +245,11 @@ public class Parser {
         expect(Type.CLOSE_EXPRESSION, "Expected '}}' after closing each tag");
 
         // Clean whitespace for standalone tags
-        var clean = cleanStandaloneLineWhitespace();
-        var node = new EachBlockNode(itemName, collection, mergeTextNodes(body));
+        var indent = cleanStandaloneLineWhitespace();
+        var node = new EachBlockNode(control.itemName(), control.collection(), mergeTextNodes(body));
 
         stack.pop();
-        return clean ? new MarkerNode(NEW_LINE, node) : node;
+        return indent ? new MarkerNode(NEW_LINE, node) : node;
     }
 
     /**
@@ -473,14 +456,17 @@ public class Parser {
         if (tagName.equals("slot"))
             return parseSlotOutput();
 
-        // Parse attributes
-        var attributes = parseAttributes();
+        // Parse attributes (including control flow attributes)
+        var parsed = parseAttributes();
+        var attributes = parsed.attributes();
 
         // Check for self-closing tag
         if (consume(Type.SLASH)) {
             expect(Type.CLOSE_ANGLE_BRACKET, "Expected '>' after '/'");
 
-            return new ComponentBlockNode(tagName, attributes, List.of());
+            return parsed.build(
+                    new ComponentBlockNode(tagName, attributes, List.of())
+            );
         }
 
         expect(Type.CLOSE_ANGLE_BRACKET, "Expected '>' after tag");
@@ -512,7 +498,9 @@ public class Parser {
         }
         stack.pop();
 
-        return new ComponentBlockNode(tagName, attributes, mergeTextNodes(children));
+        return parsed.build(
+                new ComponentBlockNode(tagName, attributes, mergeTextNodes(children))
+        );
     }
 
     /**
@@ -528,12 +516,15 @@ public class Parser {
                 expect(Type.TEXT, "Expected slot name after 'slot:'");
         }
 
-        var attributes = parseAttributes();
+        var parsed = parseAttributes();
+        var attributes = parsed.attributes();
 
         // Check for self-closing
         if (consume(Type.SLASH)) {
             expect(Type.CLOSE_ANGLE_BRACKET, "Expected '>' after '/'");
-            return new SlotBlockNode(slotName, attributes, List.of(), true);
+            return parsed.build(
+                    new SlotBlockNode(slotName, attributes, List.of(), true)
+            );
         }
 
         expect(Type.CLOSE_ANGLE_BRACKET, "Expected '>' after slot tag");
@@ -574,7 +565,9 @@ public class Parser {
         }
         stack.pop();
 
-        return new SlotBlockNode(slotName, attributes, mergeTextNodes(children), true);
+        return parsed.build(
+                new SlotBlockNode(slotName, attributes, mergeTextNodes(children), true)
+        );
     }
 
     /**
@@ -588,12 +581,15 @@ public class Parser {
         if (slotName.isEmpty())
             slotName = HTML_SLOT_DEFAULT;
 
-        var attributes = parseAttributes();
+        var parsed = parseAttributes();
+        var attributes = parsed.attributes();
 
         // Check for self-closing
         if (consume(Type.SLASH)) {
             expect(Type.CLOSE_ANGLE_BRACKET, "Expected '>'");
-            return new SlotBlockNode(slotName, attributes, List.of(), false);
+            return parsed.build(
+                    new SlotBlockNode(slotName, attributes, List.of(), false)
+            );
         }
 
         expect(Type.CLOSE_ANGLE_BRACKET, "Expected '>'");
@@ -628,7 +624,9 @@ public class Parser {
         }
         stack.pop();
 
-        return new SlotBlockNode(slotName, attributes, mergeTextNodes(children), false);
+        return parsed.build(
+                new SlotBlockNode(slotName, attributes, mergeTextNodes(children), false)
+        );
     }
 
     /**
@@ -648,10 +646,11 @@ public class Parser {
     }
 
     /**
-     * Parse tag attributes
+     * Parse tag attributes and extract control flow attributes (each, if)
      */
-    private List<AttributeValueNode> parseAttributes() {
+    private ParsedAttributes parseAttributes() {
         var attributes = new ArrayList<AttributeValueNode>();
+        List<Attribute> flowAttributes = new ArrayList<>();
         skipWhitespace();
 
         while (!isAtEnd() && !match(Type.CLOSE_ANGLE_BRACKET, Type.SLASH)) {
@@ -674,6 +673,18 @@ public class Parser {
             // Check for attribute value
             if (consume(Type.ASSIGN)) {
                 skipWhitespace();
+
+                // Flow attributes: each="$items itemName"
+                if (name.equals(KEYWORD_EACH) && consume(Type.QUOTE)) {
+                    flowAttributes.add(parseEachAttributeValue(Type.QUOTE));
+                    continue;
+                }
+
+                // Flow attributes: if="$condition"
+                if (name.equals(KEYWORD_IF) && consume(Type.QUOTE)) {
+                    flowAttributes.add(parseIfAttributeValue(Type.QUOTE));
+                    continue;
+                }
 
                 // Dynamic attribute: attr={expr}
                 if (consume(Type.OPEN_EXPRESSION)) {
@@ -727,7 +738,46 @@ public class Parser {
             skipWhitespace();
         }
 
-        return attributes;
+        return new ParsedAttributes(attributes, flowAttributes);
+    }
+
+    /**
+     * Parse the value of an "each" block
+     *
+     * @param delimiter The expected delimiter type to end the attribute value
+     */
+    private ControlAttribute parseEachAttributeValue(Type delimiter) {
+        skipWhitespace();
+
+        // Parse collection name
+        var collection = parseVariable();
+        skipWhitespace();
+
+        // Parse item name (optional, defaults to "item")
+        var itemName = "item";
+        if (match(Type.TEXT)) {
+            itemName = joinTokens(Type.TEXT, Type.NUMBER, Type.KEYWORD);
+            skipWhitespace();
+        }
+
+        expect(delimiter, "Expected delimiter around `each` block");
+        return new ControlAttribute(collection, itemName);
+    }
+
+    /**
+     * Parse the value of an "if" block
+     *
+     * @param delimiter The expected delimiter type to end the attribute value
+     */
+    private ConditionAttribute parseIfAttributeValue(Type delimiter) {
+        skipWhitespace();
+
+        // Parse condition expression
+        var condition = parseExpression();
+        skipWhitespace();
+
+        expect(delimiter, "Expected delimiter around `if` block");
+        return new ConditionAttribute(condition);
     }
 
     // ===== Navigation =====
@@ -792,13 +842,6 @@ public class Parser {
 
     private Token expect(Type type, String message) {
         if (!match(type))
-            throw new ParserException(message, peek(), pos);
-
-        return advance();
-    }
-
-    private Token expectSymbol(Type type, String symbol, String message) {
-        if (!matchSymbol(type, symbol))
             throw new ParserException(message, peek(), pos);
 
         return advance();

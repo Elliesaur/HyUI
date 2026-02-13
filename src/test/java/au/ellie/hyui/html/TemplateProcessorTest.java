@@ -1100,6 +1100,29 @@ class TemplateProcessorTest {
                     processor.process()
             );
         }
+
+        @Test
+        @DisplayName("Should handle control flow as attributes")
+        void componentAttributesFlow() {
+            processor.setVariable("items", List.of("A", "B", "C"));
+            processor.registerComponent("bigButton", "<h1><slot/></h1>");
+            processor.registerComponent("panel", """
+                    <div style="background: red">
+                        <slot/>
+                    </div>
+                    """);
+
+            processor.setTemplate("""
+                    <panel>
+                        <bigButton each="$items key">Button {{$key}} <hidden if="$key == B">secret</hidden></bigButton>
+                    </panel>
+                    """);
+            assertEquals(normalize("""
+                    <div style="background: red">
+                        <h1>Button A</h1><h1>Button B <hidden>secret</hidden></h1><h1>Button C</h1>
+                    </div>
+                    """), processor.process());
+        }
     }
 
     // ========== ERROR HANDLING ==========
