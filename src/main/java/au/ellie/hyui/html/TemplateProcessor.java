@@ -395,7 +395,7 @@ public class TemplateProcessor {
         public List<Node> getAst() {
             if (ast == null) {
                 List<Token> tokens = new Lexer(template).tokenize();
-                ast = new Parser(tokens).parse();
+                ast = new Parser(tokens, template).parse();
             }
 
             return ast;

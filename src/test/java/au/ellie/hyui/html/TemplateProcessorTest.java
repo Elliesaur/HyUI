@@ -129,6 +129,88 @@ class TemplateProcessorTest {
             processor.setTemplate("<div>  Hello  </div>");
             assertEquals("<div>  Hello  </div>", processor.process());
         }
+
+        @Test
+        @DisplayName("Should render empty non-void elements with attributes")
+        void emptyElements() {
+            // Non-void elements WITH ATTRIBUTES should render with closing tags
+            processor.setTemplate("<div class=\"container\"></div>");
+            assertEquals("<div class=\"container\"></div>", processor.process());
+
+            processor.setTemplate("<span id=\"test\"></span>");
+            assertEquals("<span id=\"test\"></span>", processor.process());
+
+            processor.setTemplate("<p style=\"color: red;\"></p>");
+            assertEquals("<p style=\"color: red;\"></p>", processor.process());
+        }
+
+        @Test
+        @DisplayName("Should skip completely empty elements with no attributes")
+        void completelyEmptyElements() {
+            // Completely empty elements with no attributes should be skipped (prevents flexbox issues)
+            processor.setTemplate("<div></div>");
+            assertEquals("", processor.process());
+
+            processor.setTemplate("<span></span>");
+            assertEquals("", processor.process());
+
+            processor.setTemplate("<p></p>");
+            assertEquals("", processor.process());
+
+            // But elements with content should still render
+            processor.setTemplate("<div>Content</div>");
+            assertEquals("<div>Content</div>", processor.process());
+        }
+
+        @Test
+        @DisplayName("Should render void elements as self-closing")
+        void voidElements() {
+            // Void elements should be self-closing
+            processor.setTemplate("<input type=\"text\"/>");
+            assertEquals("<input type=\"text\"/>", processor.process());
+
+            processor.setTemplate("<br/>");
+            assertEquals("<br/>", processor.process());
+
+            processor.setTemplate("<img src=\"test.png\"/>");
+            assertEquals("<img src=\"test.png\"/>", processor.process());
+
+            processor.setTemplate("<hr/>");
+            assertEquals("<hr/>", processor.process());
+        }
+
+        @Test
+        @DisplayName("Should handle void elements without self-closing slash")
+        void voidElementsWithoutSlash() {
+            // Void elements should work with or without the trailing /
+            processor.setTemplate("<input type=\"text\">");
+            assertEquals("<input type=\"text\"/>", processor.process());
+
+            processor.setTemplate("<br>");
+            assertEquals("<br/>", processor.process());
+
+            processor.setTemplate("<img src=\"test.png\">");
+            assertEquals("<img src=\"test.png\"/>", processor.process());
+
+            processor.setTemplate("<hr>");
+            assertEquals("<hr/>", processor.process());
+        }
+
+        @Test
+        @DisplayName("Should handle multiple empty elements correctly")
+        void multipleEmptyElements() {
+            String template = """
+                <div class="flex-1"></div>
+                <div class="flex-2"></div>
+                <div class="flex-3"></div>
+                """;
+            String result = processor.setTemplate(template).process();
+
+            // All divs should have closing tags
+            assertTrue(result.contains("<div class=\"flex-1\"></div>"));
+            assertTrue(result.contains("<div class=\"flex-2\"></div>"));
+            assertTrue(result.contains("<div class=\"flex-3\"></div>"));
+        }
     }
 
     // ========== LITERALS ==========
@@ -954,6 +1036,56 @@ class TemplateProcessorTest {
             String result = processor.process();
             assertTrue(result.contains("class=\"base active\""));
         }
+
+        @Test
+        @DisplayName("Should handle inline if blocks with newlines and whitespace in attribute values")
+        void inlineIfWithNewlinesInAttributeValue() {
+            processor.setVariable("mode", "sell");
+
+            // Test case matching user's scenario with newlines inside attribute
+            String template = "<dexBtn type=\"{{if $mode == sell}}Primary{{else}}Slate{{/if}}\" id=\"mode-sell\" \n" +
+                    "                                class=\"right-2 h-md w-2xl\">Sell                         </dexBtn>";
+
+            processor.setTemplate(template);
+
+            String result = processor.process();
+            assertTrue(result.contains("type=\"Primary\""));
+            assertFalse(result.contains("Slate"));
+        }
+
+        @Test
+        @DisplayName("Should handle inline if blocks with newlines - else branch")
+        void inlineIfWithNewlinesInAttributeValueElseBranch() {
+            processor.setVariable("mode", "buy");
+
+            // Test case matching user's scenario with newlines inside attribute
+            String template = "<dexBtn type=\"{{if $mode == sell}}Primary{{else}}Slate{{/if}}\" id=\"mode-buy\" \n" +
+                    "                                class=\"h-md right-4 w-2xl\">                             Buy                         </dexBtn>";
+
+            processor.setTemplate(template);
+
+            String result = processor.process();
+            assertTrue(result.contains("type=\"Slate\""));
+            assertFalse(result.contains("Primary"));
+        }
+
+        @Test
+        @DisplayName("Should handle input elements with expression in max attribute")
+        void inputWithMaxExpression() {
+            // Create a simple object with properties
+            var item = new Item("sword", true, "Sword", 50);
+            processor.setVariable("item", item);
+
+            // This template has max="{{$item.count}}" which used to cause issues
+            // because the > after max gets tokenized with = as >= (COMPARATOR token)
+            String template = "<input id=\"sell-slider-{{$item.name}}\" type=\"range\" value=\"10\" min=\"1\" max=\"{{$item.count}}\" class=\"slider\" />";
+
+            processor.setTemplate(template);
+
+            String result = processor.process();
+            assertTrue(result.contains("max=\"50\""));
+            assertTrue(result.contains("id=\"sell-slider-sword\""));
+        }
     }
 
     // ========== EACH BLOCKS ==========
@@ -1351,6 +1483,97 @@ class TemplateProcessorTest {
         }
 
         @Test
+        @DisplayName("Should evaluate inline if blocks in component attributes")
+        void componentWithInlineIfInAttribute() {
+            processor.setVariable("mode", "buy");
+            processor.setVariable("buyPrice", "100");
+            processor.setVariable("sellPrice", "50");
+
+            processor.registerComponent("priceDisplay", "<div class=\"price\">{{$amount}}</div>");
+
+            processor.setTemplate("<priceDisplay amount=\"{{if $mode == 'buy'}}{{$buyPrice}}{{else}}{{$sellPrice}}{{/if}}\"/>");
+
+            String result = processor.process();
+            assertTrue(result.contains("<div class=\"price\">100</div>"), "Should show buy price when mode is buy: " + result);
+        }
+
+        @Test
+        @DisplayName("Should evaluate inline if blocks in component attributes - else branch")
+        void componentWithInlineIfInAttributeElseBranch() {
+            processor.setVariable("mode", "sell");
+            processor.setVariable("buyPrice", "100");
+            processor.setVariable("sellPrice", "50");
+
+            processor.registerComponent("priceDisplay", "<div class=\"price\">{{$amount}}</div>");
+
+            processor.setTemplate("<priceDisplay amount=\"{{if $mode == 'buy'}}{{$buyPrice}}{{else}}{{$sellPrice}}{{/if}}\"/>");
+
+            String result = processor.process();
+            assertTrue(result.contains("<div class=\"price\">50</div>"), "Should show sell price when mode is sell: " + result);
+        }
+
+        @Test
+        @DisplayName("Should evaluate complex expressions in component attributes")
+        void componentWithComplexAttributeExpressions() {
+            processor.setVariable("type", "secondary");
+            processor.setVariable("variant", "Dense");
+            processor.setVariable("playerAmount", 0);
+
+            processor.registerComponent("testBtn", """
+                    <button 
+                        data-type="@{{$type}}-{{$variant}}" 
+                        class="{{$class}}">
+                        <slot/>
+                    </button>
+                    """);
+
+            processor.setTemplate("""
+                    <testBtn 
+                        type="{{$type}}" 
+                        variant="{{$variant}}" 
+                        class="p-2 {{if $playerAmount <= 0}}hidden{{/if}}">
+                        Sell
+                    </testBtn>
+                    """);
+
+            String result = processor.process();
+            assertTrue(result.contains("data-type=\"@secondary-Dense\""), "Should have correct data-type: " + result);
+            assertTrue(result.contains("class=\"p-2 hidden\""), "Should have hidden class when playerAmount is 0: " + result);
+        }
+
+        @Test
+        @DisplayName("Should handle undefined variables in component attributes gracefully")
+        void componentWithUndefinedVariablesInAttributes() {
+            // Variables NOT set - should use empty strings
+            processor.registerComponent("priceDisplay", "<div class=\"price\">{{$amount}}</div>");
+
+            processor.setTemplate("<priceDisplay amount=\"{{if $mode == 'buy'}}{{$buyPrice}}{{else}}{{$sellPrice}}{{/if}}\"/>");
+
+            String result = processor.process();
+            // When variables are undefined, they should be empty strings
+            assertTrue(result.contains("<div class=\"price\"></div>"),
+                      "Should have empty amount when variables are undefined: " + result);
+        }
+
+        @Test
+        @DisplayName("Should show actual behavior with partially defined variables")
+        void componentWithPartiallyDefinedVariables() {
+            processor.setVariable("mode", "buy");
+            // buyPrice is NOT set, sellPrice is set
+            processor.setVariable("sellPrice", "50");
+
+            processor.registerComponent("priceDisplay", "<div class=\"price\">Price: {{$amount}}</div>");
+
+            processor.setTemplate("<priceDisplay amount=\"{{if $mode == 'buy'}}{{$buyPrice}}{{else}}{{$sellPrice}}{{/if}}\"/>");
+
+            String result = processor.process();
+            System.out.println("Result with partially defined vars: " + result);
+            // buyPrice is undefined, so it should be empty string
+            assertTrue(result.contains("<div class=\"price\">Price: </div>"),
+                      "Should have empty amount when buyPrice is undefined: " + result);
+        }
+
+        @Test
         @DisplayName("Should allow components to pass existing parameters")
         void componentCanPassExistingParameters() {
             processor.registerComponent("button", "<button style={{$style}}>Submit</button>");
@@ -1697,6 +1920,81 @@ class TemplateProcessorTest {
             long duration = System.currentTimeMillis() - start;
 
             assertTrue(duration < 1000, "100 iterations should complete in less than 1 second");
+        }
+    }
+
+    // ========== ERROR MESSAGES ==========
+
+    @Nested
+    @DisplayName("Error Messages")
+    class ErrorMessages {
+
+        @Test
+        @DisplayName("Should show line and column number for syntax errors")
+        void errorWithLineAndColumn() {
+            // Template with an error on line 3
+            String template = """
+                    <div>
+                        <span>Hello</span>
+                        <input type="range" max={{$value}}" />
+                    </div>
+                    """;
+
+            var exception = assertThrows(Exception.class, () -> {
+                processor.setTemplate(template).process();
+            });
+
+            String message = exception.getMessage();
+            // Should contain line number
+            assertTrue(message.contains("line 3"), "Error message should contain line number: " + message);
+            // Should contain column information
+            assertTrue(message.contains("column"), "Error message should contain column information: " + message);
+            // Should show the line with error
+            assertTrue(message.contains("input"), "Error message should show the line with the error: " + message);
+        }
+
+        @Test
+        @DisplayName("Should show caret pointing to error location")
+        void errorWithCaret() {
+            String template = "<div>{{$unknown.property}}</div>";
+
+            // This will cause an error during processing (unknown variable)
+            // But we can test parsing errors
+            String badTemplate = "<div>{{$var.</div>";
+
+            var exception = assertThrows(Exception.class, () -> {
+                processor.setTemplate(badTemplate).process();
+            });
+
+            String message = exception.getMessage();
+            // Should contain a caret (^) pointing to the error
+            assertTrue(message.contains("^"), "Error message should contain a caret: " + message);
+        }
+
+        @Test
+        @DisplayName("Should handle multiline templates in error messages")
+        void errorInMultilineTemplate() {
+            String template = normalize("""
+                    <container>
+                        <header>
+                            <title>Test</title>
+                        </header>
+                        <body>
+                            <input type="text" value="{{$name" />
+                        </body>
+                    </container>
+                    """);
+
+            var exception = assertThrows(Exception.class, () -> {
+                processor.setTemplate(template).process();
+            });
+
+            String message = exception.getMessage();
+            // Should show line number (line 6 has the error)
+            assertTrue(message.contains("line"), "Error message should contain line number: " + message);
+            // Should show the problematic line
+            assertTrue(message.contains("input") || message.contains("value"),
+                      "Error message should show the line with the error: " + message);
         }
     }
 }

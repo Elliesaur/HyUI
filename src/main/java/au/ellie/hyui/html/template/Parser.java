@@ -50,10 +50,16 @@ import static au.ellie.hyui.html.template.item.Symbols.*;
 public class Parser {
     private final Stack<List<Node>> stack = new Stack<>();
     private final List<Token> tokens;
+    private final String source;
     private int pos = 0;
 
     public Parser(List<Token> tokens) {
+        this(tokens, null);
+    }
+
+    public Parser(List<Token> tokens, String source) {
         this.tokens = tokens;
+        this.source = source;
     }
 
     /**
@@ -270,7 +276,14 @@ public class Parser {
         var builder = new StringBuilder();
 
         while (!isAtEnd()) {
-            if (consume(Type.OPEN_EXPRESSION)) {
+            if (match(Type.QUOTE)) {
+                // Hit the closing quote of the attribute - this is an error
+                throw error("Unclosed inline if block in attribute value");
+            } else if (match(Type.OPEN_EXPRESSION)) {
+                int savedPos = pos;
+                advance(); // consume {{
+
+                // Skip whitespace to check what follows
                 skipWhitespace();
 
                 // Check for else or end
@@ -280,6 +293,7 @@ public class Parser {
                     // Add remaining text
                     if (!builder.isEmpty()) {
                         thenParts.add(new TextNode(builder.toString()));
+                        builder.setLength(0);
                     }
                     break;
                 }
@@ -296,15 +310,26 @@ public class Parser {
                         // Return if block with empty else
                         return new IfBlockNode(control.condition(), thenParts, List.of());
                     }
-                    // Not /if, so restore and treat {{ and / as text
-                    builder.append("{{").append("/");
-                } else {
-                    // Not a control keyword, treat {{ as text
-                    builder.append("{{");
                 }
-            } else if (match(Type.QUOTE)) {
-                // Hit the closing quote of the attribute - this is an error
-                throw new ParserException("Unclosed inline if block in attribute value", peek(), pos);
+
+                // Not a control keyword, restore position and parse as expression
+                pos = savedPos;
+                advance(); // consume {{ again
+
+                // Add any accumulated text first
+                if (!builder.isEmpty()) {
+                    thenParts.add(new TextNode(builder.toString()));
+                    builder.setLength(0);
+                }
+
+                // Parse the expression
+                skipWhitespace();
+                var expr = parseExpression();
+                skipWhitespace();
+                expect(Type.CLOSE_EXPRESSION, "Expected '}}' after expression");
+
+                // Add expression node
+                thenParts.add(expr);
             } else {
                 builder.append(advance().value());
             }
@@ -315,7 +340,14 @@ public class Parser {
         builder.setLength(0);
 
         while (!isAtEnd()) {
-            if (consume(Type.OPEN_EXPRESSION)) {
+            if (match(Type.QUOTE)) {
+                // Hit the closing quote of the attribute - this is an error
+                throw error("Unclosed inline if block in attribute value");
+            } else if (match(Type.OPEN_EXPRESSION)) {
+                int savedPos = pos;
+                advance(); // consume {{
+
+                // Skip whitespace to check what follows
                 skipWhitespace();
 
                 if (consume(Type.SLASH)) {
@@ -330,21 +362,32 @@ public class Parser {
                         // Return if block
                         return new IfBlockNode(control.condition(), thenParts, elseParts);
                     }
-                    // Not /if, so treat {{ and / as text
-                    builder.append("{{").append("/");
-                } else {
-                    // Not a control keyword, treat {{ as text
-                    builder.append("{{");
                 }
-            } else if (match(Type.QUOTE)) {
-                // Hit the closing quote of the attribute - this is an error
-                throw new ParserException("Unclosed inline if block in attribute value", peek(), pos);
+
+                // Not a control keyword, restore position and parse as expression
+                pos = savedPos;
+                advance(); // consume {{ again
+
+                // Add any accumulated text first
+                if (!builder.isEmpty()) {
+                    elseParts.add(new TextNode(builder.toString()));
+                    builder.setLength(0);
+                }
+
+                // Parse the expression
+                skipWhitespace();
+                var expr = parseExpression();
+                skipWhitespace();
+                expect(Type.CLOSE_EXPRESSION, "Expected '}}' after expression");
+
+                // Add expression node
+                elseParts.add(expr);
             } else {
                 builder.append(advance().value());
             }
         }
 
-        throw new ParserException("Unclosed inline if block in attribute value", peek(), pos);
+        throw error("Unclosed inline if block in attribute value");
     }
 
     /**
@@ -482,7 +525,7 @@ public class Parser {
         if (match(Type.TEXT))
             return new LiteralNode(advance().value());
 
-        throw new ParserException("Unexpected token in expression", peek(), pos);
+        throw error("Unexpected token in expression");
     }
 
     /**
@@ -498,7 +541,7 @@ public class Parser {
 
         var varName = joinTokens(Type.TEXT, Type.NUMBER, Type.COLON, Type.KEYWORD);
         if (varName.isEmpty())
-            throw new ParserException("Expected variable name after '$'", peek(), pos);
+            throw error("Expected variable name after '$'");
 
         // Check for property access
         ExpressionNode expr = new VariableNode(varName);
@@ -508,7 +551,7 @@ public class Parser {
 
             var property = joinTokens(Type.TEXT, Type.NUMBER, Type.COLON, Type.KEYWORD);
             if (property.isEmpty())
-                throw new ParserException("Expected property name after '.'", peek(), pos);
+                throw error("Expected property name after '.'");
 
             expr = new PropertyAccessNode(expr, property);
         }
@@ -563,6 +606,21 @@ public class Parser {
     }
 
     /**
+     * HTML void elements that cannot have children or closing tags.
+     */
+    private static final java.util.Set<String> VOID_ELEMENTS = java.util.Set.of(
+            "area", "base", "br", "col", "embed", "hr", "img", "input",
+            "link", "meta", "param", "source", "track", "wbr"
+    );
+
+    /**
+     * Check if a tag name represents a void element.
+     */
+    private boolean isVoidElement(String tagName) {
+        return VOID_ELEMENTS.contains(tagName.toLowerCase());
+    }
+
+    /**
      * Parse HTML/component tags
      */
     private Node parseTag() {
@@ -579,7 +637,7 @@ public class Parser {
         // Parse tag name
         var tagName = joinTokens(Type.TEXT, Type.NUMBER, Type.KEYWORD);
         if (tagName.isEmpty())
-            throw new ParserException("Expected tag name after '<'", peek(), pos);
+            throw error("Expected tag name after '<'");
 
         // Check if it's a slot tag
         if (tagName.equals("slot"))
@@ -589,16 +647,41 @@ public class Parser {
         var parsed = parseAttributes();
         var attributes = parsed.attributes();
 
+        // Skip whitespace and newlines before checking for tag closing
+        skipWhitespaceAndNewlines();
+
         // Check for self-closing tag
         if (consume(Type.SLASH)) {
-            expect(Type.CLOSE_ANGLE_BRACKET, "Expected '>' after '/'");
+            if (!match(Type.CLOSE_ANGLE_BRACKET)) {
+                throw error(
+                        String.format("Expected '>' after '/' but found '%s'. " +
+                                      "If you have a comparison in an attribute value, make sure it's properly quoted.",
+                                      peek().value())
+                );
+            }
+            advance(); // consume >
 
             return parsed.build(
                     new ComponentBlockNode(tagName, attributes, List.of())
             );
         }
 
-        expect(Type.CLOSE_ANGLE_BRACKET, "Expected '>' after tag");
+        if (!match(Type.CLOSE_ANGLE_BRACKET)) {
+            throw error(
+                    String.format("Expected '>' after tag but found '%s'. " +
+                                  "If you have a comparison in an attribute value, make sure it's properly quoted.",
+                                  peek().value())
+            );
+        }
+        advance(); // consume >
+
+        // Check if this is a void element (cannot have children or closing tag)
+        if (isVoidElement(tagName)) {
+            // Void elements are self-closing by definition, don't parse children
+            return parsed.build(
+                    new ComponentBlockNode(tagName, attributes, List.of())
+            );
+        }
 
         // Parse children
         var children = new ArrayList<Node>();
@@ -780,15 +863,19 @@ public class Parser {
     private ParsedAttributes parseAttributes() {
         var attributes = new ArrayList<AttributeValueNode>();
         List<Attribute> flowAttributes = new ArrayList<>();
-        skipWhitespace();
+        skipWhitespaceAndNewlines();
 
         while (!isAtEnd() && !match(Type.CLOSE_ANGLE_BRACKET, Type.SLASH)) {
+            // Also check for >= which gets tokenized as COMPARATOR but means we're at the end
+            if (match(Type.COMPARATOR) && peek().value().startsWith(">"))
+                break;
+
             // Check for dynamic attribute with curly braces
             if (match(Type.OPEN_EXPRESSION)) {
                 var expr = parseMustacheExpression();
                 attributes.add(new ExpressionAttributeNode(expr));
 
-                skipWhitespace();
+                skipWhitespaceAndNewlines();
                 continue;
             }
 
@@ -883,7 +970,7 @@ public class Parser {
                 }
             }
 
-            skipWhitespace();
+            skipWhitespaceAndNewlines();
         }
 
         return new ParsedAttributes(attributes, flowAttributes);
@@ -918,18 +1005,18 @@ public class Parser {
 
                 // Parse index variable
                 if (!match(Type.VARIABLE))
-                    throw new ParserException("Expected index variable after comma in each block", peek(), pos);
+                    throw error("Expected index variable after comma in each block");
 
                 var indexVar = parseVariable();
                 if (!(indexVar instanceof VariableNode indexVarNode))
-                    throw new ParserException("Expected variable for index in each block", peek(), pos);
+                    throw error("Expected variable for index in each block");
 
                 indexName = indexVarNode.name();
                 skipWhitespace();
 
                 // Expect "in" keyword
                 if (!consumeSymbol(Type.KEYWORD, KEYWORD_IN))
-                    throw new ParserException("Expected 'in' keyword in each block", peek(), pos);
+                    throw error("Expected 'in' keyword in each block");
 
                 skipWhitespace();
 
@@ -938,7 +1025,7 @@ public class Parser {
 
                 // Extract item name from first variable
                 if (!(firstVar instanceof VariableNode itemVarNode))
-                    throw new ParserException("Expected variable for item in each block", peek(), pos);
+                    throw error("Expected variable for item in each block");
                 itemName = itemVarNode.name();
             }
             // Check for "in" keyword
@@ -950,7 +1037,7 @@ public class Parser {
 
                 // Extract item name from first variable
                 if (!(firstVar instanceof VariableNode itemVarNode))
-                    throw new ParserException("Expected variable for item in each block", peek(), pos);
+                    throw error("Expected variable for item in each block");
                 itemName = itemVarNode.name();
             }
             // Old syntax or just collection: "{{each $collection}}" or "{{each $collection itemName}}"
@@ -964,7 +1051,7 @@ public class Parser {
                 }
             }
         } else {
-            throw new ParserException("Expected variable in each block", peek(), pos);
+            throw error("Expected variable in each block");
         }
 
         skipWhitespace();
@@ -1077,13 +1164,28 @@ public class Parser {
 
     private Token expect(Type type, String message) {
         if (!match(type))
-            throw new ParserException(message, peek(), pos);
+            throw error(message);
 
         return advance();
     }
 
+    /**
+     * Create a ParserException with source context
+     */
+    private ParserException error(String message) {
+        return new ParserException(message, peek(), pos, source);
+    }
+
     private void skipWhitespace() {
         while (match(Type.SPACER))
+            advance();
+    }
+
+    /**
+     * Skip all whitespace including newlines
+     */
+    private void skipWhitespaceAndNewlines() {
+        while (match(Type.SPACER, Type.NEW_LINE))
             advance();
     }
 

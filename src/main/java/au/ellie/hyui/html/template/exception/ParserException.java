@@ -32,9 +32,94 @@ public class ParserException extends RuntimeException {
      */
     public final int index;
 
+    /**
+     * The source template text (optional)
+     */
+    private final String source;
+
+    /**
+     * Create a parser exception with position information
+     */
     public ParserException(String message, Token token, int index) {
-        super(message);
+        this(message, token, index, null);
+    }
+
+    /**
+     * Create a parser exception with position information and source text
+     */
+    public ParserException(String message, Token token, int index, String source) {
+        super(formatMessage(message, token, index, source));
         this.token = token;
         this.index = index;
+        this.source = source;
+    }
+
+    /**
+     * Format the exception message with line/column information and source preview
+     */
+    private static String formatMessage(String message, Token token, int index, String source) {
+        if (source == null || token == null) {
+            return String.format("%s at position %d (token: %s)", message, index, token);
+        }
+
+        int position = token.position();
+        var lineCol = getLineAndColumn(source, position);
+        int line = lineCol[0];
+        int col = lineCol[1];
+
+        // Get the line content and create a caret pointer
+        String lineContent = getLine(source, position);
+        String caret = " ".repeat(Math.max(0, col - 1)) + "^";
+
+        return String.format(
+            "%s at line %d, column %d\n" +
+            "  %s\n" +
+            "  %s",
+            message, line, col, lineContent, caret
+        );
+    }
+
+    /**
+     * Calculate line and column number from character position
+     * @return array with [line, column] (1-based)
+     */
+    private static int[] getLineAndColumn(String source, int position) {
+        int line = 1;
+        int col = 1;
+
+        for (int i = 0; i < position && i < source.length(); i++) {
+            if (source.charAt(i) == '\n') {
+                line++;
+                col = 1;
+            } else {
+                col++;
+            }
+        }
+
+        return new int[]{line, col};
+    }
+
+    /**
+     * Extract the line containing the given position
+     */
+    private static String getLine(String source, int position) {
+        if (position < 0 || position >= source.length()) {
+            return "";
+        }
+
+        // Find start of line
+        int start = position;
+        while (start > 0 && source.charAt(start - 1) != '\n') {
+            start--;
+        }
+
+        // Find end of line
+        int end = position;
+        while (end < source.length() && source.charAt(end) != '\n') {
+            end++;
+        }
+
+        // Extract line and replace tabs with spaces for better display
+        return source.substring(start, end).replace('\t', ' ');
     }
 }

@@ -417,12 +417,34 @@ public class Evaluator {
     }
 
     /**
+     * HTML void elements that should be self-closing when empty.
+     * These are elements that cannot have any content.
+     */
+    private static final java.util.Set<String> VOID_ELEMENTS = java.util.Set.of(
+            "area", "base", "br", "col", "embed", "hr", "img", "input",
+            "link", "meta", "param", "source", "track", "wbr"
+    );
+
+    /**
      * Evaluate a component as a string without processing it as a component.
      *
      * @param component The component element node to evaluate as a string.
      * @return The resulting string representation of the component.
      */
     private String evaluateComponentString(ComponentBlockNode component) {
+        // Void elements should ALWAYS be self-closing (they cannot have children)
+        boolean isVoid = VOID_ELEMENTS.contains(component.tag().toLowerCase());
+
+        // Check if element is completely empty (no children, no attributes)
+        boolean isEmpty = component.children().isEmpty();
+        boolean hasNoAttributes = component.attributes().isEmpty();
+
+        // Skip rendering completely empty non-void elements with no attributes
+        // These cause flexbox layout issues and are typically unintentional
+        if (!isVoid && isEmpty && hasNoAttributes) {
+            return "";
+        }
+
         var sb = new StringBuilder();
         sb.append("<").append(component.tag());
 
@@ -432,15 +454,18 @@ public class Evaluator {
                 sb.append(" ").append(attrStr);
         }
 
-        if (component.children().isEmpty())
-            sb.append("/");
+        if (isVoid) {
+            sb.append("/>");
+            return sb.toString();
+        }
+
+        // Non-void elements always have opening and closing tags
         sb.append(">");
 
         for (Node child : component.children())
             sb.append(evaluateNode(child));
 
-        if (!component.children().isEmpty())
-            sb.append("</").append(component.tag()).append(">");
+        sb.append("</").append(component.tag()).append(">");
 
         return sb.toString();
     }
