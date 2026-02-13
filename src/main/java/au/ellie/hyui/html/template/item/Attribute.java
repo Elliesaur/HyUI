@@ -22,8 +22,10 @@ import au.ellie.hyui.html.template.item.Node.AttributeValueNode;
 import au.ellie.hyui.html.template.item.Node.BlockNode.EachBlockNode;
 import au.ellie.hyui.html.template.item.Node.BlockNode.IfBlockNode;
 import au.ellie.hyui.html.template.item.Node.ExpressionNode;
+import au.ellie.hyui.utils.StringReader;
 
 import java.util.List;
+import java.util.Map;
 
 public interface Attribute {
 
@@ -80,6 +82,37 @@ public interface Attribute {
             }
 
             return result;
+        }
+    }
+
+    /**
+     * Parse inline attributes from evaluated expression content.
+     *
+     * @param content The evaluated content containing attributes
+     * @param context The context map to add attributes to
+     */
+    static void inlineAttributes(String content, Map<String, Object> context) {
+        var reader = new StringReader(content.trim());
+
+        while (reader.hasNext()) {
+            reader.skipWhitespace();
+            if (!reader.hasNext())
+                break;
+
+            // Read attribute name (until whitespace or '=')
+            var name = reader.readWhile(c -> !Character.isWhitespace(c) && c != '=');
+            if (name.isEmpty())
+                break;
+
+            reader.skipWhitespace();
+
+            // Switch between flag and key-value attribute
+            if (reader.consume('=')) {
+                reader.skipWhitespace();
+
+                context.put(name, reader.readValue());
+            } else
+                context.put(name, true);
         }
     }
 }

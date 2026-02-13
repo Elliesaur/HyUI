@@ -45,10 +45,10 @@ import au.ellie.hyui.utils.ReflectionUtils;
 import java.util.*;
 import java.util.function.Supplier;
 
+import static au.ellie.hyui.html.template.item.Attribute.inlineAttributes;
 import static au.ellie.hyui.html.template.item.Symbols.SCOPE_COMPONENT_PREFIX;
 import static au.ellie.hyui.html.template.item.Symbols.SCOPE_EACH_NAME;
-import static au.ellie.hyui.utils.ObjectUtils.toBoolean;
-import static au.ellie.hyui.utils.ObjectUtils.toIterable;
+import static au.ellie.hyui.utils.ObjectUtils.*;
 
 public class Evaluator {
     private final static Stack<String> STACK = new Stack<>();
@@ -178,8 +178,8 @@ public class Evaluator {
             case Symbols.GREATER_THAN_EQUALS -> evaluateComparison(node, left, right.get()) >= 0;
             case Symbols.AND -> toBoolean(left) && toBoolean(right.get());
             case Symbols.OR -> toBoolean(left) || toBoolean(right.get());
-            case Symbols.KEYWORD_IN -> evaluateIn(left, right.get());
-            case Symbols.KEYWORD_NOT_IN -> !evaluateIn(left, right.get());
+            case Symbols.KEYWORD_IN -> containedIn(left, right.get());
+            case Symbols.KEYWORD_NOT_IN -> !containedIn(left, right.get());
             default -> throw new EvaluationException("Unknown operator " + node.operator(), node);
         };
     }
@@ -348,7 +348,7 @@ public class Evaluator {
                 case ExpressionAttributeNode expressionAttributeNode -> {
                     var evaluatedValue = evaluateNode(expressionAttributeNode.expressions());
                     if (!evaluatedValue.isEmpty())
-                        parseInlineAttributes(evaluatedValue, context);
+                        inlineAttributes(evaluatedValue, context);
                 }
                 case FlagAttributeNode _ -> context.put(attribute.getName(), true);
             }
@@ -456,88 +456,5 @@ public class Evaluator {
         }
 
         return sb.toString();
-    }
-
-    /**
-     * Parse inline attributes from evaluated expression content.
-     *
-     * @param content The evaluated content containing attributes
-     * @param context The context map to add attributes to
-     */
-    private void parseInlineAttributes(String content, Map<String, Object> context) {
-        var trimmed = content.trim();
-        var len = trimmed.length();
-        var i = 0;
-
-        while (i < len) {
-            while (i < len && Character.isWhitespace(trimmed.charAt(i)))
-                i++;
-
-            if (i >= len)
-                break;
-
-            var nameStart = i;
-
-            // Skip whitespaces
-            while (i < len && !Character.isWhitespace(trimmed.charAt(i)) && trimmed.charAt(i) != '=')
-                i++;
-
-            String name = trimmed.substring(nameStart, i);
-            if (name.isEmpty())
-                break;
-
-            // Skip whitespaces
-            while (i < len && Character.isWhitespace(trimmed.charAt(i)))
-                i++;
-
-            if (i < len && trimmed.charAt(i) == '=') {
-
-                do i++;
-                while (i < len && Character.isWhitespace(trimmed.charAt(i)));
-
-                // Read value
-                String value;
-                if (i < len && (trimmed.charAt(i) == '"' || trimmed.charAt(i) == '\'')) {
-                    var quote = trimmed.charAt(i++);
-                    nameStart = i;
-
-                    // Find closing quote
-                    while (i < len && trimmed.charAt(i) != quote)
-                        i++;
-
-                    value = trimmed.substring(nameStart, i);
-
-                    // Skip closing quote
-                    if (i < len)
-                        i++;
-                } else {
-                    // Unquoted value - read until whitespace
-                    int valueStart = i;
-                    while (i < len && !Character.isWhitespace(trimmed.charAt(i)))
-                        i++;
-
-                    value = trimmed.substring(valueStart, i);
-                }
-
-                context.put(name, value);
-            } else
-                context.put(name, true);
-        }
-    }
-
-    /**
-     * Evaluate if needle is in haystack.
-     *
-     * @param needle   Object to search for
-     * @param haystack Object to search in
-     * @return True if needle is in haystack, false otherwise
-     */
-    private boolean evaluateIn(Object needle, Object haystack) {
-        return switch (haystack) {
-            case Collection<?> collection -> collection.contains(needle);
-            case Map<?, ?> map -> map.containsKey(needle);
-            case String str when needle != null -> str.contains(needle.toString());
-            case null, default -> false;
-        };
     }
 }

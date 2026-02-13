@@ -60,4 +60,20 @@ public class ObjectUtils {
 
         throw new RuntimeException("Cannot iterate over " + value.getClass());
     }
+
+    /**
+     * Evaluate if needle is in haystack.
+     *
+     * @param needle   Object to search for
+     * @param haystack Object to search in
+     * @return True if needle is in haystack, false otherwise
+     */
+    public static boolean containedIn(Object needle, Object haystack) {
+        return switch (haystack) {
+            case Collection<?> collection -> collection.contains(needle);
+            case Map<?, ?> map -> map.containsKey(needle);
+            case String str when needle != null -> str.contains(needle.toString());
+            case null, default -> false;
+        };
+    }
 }
