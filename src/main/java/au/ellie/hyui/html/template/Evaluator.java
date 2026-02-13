@@ -355,6 +355,11 @@ public class Evaluator {
                             var value = evaluateExpression(expr);
                             if (value != null)
                                 builder.append(value);
+                        } else if (part instanceof Node node) {
+                            // Handle inline blocks (e.g., IfBlockNode)
+                            var value = evaluateNode(node);
+                            if (value != null && !value.isEmpty())
+                                builder.append(value);
                         }
                     }
 
@@ -460,6 +465,11 @@ public class Evaluator {
                     else if (part instanceof ExpressionNode expr) {
                         var value = evaluateExpression(expr);
                         if (value != null)
+                            builder.append(value);
+                    } else if (part instanceof Node node) {
+                        // Handle inline blocks (e.g., IfBlockNode)
+                        var value = evaluateNode(node);
+                        if (value != null && !value.isEmpty())
                             builder.append(value);
                     }
                 }

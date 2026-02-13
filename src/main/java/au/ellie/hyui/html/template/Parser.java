@@ -256,6 +256,98 @@ public class Parser {
     }
 
     /**
+     * Parse an inline if block within an attribute value
+     * <pre>
+     *   {{if condition}}value{{else}}otherValue{{/if}}
+     * </pre>
+     */
+    private Node parseInlineIfBlock() {
+        // Parse condition
+        var control = parseIfAttributeValue(Type.CLOSE_EXPRESSION);
+
+        // Parse then part
+        var thenParts = new ArrayList<Node>();
+        var builder = new StringBuilder();
+
+        while (!isAtEnd()) {
+            if (consume(Type.OPEN_EXPRESSION)) {
+                skipWhitespace();
+
+                // Check for else or end
+                if (consumeSymbol(Type.KEYWORD, KEYWORD_ELSE)) {
+                    skipWhitespace();
+                    expect(Type.CLOSE_EXPRESSION, "Expected '}}' after else");
+                    // Add remaining text
+                    if (!builder.isEmpty()) {
+                        thenParts.add(new TextNode(builder.toString()));
+                    }
+                    break;
+                }
+
+                if (consume(Type.SLASH)) {
+                    skipWhitespace();
+                    if (consumeSymbol(Type.KEYWORD, KEYWORD_IF)) {
+                        skipWhitespace();
+                        expect(Type.CLOSE_EXPRESSION, "Expected '}}' after closing if tag");
+                        // Add remaining text
+                        if (!builder.isEmpty()) {
+                            thenParts.add(new TextNode(builder.toString()));
+                        }
+                        // Return if block with empty else
+                        return new IfBlockNode(control.condition(), thenParts, List.of());
+                    }
+                    // Not /if, so restore and treat {{ and / as text
+                    builder.append("{{").append("/");
+                } else {
+                    // Not a control keyword, treat {{ as text
+                    builder.append("{{");
+                }
+            } else if (match(Type.QUOTE)) {
+                // Hit the closing quote of the attribute - this is an error
+                throw new ParserException("Unclosed inline if block in attribute value", peek(), pos);
+            } else {
+                builder.append(advance().value());
+            }
+        }
+
+        // Parse else part
+        var elseParts = new ArrayList<Node>();
+        builder.setLength(0);
+
+        while (!isAtEnd()) {
+            if (consume(Type.OPEN_EXPRESSION)) {
+                skipWhitespace();
+
+                if (consume(Type.SLASH)) {
+                    skipWhitespace();
+                    if (consumeSymbol(Type.KEYWORD, KEYWORD_IF)) {
+                        skipWhitespace();
+                        expect(Type.CLOSE_EXPRESSION, "Expected '}}' after closing if tag");
+                        // Add remaining text
+                        if (!builder.isEmpty()) {
+                            elseParts.add(new TextNode(builder.toString()));
+                        }
+                        // Return if block
+                        return new IfBlockNode(control.condition(), thenParts, elseParts);
+                    }
+                    // Not /if, so treat {{ and / as text
+                    builder.append("{{").append("/");
+                } else {
+                    // Not a control keyword, treat {{ as text
+                    builder.append("{{");
+                }
+            } else if (match(Type.QUOTE)) {
+                // Hit the closing quote of the attribute - this is an error
+                throw new ParserException("Unclosed inline if block in attribute value", peek(), pos);
+            } else {
+                builder.append(advance().value());
+            }
+        }
+
+        throw new ParserException("Unclosed inline if block in attribute value", peek(), pos);
+    }
+
+    /**
      * Parse an expression (variable, property access, operators, etc.)
      */
     private ExpressionNode parseExpression() {
@@ -358,13 +450,29 @@ public class Parser {
         if (match(Type.NUMBER))
             return parseNumberLiteral();
 
+        // Backslash followed by quote - escaped string literal
+        if (match(Type.BACK_SLASH) && matchNext(Type.QUOTE)) {
+            advance(); // consume backslash
+            return parseStringLiteral(Type.QUOTE, true);
+        }
+
+        // Backslash followed by single quote - escaped single-quoted string literal
+        if (match(Type.BACK_SLASH) && matchNext(Type.SINGLE_QUOTE)) {
+            advance(); // consume backslash
+            return parseStringLiteral(Type.SINGLE_QUOTE, true);
+        }
+
         // Backslash
         if (consume(Type.BACK_SLASH))
             return new LiteralNode(advance().value());
 
-        // String literals
+        // String literals with double quotes
         if (match(Type.QUOTE))
-            return parseStringLiteral();
+            return parseStringLiteral(Type.QUOTE, false);
+
+        // String literals with single quotes
+        if (match(Type.SINGLE_QUOTE))
+            return parseStringLiteral(Type.SINGLE_QUOTE, false);
 
         // Variables and property access
         if (match(Type.VARIABLE))
@@ -421,17 +529,35 @@ public class Parser {
 
     /**
      * Parse a string literal
+     *
+     * @param quoteType The type of quote used (QUOTE or SINGLE_QUOTE)
+     * @param escaped Whether the string started with an escaped quote (\")
      */
-    private LiteralNode parseStringLiteral() {
-        advance(); // consume opening "
+    private LiteralNode parseStringLiteral(Type quoteType, boolean escaped) {
+        advance(); // consume opening quote
 
         var builder = new StringBuilder();
-        while (!isAtEnd() && !match(Type.QUOTE)) {
-            consume(Type.BACK_SLASH);
-            builder.append(advance().value());
-        }
+        while (!isAtEnd()) {
+            // Check for end of string
+            if (escaped && match(Type.BACK_SLASH) && matchNext(quoteType)) {
+                // Escaped string ends with \' or \"
+                advance(); // consume backslash
+                advance(); // consume quote
+                break;
+            } else if (!escaped && match(quoteType)) {
+                // Normal string ends with ' or "
+                advance(); // consume quote
+                break;
+            }
 
-        expect(Type.QUOTE, "Expected closing quote");
+            // Handle escaped characters within the string
+            if (match(Type.BACK_SLASH) && matchNext(quoteType)) {
+                advance(); // consume backslash
+                builder.append(advance().value()); // append the quote character
+            } else {
+                builder.append(advance().value());
+            }
+        }
 
         return new LiteralNode(builder.toString());
     }
@@ -717,10 +843,17 @@ public class Parser {
                                 builder.setLength(0);
                             }
 
-                            parts.add(parseExpression());
-
                             skipWhitespace();
-                            expect(Type.CLOSE_EXPRESSION, "Expected '}}' in attribute value");
+
+                            // Check if this is an inline if block
+                            if (consumeSymbol(Type.KEYWORD, KEYWORD_IF)) {
+                                parts.add(parseInlineIfBlock());
+                            } else {
+                                parts.add(parseExpression());
+
+                                skipWhitespace();
+                                expect(Type.CLOSE_EXPRESSION, "Expected '}}' in attribute value");
+                            }
                         } else
                             builder.append(advance().value());
                     }
@@ -919,6 +1052,17 @@ public class Parser {
 
         for (var type : types)
             if (peek().type() == type)
+                return true;
+
+        return false;
+    }
+
+    private boolean matchNext(Type... types) {
+        if (pos + 1 >= tokens.size())
+            return false;
+
+        for (var type : types)
+            if (tokens.get(pos + 1).type() == type)
                 return true;
 
         return false;

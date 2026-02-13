@@ -147,6 +147,28 @@ class TemplateProcessorTest {
             assertEquals("Hello \"World\"", processor.process());
         }
 
+        @Test
+        @DisplayName("Should handle single-quoted string literals")
+        void singleQuotedStringLiterals() {
+            processor.setTemplate("{{'Hello World'}}");
+            assertEquals("Hello World", processor.process());
+
+            processor.setTemplate("{{'Hello \\'World\\''}}");
+            assertEquals("Hello 'World'", processor.process());
+        }
+
+        @Test
+        @DisplayName("Should handle single quotes in comparisons")
+        void singleQuotesInComparisons() {
+            processor.setVariable("name", "Alice");
+            processor.setTemplate("{{if $name == 'Alice'}}Match{{else}}No match{{/if}}");
+            assertEquals("Match", processor.process());
+
+            processor.setVariable("name", "Bob");
+            processor.setTemplate("{{if $name == 'Alice'}}Match{{else}}No match{{/if}}");
+            assertEquals("No match", processor.process());
+        }
+
         @ParameterizedTest
         @CsvSource({"{{42}}", "{{3.14}}", "{{-5}}"})
         @DisplayName("Should handle numeric literals")
@@ -872,6 +894,65 @@ class TemplateProcessorTest {
             assertFalse(result.contains(">A<"));
             assertTrue(result.contains(">B<"));
             assertFalse(result.contains(">C<"));
+        }
+
+        @Test
+        @DisplayName("Should handle inline if blocks in attribute values")
+        void inlineIfInAttributeValue() {
+            processor.setVariable("mode", "sell");
+
+            processor.setTemplate("<button type=\"{{if $mode == \\\"sell\\\"}}Primary{{else}}Slate{{/if}}\">Action</button>");
+
+            String result = processor.process();
+            assertTrue(result.contains("type=\"Primary\""));
+            assertFalse(result.contains("Slate"));
+        }
+
+        @Test
+        @DisplayName("Should handle inline if blocks in attribute values with different condition")
+        void inlineIfInAttributeValueAlternate() {
+            processor.setVariable("mode", "buy");
+
+            processor.setTemplate("<button type=\"{{if $mode == \\\"sell\\\"}}Primary{{else}}Slate{{/if}}\">Action</button>");
+
+            String result = processor.process();
+            assertTrue(result.contains("type=\"Slate\""));
+            assertFalse(result.contains("Primary"));
+        }
+
+        @Test
+        @DisplayName("Should handle inline if blocks with single quotes in attribute values")
+        void inlineIfWithSingleQuotesInAttributeValue() {
+            processor.setVariable("mode", "sell");
+
+            processor.setTemplate("<button type=\"{{if $mode == 'sell'}}Primary{{else}}Slate{{/if}}\">Action</button>");
+
+            String result = processor.process();
+            assertTrue(result.contains("type=\"Primary\""));
+            assertFalse(result.contains("Slate"));
+        }
+
+        @Test
+        @DisplayName("Should handle inline if blocks with single quotes - else branch")
+        void inlineIfWithSingleQuotesInAttributeValueElse() {
+            processor.setVariable("mode", "buy");
+
+            processor.setTemplate("<button type=\"{{if $mode == 'sell'}}Primary{{else}}Slate{{/if}}\">Action</button>");
+
+            String result = processor.process();
+            assertTrue(result.contains("type=\"Slate\""));
+            assertFalse(result.contains("Primary"));
+        }
+
+        @Test
+        @DisplayName("Should handle inline if blocks without else in attribute values")
+        void inlineIfWithoutElseInAttributeValue() {
+            processor.setVariable("active", true);
+
+            processor.setTemplate("<div class=\"base {{if $active}}active{{/if}}\">Content</div>");
+
+            String result = processor.process();
+            assertTrue(result.contains("class=\"base active\""));
         }
     }
 
