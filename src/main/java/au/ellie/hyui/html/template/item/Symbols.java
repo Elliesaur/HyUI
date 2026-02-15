@@ -18,6 +18,8 @@
 
 package au.ellie.hyui.html.template.item;
 
+import java.util.Set;
+
 public class Symbols {
 
     // Template delimiters
@@ -62,16 +64,14 @@ public class Symbols {
     // List of all comparators
     public final static String[] COMPARATORS = new String[]{
             EQUALS,
-            NOT_EQUALS,
-            GREATER_THAN_EQUALS,
-            LESS_THAN_EQUALS,
+            NOT_EQUALS
     };
 
     // Keywords
     public final static String KEYWORD_NOT_IN = "not in";
     public final static String KEYWORD_IN = "in";
 
-    public final static String KEYWORD_EACH = "each";
+    public final static String KEYWORD_FOR = "for";
     public final static String KEYWORD_ELSE_IF = "else-if";
     public final static String KEYWORD_ELSE = "else";
     public final static String KEYWORD_IF = "if";
@@ -83,7 +83,7 @@ public class Symbols {
     public final static String[] KEYWORDS = new String[]{
             KEYWORD_NOT_IN,
             KEYWORD_IN,
-            KEYWORD_EACH,
+            KEYWORD_FOR,
             KEYWORD_ELSE_IF,
             KEYWORD_ELSE,
             KEYWORD_IF,
@@ -91,12 +91,27 @@ public class Symbols {
             KEYWORD_TRUE,
     };
 
+    public final static Set<String> KEYWORD_CONDITIONALS = Set.of(
+            KEYWORD_ELSE_IF,
+            KEYWORD_ELSE,
+            KEYWORD_IF
+    );
+
     // Html slot related symbols
+    public static final String HTML_TAG_TEMPLATE = "template";
+    public static final String HTML_TAG_SLOT = "slot";
+
     public static final String HTML_SLOT_DEFAULT = "default";
     public static final String HTML_SLOT_KEY = "slot:";
 
     // Scope names
     public static final String SCOPE_COMPONENT_PREFIX = "component:";
     public static final String SCOPE_ROOT_NAME = "root";
-    public static final String SCOPE_EACH_NAME = "each";
+    public static final String SCOPE_FOR_NAME = "for";
+
+    // Void elements that do not require a closing tag
+    public static final java.util.Set<String> VOID_ELEMENTS = java.util.Set.of(
+            "area", "base", "br", "col", "embed", "hr", "img", "input",
+            "link", "meta", "param", "source", "track", "wbr"
+    );
 }

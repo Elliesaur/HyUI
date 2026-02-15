@@ -20,6 +20,8 @@ package au.ellie.hyui.html.template.exception;
 
 import au.ellie.hyui.html.template.item.Token;
 
+import javax.annotation.Nonnull;
+
 public class ParserException extends RuntimeException {
 
     /**
@@ -28,72 +30,80 @@ public class ParserException extends RuntimeException {
     public final Token token;
 
     /**
-     * The index of the token in the original template string
-     */
-    public final int index;
-
-    /**
      * The source template text (optional)
      */
-    private final String source;
+    public final String source;
 
     /**
      * Create a parser exception with position information
+     *
+     * @param message The error message
+     * @param token   The token where the error occurred
      */
-    public ParserException(String message, Token token, int index) {
-        this(message, token, index, null);
+    public ParserException(String message, @Nonnull Token token) {
+        this(message, token, null);
     }
 
     /**
      * Create a parser exception with position information and source text
+     *
+     * @param message The error message
+     * @param token   The token where the error occurred
+     * @param source  The original template source text (used for line/column info)
      */
-    public ParserException(String message, Token token, int index, String source) {
-        super(formatMessage(message, token, index, source));
+    public ParserException(String message, Token token, String source) {
+        super(formatMessage(message, token, source));
         this.token = token;
-        this.index = index;
         this.source = source;
     }
 
     /**
-     * Format the exception message with line/column information and source preview
+     * Format the exception message. If source is provided, include line
+     * and column information with a caret pointing to the error location
+     *
+     * @param message The error message
+     * @param token   The token where the error occurred
+     * @param source  The original template source text (optional)
      */
-    private static String formatMessage(String message, Token token, int index, String source) {
-        if (source == null || token == null) {
-            return String.format("%s at position %d (token: %s)", message, index, token);
-        }
+    private static String formatMessage(String message, Token token, String source) {
+        var position = token.position();
+        if (source == null)
+            return String.format("%s at position %d (token: %s)", message, position, token);
 
-        int position = token.position();
         var lineCol = getLineAndColumn(source, position);
-        int line = lineCol[0];
-        int col = lineCol[1];
+        var line = lineCol[0];
+        var col = lineCol[1];
 
         // Get the line content and create a caret pointer
-        String lineContent = getLine(source, position);
-        String caret = " ".repeat(Math.max(0, col - 1)) + "^";
+        var lineContent = getLine(source, position);
+        var caret = " ".repeat(Math.max(0, col - 1)) + "^";
 
-        return String.format(
-            "%s at line %d, column %d\n" +
-            "  %s\n" +
-            "  %s",
-            message, line, col, lineContent, caret
+        return String.format("""
+                        %s at line %d, column %d
+                          %s
+                          %s
+                        """,
+                message, line, col, lineContent, caret
         );
     }
 
     /**
      * Calculate line and column number from character position
+     *
+     * @param source   The original template source text
+     * @param position The character index in the source text (0-based)
      * @return array with [line, column] (1-based)
      */
     private static int[] getLineAndColumn(String source, int position) {
-        int line = 1;
-        int col = 1;
+        var line = 1;
+        var col = 1;
 
-        for (int i = 0; i < position && i < source.length(); i++) {
+        for (var i = 0; i < position && i < source.length(); i++) {
             if (source.charAt(i) == '\n') {
                 line++;
                 col = 1;
-            } else {
+            } else
                 col++;
-            }
         }
 
         return new int[]{line, col};
@@ -101,25 +111,25 @@ public class ParserException extends RuntimeException {
 
     /**
      * Extract the line containing the given position
+     *
+     * @param source   The original template source text
+     * @param position The character index in the source text (0-based)
      */
     private static String getLine(String source, int position) {
-        if (position < 0 || position >= source.length()) {
+        if (position < 0 || position >= source.length())
             return "";
-        }
 
         // Find start of line
-        int start = position;
-        while (start > 0 && source.charAt(start - 1) != '\n') {
+        var start = position;
+        while (start > 0 && source.charAt(start - 1) != '\n')
             start--;
-        }
 
         // Find end of line
-        int end = position;
-        while (end < source.length() && source.charAt(end) != '\n') {
+        var end = position;
+        while (end < source.length() && source.charAt(end) != '\n')
             end++;
-        }
 
-        // Extract line and replace tabs with spaces for better display
-        return source.substring(start, end).replace('\t', ' ');
+        return source.substring(start, end)
+                .replace('\t', ' ');
     }
 }

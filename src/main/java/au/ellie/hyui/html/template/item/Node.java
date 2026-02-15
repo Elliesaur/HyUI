@@ -72,15 +72,18 @@ public interface Node {
 
     interface BlockNode extends Node {
         /**
-         * Represents an if control structure
+         * Represents an if / else-if / else control structure
          */
-        record IfBlockNode(ExpressionNode condition, List<Node> thenBody, List<Node> elseBody) implements BlockNode {
+        record ConditionalBlockNode(String name, List<ConditionalBranch> branches) implements BlockNode {
+            public record ConditionalBranch(ExpressionNode condition, List<Node> body) {
+            }
         }
 
         /**
          * Represents an `each` control structure
          */
-        record EachBlockNode(String itemName, String indexName, ExpressionNode collection, List<Node> body) implements BlockNode {
+        record ForBlockNode(String itemName, String indexName, ExpressionNode collection,
+                            List<Node> body) implements BlockNode {
         }
 
         /**

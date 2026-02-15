@@ -32,8 +32,8 @@ import au.ellie.hyui.html.template.item.Node.AttributeValueNode.ExpressionAttrib
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode.FlagAttributeNode;
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode.MixedAttributeNode;
 import au.ellie.hyui.html.template.item.Node.BlockNode.ComponentBlockNode;
-import au.ellie.hyui.html.template.item.Node.BlockNode.EachBlockNode;
-import au.ellie.hyui.html.template.item.Node.BlockNode.IfBlockNode;
+import au.ellie.hyui.html.template.item.Node.BlockNode.ConditionalBlockNode;
+import au.ellie.hyui.html.template.item.Node.BlockNode.ForBlockNode;
 import au.ellie.hyui.html.template.item.Node.BlockNode.SlotBlockNode;
 import au.ellie.hyui.html.template.item.Node.ExpressionNode;
 import au.ellie.hyui.html.template.item.Node.ExpressionNode.*;
@@ -43,11 +43,11 @@ import au.ellie.hyui.utils.NumericUtils;
 import au.ellie.hyui.utils.ReflectionUtils;
 
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.function.Supplier;
 
 import static au.ellie.hyui.html.template.item.Attribute.inlineAttributes;
-import static au.ellie.hyui.html.template.item.Symbols.SCOPE_COMPONENT_PREFIX;
-import static au.ellie.hyui.html.template.item.Symbols.SCOPE_EACH_NAME;
+import static au.ellie.hyui.html.template.item.Symbols.*;
 import static au.ellie.hyui.utils.ObjectUtils.*;
 
 public class Evaluator {
@@ -96,8 +96,8 @@ public class Evaluator {
                 var value = evaluateExpression(expr);
                 yield value == null ? "" : value.toString();
             }
-            case IfBlockNode ifBlock -> evaluateIfBlock(ifBlock);
-            case EachBlockNode eachBlock -> evaluateEachBlock(eachBlock);
+            case ConditionalBlockNode ifBlock -> evaluateIfBlock(ifBlock);
+            case ForBlockNode eachBlock -> evaluateEachBlock(eachBlock);
             case SlotBlockNode slotBlockNode -> evaluateSlotBlock(slotBlockNode);
             case ComponentBlockNode component -> evaluateComponent(component);
             case AttributeValueNode attributeValueNode -> evaluateAttributeString(attributeValueNode);
@@ -267,19 +267,20 @@ public class Evaluator {
      * @param node The `if` block node to evaluate.
      * @return The resulting string after evaluation.
      */
-    private String evaluateIfBlock(IfBlockNode node) {
-        var conditionValue = evaluateExpression(node.condition());
+    private String evaluateIfBlock(ConditionalBlockNode node) {
+        for (var branch : node.branches()) {
+            var conditionValue = evaluateExpression(branch.condition());
 
-        var result = new StringBuilder();
-        if (toBoolean(conditionValue)) {
-            for (Node child : node.thenBody())
-                result.append(evaluateNode(child));
-        } else {
-            for (Node child : node.elseBody())
-                result.append(evaluateNode(child));
+            if (toBoolean(conditionValue)) {
+                var result = new StringBuilder();
+                for (Node child : branch.body())
+                    result.append(evaluateNode(child));
+
+                return result.toString();
+            }
         }
 
-        return result.toString();
+        return "";
     }
 
     /**
@@ -288,23 +289,30 @@ public class Evaluator {
      * @param node The `each` block node to evaluate.
      * @return The resulting string after evaluation.
      */
-    private String evaluateEachBlock(EachBlockNode node) {
+    private String evaluateEachBlock(ForBlockNode node) {
         var collectionValue = evaluateExpression(node.collection());
 
         if (collectionValue == null)
             return "";
 
+        var index = 0;
         var items = toIterable(collectionValue);
         var result = new StringBuilder();
-        var index = 0;
 
         for (Object item : items) {
-            var scope = new VariableScope(SCOPE_EACH_NAME);
-            scope.putKeyed(node.itemName(), item);
+            var scope = new VariableScope(SCOPE_FOR_NAME);
+            Object itemIndex = index;
 
-            // Add index if indexName is provided
+            // If iterating over a Map, extract key and value
+            if (item instanceof Map.Entry<?, ?>) {
+                itemIndex = ((Entry<?, ?>) item).getKey();
+                item = ((Entry<?, ?>) item).getValue();
+            }
+
+            // Add item and optionally index to scope
+            scope.putKeyed(node.itemName(), item);
             if (node.indexName() != null)
-                scope.putKeyed(node.indexName(), index);
+                scope.putKeyed(node.indexName(), itemIndex);
 
             contextStack.pushScope(scope);
             try {
@@ -327,17 +335,20 @@ public class Evaluator {
      * @return The resulting string after evaluation.
      */
     private String evaluateComponent(ComponentBlockNode component) {
-        var componentDef = component.tag();
+        var tagName = component.tag();
 
-        // Handle <template> tag as renderless wrapper - just render children
-        if (componentDef.equals("template")) {
+        // Handle template tag as renderless wrapper
+        if (tagName.equals(Symbols.HTML_TAG_TEMPLATE)) {
             var result = new StringBuilder();
             for (Node child : component.children())
                 result.append(evaluateNode(child));
+
             return result.toString();
         }
 
-        if (!components.containsKey(componentDef) || STACK.contains(componentDef))
+        // Tag is not a registered component, or is already being evaluated (prevent infinite recursion)
+        // and should be rendered as normal HTML element instead
+        if (!components.containsKey(tagName) || STACK.contains(tagName))
             return evaluateComponentString(component);
 
         // Attributes
@@ -351,12 +362,7 @@ public class Evaluator {
                     for (var part : mixedAttr.parts()) {
                         if (part instanceof String text)
                             builder.append(text);
-                        else if (part instanceof ExpressionNode expr) {
-                            var value = evaluateExpression(expr);
-                            if (value != null)
-                                builder.append(value);
-                        } else if (part instanceof Node node) {
-                            // Handle inline blocks (e.g., IfBlockNode)
+                        else if (part instanceof Node node) {
                             var value = evaluateNode(node);
                             if (value != null && !value.isEmpty())
                                 builder.append(value);
@@ -375,7 +381,7 @@ public class Evaluator {
         }
 
         // Children
-        var scope = new VariableScope(SCOPE_COMPONENT_PREFIX + componentDef, context);
+        var scope = new VariableScope(SCOPE_COMPONENT_PREFIX + tagName, context);
         for (var child : component.children()) {
             var slotName = Symbols.HTML_SLOT_DEFAULT;
             if (child instanceof SlotBlockNode slot)
@@ -388,10 +394,10 @@ public class Evaluator {
             }).add(child);
         }
 
-        STACK.push(componentDef);
+        STACK.push(tagName);
         contextStack.pushScope(scope);
         try {
-            var cachedComponent = components.get(componentDef);
+            var cachedComponent = components.get(tagName);
             return evaluate(cachedComponent.getAst());
         } finally {
             STACK.pop();
@@ -417,33 +423,19 @@ public class Evaluator {
     }
 
     /**
-     * HTML void elements that should be self-closing when empty.
-     * These are elements that cannot have any content.
-     */
-    private static final java.util.Set<String> VOID_ELEMENTS = java.util.Set.of(
-            "area", "base", "br", "col", "embed", "hr", "img", "input",
-            "link", "meta", "param", "source", "track", "wbr"
-    );
-
-    /**
      * Evaluate a component as a string without processing it as a component.
      *
      * @param component The component element node to evaluate as a string.
      * @return The resulting string representation of the component.
      */
     private String evaluateComponentString(ComponentBlockNode component) {
-        // Void elements should ALWAYS be self-closing (they cannot have children)
-        boolean isVoid = VOID_ELEMENTS.contains(component.tag().toLowerCase());
-
-        // Check if element is completely empty (no children, no attributes)
-        boolean isEmpty = component.children().isEmpty();
-        boolean hasNoAttributes = component.attributes().isEmpty();
+        var isVoid = VOID_ELEMENTS.contains(component.tag().toLowerCase());
+        var isEmpty = component.children().isEmpty() && component.attributes().isEmpty();
 
         // Skip rendering completely empty non-void elements with no attributes
         // These cause flexbox layout issues and are typically unintentional
-        if (!isVoid && isEmpty && hasNoAttributes) {
+        if (!isVoid && isEmpty)
             return "";
-        }
 
         var sb = new StringBuilder();
         sb.append("<").append(component.tag());
@@ -459,7 +451,6 @@ public class Evaluator {
             return sb.toString();
         }
 
-        // Non-void elements always have opening and closing tags
         sb.append(">");
 
         for (Node child : component.children())
@@ -487,12 +478,7 @@ public class Evaluator {
                 for (var part : mixedAttr.parts()) {
                     if (part instanceof String text)
                         builder.append(text);
-                    else if (part instanceof ExpressionNode expr) {
-                        var value = evaluateExpression(expr);
-                        if (value != null)
-                            builder.append(value);
-                    } else if (part instanceof Node node) {
-                        // Handle inline blocks (e.g., IfBlockNode)
+                    else if (part instanceof Node node) {
                         var value = evaluateNode(node);
                         if (value != null && !value.isEmpty())
                             builder.append(value);

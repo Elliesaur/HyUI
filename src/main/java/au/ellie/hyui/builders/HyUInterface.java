@@ -30,16 +30,14 @@ import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import au.ellie.hyui.HyUIPlugin;
 
 import javax.annotation.Nonnull;
 import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.UUID;
 
 public abstract class HyUInterface implements UIContext {
 
+    private final Set<String> dirtyValueIds = new HashSet<>();
     protected String uiFile;
     protected List<UIElementBuilder<?>> elements;
     protected List<BiConsumer<UICommandBuilder, UIEventBuilder>> editCallbacks;
@@ -49,7 +47,6 @@ public abstract class HyUInterface implements UIContext {
     protected TemplateProcessor templateProcessor;
     private boolean hasBuilt;
     private boolean runtimeTemplateUpdatesEnabled;
-    private final Set<String> dirtyValueIds = new HashSet<>();
 
     public HyUInterface(String uiFile,
                         List<UIElementBuilder<?>> elements,
@@ -87,11 +84,12 @@ public abstract class HyUInterface implements UIContext {
     }
 
     @Override
-    public void updatePage(boolean shouldClose) {}
-
+    public void updatePage(boolean shouldClose) {
+    }
 
     @Override
-    public void updatePageThreadsafe(Player playerComponent, boolean shouldClear) {}
+    public void updatePageThreadsafe(Player playerComponent, boolean shouldClear) {
+    }
 
     public void build(@Nonnull Ref<EntityStore> ref,
                       @Nonnull UICommandBuilder uiCommandBuilder,
@@ -105,7 +103,7 @@ public abstract class HyUInterface implements UIContext {
                       @Nonnull UIEventBuilder uiEventBuilder,
                       @Nonnull Store<EntityStore> store,
                       boolean updateOnly) {
-        
+
         HyUIPlugin.getLog().logFinest("REBUILD: HyUInterface build updateOnly=" + updateOnly);
         HyUIPlugin.getLog().logFinest("Building HyUInterface" + (uiFile != null ? " from file: " + uiFile : ""));
 
@@ -270,13 +268,13 @@ public abstract class HyUInterface implements UIContext {
                     continue;
                 }
 
-                if (listener.type() == CustomUIEventBindingType.Activating || 
-                        listener.type() == CustomUIEventBindingType.Dismissing || 
+                if (listener.type() == CustomUIEventBindingType.Activating ||
+                        listener.type() == CustomUIEventBindingType.Dismissing ||
                         listener.type() == CustomUIEventBindingType.Validating) {
                     ((UIEventListener<Void>) listener).callback().accept(null, context);
                     continue;
                 }
-                if (isSlotEventRelated(listener.type()) || 
+                if (isSlotEventRelated(listener.type()) ||
                         listener.type() == CustomUIEventBindingType.SelectedTabChanged ||
                         listener.type() == CustomUIEventBindingType.MouseButtonReleased ||
                         listener.type() == CustomUIEventBindingType.MouseEntered ||
@@ -295,8 +293,8 @@ public abstract class HyUInterface implements UIContext {
                 if (finalValue != null && userId != null && listener.type() != CustomUIEventBindingType.FocusGained) {
                     //Object previous = elementValues.get(userId);
                     //if (!Objects.equals(previous, finalValue)) {
-                        elementValues.put(userId, finalValue);
-                        dirtyValueIds.add(userId);
+                    elementValues.put(userId, finalValue);
+                    dirtyValueIds.add(userId);
                     //}
                 }
 
@@ -339,7 +337,8 @@ public abstract class HyUInterface implements UIContext {
             case SlotClickPressWhileDragging -> SlotClickPressWhileDraggingEventData.from(data);
             case SelectedTabChanged -> SelectedTabChangedEventData.from(data);
             // Only RightClicking and DoubleClicking has event data, but we wrap it in the same event data.
-            case MouseButtonReleased, MouseEntered, MouseExited, DoubleClicking, RightClicking -> MouseEventData.from(data);
+            case MouseButtonReleased, MouseEntered, MouseExited, DoubleClicking, RightClicking ->
+                    MouseEventData.from(data);
             default -> null;
         };
     }

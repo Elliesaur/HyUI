@@ -8,13 +8,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static au.ellie.hyui.html.template.context.ExecutionPolicy.*;
-import static au.ellie.hyui.html.template.item.Symbols.SCOPE_EACH_NAME;
+import static au.ellie.hyui.html.template.item.Symbols.SCOPE_FOR_NAME;
 import static org.junit.jupiter.api.Assertions.*;
 
 class TemplateProcessorTest {
@@ -200,10 +201,10 @@ class TemplateProcessorTest {
         @DisplayName("Should handle multiple empty elements correctly")
         void multipleEmptyElements() {
             String template = """
-                <div class="flex-1"></div>
-                <div class="flex-2"></div>
-                <div class="flex-3"></div>
-                """;
+                    <div class="flex-1"></div>
+                    <div class="flex-2"></div>
+                    <div class="flex-3"></div>
+                    """;
             String result = processor.setTemplate(template).process();
 
             // All divs should have closing tags
@@ -389,9 +390,9 @@ class TemplateProcessorTest {
             }, NON_NULL);
 
             processor.setTemplate("""
-                    {{each $loop}}
+                    {{for $loop}}
                     {{$secret ?? "disappeared"}}
-                    {{/each}}
+                    {{/for}}
                     """);
             assertEquals(normalize("""
                     This is a value that can only be twice once, 1 remaining
@@ -714,32 +715,42 @@ class TemplateProcessorTest {
     @DisplayName("Conditional Blocks (if)")
     class IfBlocks {
 
-        @Test
-        @DisplayName("Should render content when condition is true")
-        void renderWhenTrue() {
-            processor.setVariable("show", true);
+        @ParameterizedTest
+        @CsvSource({
+                "true, <div>Visible</div>",
+                "false, "
+        })
+        @DisplayName("Should evaluate content based on condition")
+        void renderWhenTrue(boolean show, String excected) {
+            processor.setVariable("show", show);
 
             processor.setTemplate("{{if $show}}<div>Visible</div>{{/if}}");
-            assertEquals("<div>Visible</div>", processor.process());
-        }
-
-        @Test
-        @DisplayName("Should not render content when condition is false")
-        void notRenderWhenFalse() {
-            processor.setVariable("show", false);
-
-            processor.setTemplate("{{if $show}}<div>Hidden</div>{{/if}}");
-            assertEquals("", processor.process());
+            assertEquals(excected == null ? "" : excected, processor.process());
         }
 
         @Test
         @DisplayName("Should evaluate complex conditions")
         void complexConditions() {
-            processor.setVariable("count", 5);
             processor.setVariable("enabled", true);
+            processor.setVariable("count", 5);
 
             processor.setTemplate("{{if $enabled && $count > 3}}<div>Show</div>{{/if}}");
             assertEquals("<div>Show</div>", processor.process());
+        }
+
+        @ParameterizedTest
+        @CsvSource({
+                "true, 5, enabled",
+                "false, 3, biggest",
+                "false, 1, low",
+        })
+        @DisplayName("Should evaluate multiple conditions")
+        void multipleonditions(boolean enabled, int count, String expected) {
+            processor.setVariable("enabled", enabled);
+            processor.setVariable("count", count);
+
+            processor.setTemplate("{{if $enabled}}enabled{{else if $count >= 3}}biggest{{else}}low{{/if}}");
+            assertEquals(expected, processor.process());
         }
 
         @Test
@@ -823,17 +834,17 @@ class TemplateProcessorTest {
             processor.setVariable("score", 85);
 
             processor.setTemplate(normalize("""
-                    <div if="$score >= 90">A</div>
-                    <div else-if="$score >= 80">B</div>
-                    <div else-if="$score >= 70">C</div>
-                    <div else>F</div>
+                    <div if="$score >= 90">=A</div>
+                    <div else-if="$score >= 80">=B</div>
+                    <div else-if="$score >= 70">=C</div>
+                    <div else>=F</div>
                     """));
 
             String result = processor.process();
-            assertFalse(result.contains(">A<"));
-            assertTrue(result.contains(">B<"));
-            assertFalse(result.contains(">C<"));
-            assertFalse(result.contains(">F<"));
+            assertFalse(result.contains(">=A<"));
+            assertTrue(result.contains(">=B<"));
+            assertFalse(result.contains(">=C<"));
+            assertFalse(result.contains(">=F<"));
         }
 
         @Test
@@ -914,17 +925,17 @@ class TemplateProcessorTest {
         }
 
         @Test
-        @DisplayName("Should handle if/else-if/else chains within each loops")
-        void ifElseIfChainInEach() {
+        @DisplayName("Should handle if/else-if/else chains within for loops")
+        void ifElseIfChainInFor() {
             processor.setVariable("scores", List.of(95, 85, 75, 65));
 
             processor.setTemplate(normalize("""
-                    {{each $score, $idx in $scores}}
+                    {{for $score, $idx in $scores}}
                     <div if="$score >= 90">{{$idx}}: A</div>
                     <div else-if="$score >= 80">{{$idx}}: B</div>
                     <div else-if="$score >= 70">{{$idx}}: C</div>
                     <div else>{{$idx}}: F</div>
-                    {{/each}}
+                    {{/for}}
                     """));
 
             String result = processor.process();
@@ -1088,18 +1099,18 @@ class TemplateProcessorTest {
         }
     }
 
-    // ========== EACH BLOCKS ==========
+    // ========== FOR BLOCKS ==========
 
     @Nested
-    @DisplayName("Iteration Blocks (each)")
-    class EachBlocks {
+    @DisplayName("Iteration Blocks (for)")
+    class ForBlocks {
 
         @Test
         @DisplayName("Should iterate with default item name")
         void iterateWithDefaultName() {
             processor.setVariable("items", List.of("A", "B", "C"));
 
-            processor.setTemplate("{{each $items}}{{$item}} {{/each}}");
+            processor.setTemplate("{{for $items}}{{$item}} {{/for}}");
             assertEquals("A B C ", processor.process());
         }
 
@@ -1108,7 +1119,7 @@ class TemplateProcessorTest {
         void iterateWithCustomName() {
             processor.setVariable("items", List.of("A", "B", "C"));
 
-            processor.setTemplate("{{each $items element}}{{$element}} {{/each}}");
+            processor.setTemplate("{{for $element in $items}}{{$element}} {{/for}}");
             assertEquals("A B C ", processor.process());
         }
 
@@ -1117,10 +1128,10 @@ class TemplateProcessorTest {
         void iterateRecords() {
             processor.setVariable("items", List.of(new Item("First", false, "First", 1), new Item("Second", true, "Second", 2)));
 
-            processor.setTemplate("{{each $items}}{{$item.name}}:{{$item.count}} {{/each}}");
+            processor.setTemplate("{{for $items}}{{$item.name}}:{{$item.count}} {{/for}}");
             assertEquals("First:1 Second:2 ", processor.process());
 
-            processor.setTemplate("{{each $items product}}{{$product.name}}:{{$product.count}} {{/each}}");
+            processor.setTemplate("{{for $product in $items}}{{$product.name}}:{{$product.count}} {{/for}}");
             assertEquals("First:1 Second:2 ", processor.process());
         }
 
@@ -1129,7 +1140,7 @@ class TemplateProcessorTest {
         void emptyCollection() {
             processor.setVariable("items", List.of());
 
-            processor.setTemplate("{{each $items}}{{$item}}{{/each}}");
+            processor.setTemplate("{{for $items}}{{$item}}{{/for}}");
             assertEquals("", processor.process());
         }
 
@@ -1139,10 +1150,10 @@ class TemplateProcessorTest {
             processor.setVariable("prefix", "Item");
             processor.setVariable("numbers", List.of(1, 2, 3));
 
-            processor.setTemplate("{{each $numbers}}{{$prefix}} {{$item}} {{/each}}");
+            processor.setTemplate("{{for $numbers}}{{$prefix}} {{$item}} {{/for}}");
             assertEquals("Item 1 Item 2 Item 3 ", processor.process());
 
-            processor.setTemplate("{{each $numbers num}}Number {{$num}} {{/each}}");
+            processor.setTemplate("{{for $num in $numbers}}Number {{$num}} {{/for}}");
             assertEquals("Number 1 Number 2 Number 3 ", processor.process());
         }
 
@@ -1155,12 +1166,12 @@ class TemplateProcessorTest {
             ));
 
             processor.setTemplate(normalize("""
-                    {{each $categories cat}}
+                    {{for $cat in $categories}}
                     {{$cat.name}}:
-                    {{each $cat.items product}}
+                    {{for $product in $cat.items}}
                     - {{$product}}
-                    {{/each}}
-                    {{/each}}
+                    {{/for}}
+                    {{/for}}
                     """));
 
             assertEquals(normalize("""
@@ -1182,7 +1193,7 @@ class TemplateProcessorTest {
                 add("C");
             }});
 
-            processor.setTemplate("{{each $items}}{{$item}},{{/each}}");
+            processor.setTemplate("{{for $items}}{{$item}},{{/for}}");
             assertEquals("A,,C,", processor.process());
         }
 
@@ -1191,7 +1202,7 @@ class TemplateProcessorTest {
         void iterateWithNewSyntaxItemIn() {
             processor.setVariable("items", List.of("A", "B", "C"));
 
-            processor.setTemplate("{{each $elem in $items}}{{$elem}} {{/each}}");
+            processor.setTemplate("{{for $elem in $items}}{{$elem}} {{/for}}");
             assertEquals("A B C ", processor.process());
         }
 
@@ -1200,7 +1211,7 @@ class TemplateProcessorTest {
         void iterateWithNewSyntaxItemIndexIn() {
             processor.setVariable("items", List.of("A", "B", "C"));
 
-            processor.setTemplate("{{each $elem, $i in $items}}{{$i}}:{{$elem}} {{/each}}");
+            processor.setTemplate("{{for $elem, $i in $items}}{{$i}}:{{$elem}} {{/for}}");
             assertEquals("0:A 1:B 2:C ", processor.process());
         }
 
@@ -1209,7 +1220,7 @@ class TemplateProcessorTest {
         void iterateWithIndexDefaultName() {
             processor.setVariable("items", List.of("X", "Y", "Z"));
 
-            processor.setTemplate("{{each $item, $idx in $items}}[{{$idx}}]={{$item}} {{/each}}");
+            processor.setTemplate("{{for $item, $idx in $items}}[{{$idx}}]={{$item}} {{/for}}");
             assertEquals("[0]=X [1]=Y [2]=Z ", processor.process());
         }
 
@@ -1222,12 +1233,12 @@ class TemplateProcessorTest {
             ));
 
             processor.setTemplate(normalize("""
-                    {{each $cat, $i in $categories}}
+                    {{for $cat, $i in $categories}}
                     {{$i}}.{{$cat.name}}:
-                    {{each $item, $j in $cat.items}}
+                    {{for $item, $j in $cat.items}}
                       {{$i}}.{{$j}}: {{$item}}
-                    {{/each}}
-                    {{/each}}
+                    {{/for}}
+                    {{/for}}
                     """));
 
             assertEquals(normalize("""
@@ -1241,30 +1252,57 @@ class TemplateProcessorTest {
         }
 
         @Test
-        @DisplayName("Should support new syntax in attributes: each=\"$item in $items\"")
+        @DisplayName("Should support new syntax in attributes: for=\"$item in $items\"")
         void attributeSyntaxItemIn() {
             processor.setVariable("items", List.of("A", "B", "C"));
 
-            processor.setTemplate("<div each=\"$elem in $items\">{{$elem}}</div>");
+            processor.setTemplate("<div for=\"$elem in $items\">{{$elem}}</div>");
             assertEquals("<div>A</div><div>B</div><div>C</div>", processor.process());
         }
 
         @Test
-        @DisplayName("Should support new syntax in attributes: each=\"$item, $index in $items\"")
+        @DisplayName("Should support new syntax in attributes: for=\"$item, $index in $items\"")
         void attributeSyntaxItemIndexIn() {
             processor.setVariable("items", List.of("A", "B", "C"));
 
-            processor.setTemplate("<div each=\"$elem, $i in $items\">{{$i}}:{{$elem}}</div>");
+            processor.setTemplate("<div for=\"$elem, $i in $items\">{{$i}}:{{$elem}}</div>");
             assertEquals("<div>0:A</div><div>1:B</div><div>2:C</div>", processor.process());
         }
 
         @Test
-        @DisplayName("Should support shorthand syntax in attributes: each=\"$items\"")
+        @DisplayName("Should support shorthand syntax in attributes: for=\"$items\"")
         void attributeSyntaxShorthand() {
             processor.setVariable("items", List.of("A", "B", "C"));
 
-            processor.setTemplate("<div each=\"$items\">{{$item}}</div>");
+            processor.setTemplate("<div for=\"$items\">{{$item}}</div>");
             assertEquals("<div>A</div><div>B</div><div>C</div>", processor.process());
+        }
+
+        @Test
+        @DisplayName("Should support map entry iteration with index")
+        void loopsWithMapIndex() {
+            processor.setVariable("categories", new LinkedHashMap<String, List<String>>() {{
+                put("Fruits", List.of("Apple", "Banana"));
+                put("Vegetables", List.of("Carrot", "Lettuce"));
+            }});
+
+            processor.setTemplate(normalize("""
+                    {{for $items, $cat in $categories}}
+                    {{$cat}}:
+                    {{for $product in $items}}
+                    - {{$product}}
+                    {{/for}}
+                    {{/for}}
+                    """));
+
+            assertEquals(normalize("""
+                    Fruits:
+                    - Apple
+                    - Banana
+                    Vegetables:
+                    - Carrot
+                    - Lettuce
+                    """), processor.process());
         }
     }
 
@@ -1282,7 +1320,7 @@ class TemplateProcessorTest {
                     new Product("Potion", List.of("healing", "mana"))
             ));
             processor.setVariable("tags", (stack) -> {
-                if (!stack.isScope(SCOPE_EACH_NAME))
+                if (!stack.isScope(SCOPE_FOR_NAME))
                     return "";
 
                 String key = stack.getScopeKeys().iterator().next();
@@ -1294,9 +1332,9 @@ class TemplateProcessorTest {
             }, DYNAMIC);
 
             processor.setTemplate(normalize("""
-                    {{each $products product}}
+                    {{for $product in $products}}
                     {{$name}}: {{$tags}}
-                    {{/each}}
+                    {{/for}}
                     """));
 
             assertEquals(normalize("""
@@ -1319,9 +1357,9 @@ class TemplateProcessorTest {
                     """);
 
             processor.setTemplate(normalize("""
-                    {{each $list key}}
+                    {{for $key in $list}}
                     <module key={{$key}} {{if $modulation == 0 }} {{if $key < 3 }} active {{/if}} {{/if}} style={{$style}} />
-                    {{/each}}
+                    {{/for}}
                     """));
 
             assertEquals(normalize("""
@@ -1340,8 +1378,8 @@ class TemplateProcessorTest {
     class CombinedBlocks {
 
         @Test
-        @DisplayName("Should combine if and each blocks")
-        void ifInsideEach() {
+        @DisplayName("Should combine if and for blocks")
+        void ifInsideFor() {
             processor.setVariable("items", List.of(
                     new Item("First", true, null, 0),
                     new Item("Second", false, null, 0),
@@ -1349,11 +1387,11 @@ class TemplateProcessorTest {
             ));
 
             processor.setTemplate(normalize("""
-                    {{each $items}}
+                    {{for $items}}
                     {{if $item.active}}
                     <div>{{$item.name}}</div>
                     {{/if}}
-                    {{/each}}
+                    {{/for}}
                     """));
 
             assertEquals(normalize("""
@@ -1381,9 +1419,9 @@ class TemplateProcessorTest {
                         {{if $render && $preset-list.size > 1}}
                         <div class="content-preset">
                             <select data-hyui-showlabel="true" value={{$preset-active}}>
-                                {{each $preset-list}}
+                                {{for $preset-list}}
                                 <option {{if $preset-active == $item.name}}selected {{/if}}value={{$item.name}}>{{$item.display}}</option>
-                                {{/each}}
+                                {{/for}}
                             </select>
                         </div>
                         {{/if}}
@@ -1552,7 +1590,7 @@ class TemplateProcessorTest {
             String result = processor.process();
             // When variables are undefined, they should be empty strings
             assertTrue(result.contains("<div class=\"price\"></div>"),
-                      "Should have empty amount when variables are undefined: " + result);
+                    "Should have empty amount when variables are undefined: " + result);
         }
 
         @Test
@@ -1570,7 +1608,7 @@ class TemplateProcessorTest {
             System.out.println("Result with partially defined vars: " + result);
             // buyPrice is undefined, so it should be empty string
             assertTrue(result.contains("<div class=\"price\">Price: </div>"),
-                      "Should have empty amount when buyPrice is undefined: " + result);
+                    "Should have empty amount when buyPrice is undefined: " + result);
         }
 
         @Test
@@ -1660,7 +1698,7 @@ class TemplateProcessorTest {
 
             processor.setTemplate("""
                     <panel>
-                        <bigButton each="$items key">Button {{$key}} <hidden if="$key == B">secret</hidden></bigButton>
+                        <bigButton for="$key in $items">Button {{$key}} <hidden if="$key == B">secret</hidden></bigButton>
                     </panel>
                     """);
             assertEquals(normalize("""
@@ -1721,20 +1759,20 @@ class TemplateProcessorTest {
         }
 
         @Test
-        @DisplayName("Should use template tag with each attribute")
-        void templateWithEach() {
+        @DisplayName("Should use template tag with for attribute")
+        void templateWithFor() {
             processor.setVariable("items", List.of("A", "B", "C"));
 
-            processor.setTemplate("<template each=\"$items\"><span>{{$item}}</span></template>");
+            processor.setTemplate("<template for=\"$items\"><span>{{$item}}</span></template>");
             assertEquals("<span>A</span><span>B</span><span>C</span>", processor.process());
         }
 
         @Test
-        @DisplayName("Should use template tag with each and index")
-        void templateWithEachAndIndex() {
+        @DisplayName("Should use template tag with for and index")
+        void templateWithForAndIndex() {
             processor.setVariable("items", List.of("X", "Y", "Z"));
 
-            processor.setTemplate("<template each=\"$item, $idx in $items\"><p>{{$idx}}:{{$item}}</p></template>");
+            processor.setTemplate("<template for=\"$item, $idx in $items\"><p>{{$idx}}:{{$item}}</p></template>");
             assertEquals("<p>0:X</p><p>1:Y</p><p>2:Z</p>", processor.process());
         }
 
@@ -1780,8 +1818,8 @@ class TemplateProcessorTest {
         }
 
         @Test
-        @DisplayName("Should use template tag in each loop for conditional rendering")
-        void templateInEachLoop() {
+        @DisplayName("Should use template tag in for loop for conditional rendering")
+        void templateInForLoop() {
             processor.setVariable("items", List.of(
                     new Item("First", true, null, 0),
                     new Item("Second", false, null, 0),
@@ -1789,11 +1827,11 @@ class TemplateProcessorTest {
             ));
 
             processor.setTemplate(normalize("""
-                    {{each $item in $items}}
+                    {{for $item in $items}}
                     <template if="$item.active">
                         <div>{{$item.name}}</div>
                     </template>
-                    {{/each}}
+                    {{/for}}
                     """));
 
             String result = processor.process();
@@ -1804,12 +1842,12 @@ class TemplateProcessorTest {
         }
 
         @Test
-        @DisplayName("Should combine template tag with each and conditional chain")
-        void templateWithEachAndConditionalChain() {
+        @DisplayName("Should combine template tag with for and conditional chain")
+        void templateWithForAndConditionalChain() {
             processor.setVariable("scores", List.of(95, 85, 75));
 
             processor.setTemplate(normalize("""
-                    <template each="$score, $idx in $scores">
+                    <template for="$score, $idx in $scores">
                         <template if="$score >= 90">
                             <div class="a">{{$idx}}: A</div>
                         </template>
@@ -1874,9 +1912,9 @@ class TemplateProcessorTest {
         }
 
         @Test
-        @DisplayName("Should throw exception for unclosed each block")
-        void unclosedEachBlock() {
-            processor.setTemplate("{{each $items}}Content");
+        @DisplayName("Should throw exception for unclosed for block")
+        void unclosedForBlock() {
+            processor.setTemplate("{{for $items}}Content");
             assertThrows(RuntimeException.class, () -> processor.process());
         }
     }
@@ -1895,7 +1933,7 @@ class TemplateProcessorTest {
             processor.setVariable("numbers", largeList);
 
             long start = System.currentTimeMillis();
-            processor.setTemplate("{{each $numbers}}{{$item}},{{/each}}");
+            processor.setTemplate("{{for $numbers}}{{$item}},{{/for}}");
             String result = processor.process();
             long duration = System.currentTimeMillis() - start;
 
@@ -1908,11 +1946,11 @@ class TemplateProcessorTest {
         @DisplayName("Should parse complex templates quickly")
         void complexTemplatePerformance() {
             String template = normalize("""
-                    {{each $items}}
+                    {{for $items}}
                         {{if $item.active}}
                             <div>{{$item.name | uppercase}}</div>
                         {{/if}}
-                    {{/each}}
+                    {{/for}}
                     """);
 
             long start = System.currentTimeMillis();
@@ -1994,7 +2032,7 @@ class TemplateProcessorTest {
             assertTrue(message.contains("line"), "Error message should contain line number: " + message);
             // Should show the problematic line
             assertTrue(message.contains("input") || message.contains("value"),
-                      "Error message should show the line with the error: " + message);
+                    "Error message should show the line with the error: " + message);
         }
     }
 }

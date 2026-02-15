@@ -18,9 +18,7 @@
 
 package au.ellie.hyui.events;
 
-import au.ellie.hyui.builders.HyUIHud;
 import au.ellie.hyui.builders.HyUIPage;
-import au.ellie.hyui.builders.LabelBuilder;
 import au.ellie.hyui.builders.UIElementBuilder;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 
@@ -33,9 +31,11 @@ import java.util.Optional;
 public interface UIContext {
     /**
      * Retrieves the list of logged UI commands.
+     *
      * @return A list of strings representing the logged commands.
      */
     List<String> getCommandLog();
+
     /**
      * Retrieves the current value of an element by its ID.
      *
@@ -76,13 +76,14 @@ public interface UIContext {
     /**
      * Updates the page associated with this context, rebuilding it if necessary.
      * Does not update HUDs.
+     *
      * @param shouldClear Whether to clear the page before rebuilding.
      */
     void updatePage(boolean shouldClear);
 
-
     /**
      * Updates the page associated with this context in a thread-safe manner, rebuilding it if necessary.
+     *
      * @param playerComponent
      * @param shouldClear
      */
@@ -91,9 +92,9 @@ public interface UIContext {
     /**
      * Retrieves the builder for a particular element, cast to the specified builder.
      *
-     * @param id   The ID of the element.
+     * @param id    The ID of the element.
      * @param clazz The class of the type to cast to.
-     * @param <E>  The expected type of the value.
+     * @param <E>   The expected type of the value.
      * @return An Optional containing the builder, or empty if not found or if casting fails.
      */
     <E extends UIElementBuilder<E>> Optional<E> getById(String id, Class<E> clazz);
@@ -110,9 +111,9 @@ public interface UIContext {
      * Retrieves the builder for a particular element, cast to the specified builder type.
      * This is useful for builders that extend a different self-typed base.
      *
-     * @param id The ID of the element.
+     * @param id    The ID of the element.
      * @param clazz The class of the type to cast to.
-     * @param <E> The expected type of the builder.
+     * @param <E>   The expected type of the builder.
      * @return An Optional containing the builder, or empty if not found or if casting fails.
      */
     default <E extends UIElementBuilder<?>> Optional<E> getByIdAs(String id, Class<E> clazz) {

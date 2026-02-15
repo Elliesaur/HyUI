@@ -19,14 +19,18 @@
 package au.ellie.hyui.html.template.item;
 
 import au.ellie.hyui.html.template.item.Node.AttributeValueNode;
-import au.ellie.hyui.html.template.item.Node.BlockNode.EachBlockNode;
-import au.ellie.hyui.html.template.item.Node.BlockNode.IfBlockNode;
+import au.ellie.hyui.html.template.item.Node.BlockNode.ConditionalBlockNode;
+import au.ellie.hyui.html.template.item.Node.BlockNode.ConditionalBlockNode.ConditionalBranch;
+import au.ellie.hyui.html.template.item.Node.BlockNode.ForBlockNode;
 import au.ellie.hyui.html.template.item.Node.ExpressionNode;
-import au.ellie.hyui.html.template.item.Node.ExpressionNode.LiteralNode;
 import au.ellie.hyui.utils.StringReader;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
+import static au.ellie.hyui.utils.ObjectUtils.mutableListOf;
 
 public interface Attribute {
 
@@ -39,19 +43,7 @@ public interface Attribute {
     /**
      * Hold extracted condition attribute from HTML elements
      */
-    record ConditionAttribute(ExpressionNode condition) implements Attribute {
-    }
-
-    /**
-     * Hold extracted else-if attribute from HTML elements
-     */
-    record ElseIfAttribute(ExpressionNode condition) implements Attribute {
-    }
-
-    /**
-     * Hold extracted else attribute from HTML elements
-     */
-    record ElseAttribute() implements Attribute {
+    record ConditionAttribute(String name, ExpressionNode condition) implements Attribute {
     }
 
     /**
@@ -75,7 +67,7 @@ public interface Attribute {
                         if (a instanceof ConditionAttribute && b instanceof ControlAttribute)
                             return 1;
                         return 0;
-                    }).toList();
+                    }).collect(Collectors.toCollection(ArrayList::new));
         }
 
         /**
@@ -89,14 +81,15 @@ public interface Attribute {
             Node result = base;
 
             for (var attr : sortedFlowAttributes()) {
-                if (attr instanceof ControlAttribute(ExpressionNode collection, String itemName, String indexName))
-                    result = new EachBlockNode(itemName, indexName, collection, List.of(result));
-                else if (attr instanceof ConditionAttribute(ExpressionNode condition))
-                    result = new IfBlockNode(condition, List.of(result), List.of());
-                else if (attr instanceof ElseIfAttribute(ExpressionNode condition))
-                    result = new IfBlockNode(condition, List.of(result), List.of());
-                else if (attr instanceof ElseAttribute())
-                    result = new IfBlockNode(new LiteralNode(true), List.of(result), List.of());
+                result = switch (attr) {
+                    case ControlAttribute(ExpressionNode collection, String itemName, String indexName) ->
+                            new ForBlockNode(itemName, indexName, collection, mutableListOf(result));
+                    case ConditionAttribute(String name, ExpressionNode condition) -> {
+                        var branch = new ConditionalBranch(condition, mutableListOf(result));
+                        yield new ConditionalBlockNode(name, mutableListOf(branch));
+                    }
+                    default -> result;
+                };
             }
 
             return result;

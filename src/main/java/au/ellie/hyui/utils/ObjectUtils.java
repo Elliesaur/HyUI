@@ -18,9 +18,7 @@
 
 package au.ellie.hyui.utils;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
 
 public class ObjectUtils {
 
@@ -75,5 +73,16 @@ public class ObjectUtils {
             case String str when needle != null -> str.contains(needle.toString());
             case null, default -> false;
         };
+    }
+
+    /**
+     * Create a mutable list from the given items.
+     *
+     * @param items The items to include in the list
+     * @param <T>   The type of the items
+     * @return A mutable list containing the items
+     */
+    public static <T> List<T> mutableListOf(T... items) {
+        return new ArrayList<>(Arrays.asList(items));
     }
 }

@@ -25,7 +25,6 @@ import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.html.TemplateProcessor;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPage;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -34,11 +33,15 @@ import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+
 import javax.annotation.Nonnull;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implements UIContext {
@@ -49,7 +52,7 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private ScheduledFuture<?> refreshTask;
     private BiConsumer<HyUIPage, Boolean> onDismissListener;
-    
+
     public HyUIPage(PlayerRef playerRef,
                     CustomPageLifetime lifetime,
                     String uiFile,
@@ -61,7 +64,8 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
                     BiConsumer<HyUIPage, Boolean> onDismissListener) {
         super(playerRef, lifetime, DynamicPageData.CODEC);
         this.onDismissListener = onDismissListener;
-        this.delegate = new HyUInterface(uiFile, elements, editCallbacks, templateHtml, templateProcessor, runtimeTemplateUpdatesEnabled) {};
+        this.delegate = new HyUInterface(uiFile, elements, editCallbacks, templateHtml, templateProcessor, runtimeTemplateUpdatesEnabled) {
+        };
     }
 
     private void startRefreshTask() {
@@ -123,7 +127,7 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
     public Optional<HyUIPage> getPage() {
         return Optional.of(this);
     }
-    
+
     public void close() {
         stopRefreshTask();
         super.close();
@@ -137,28 +141,24 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
     @Override
     public void updatePage(boolean shouldClear) {
         Ref<EntityStore> ref = this.playerRef.getReference();
-        if (ref != null) {
-            Store<EntityStore> store = ref.getStore();
-            Player playerComponent = (Player)store.getComponent(ref, Player.getComponentType());
-            UICommandBuilder commandBuilder = new UICommandBuilder();
-            UIEventBuilder eventBuilder = new UIEventBuilder();
-            delegate.build(ref, commandBuilder, eventBuilder, ref.getStore(), !shouldClear);
-            playerComponent.getPageManager().updateCustomPage(new CustomPage(this.getClass().getName(), false, shouldClear, this.lifetime, commandBuilder.getCommands(), eventBuilder.getEvents()));
-        }
+        if (ref == null)
+            return;
+
+        var playerComponent = ref.getStore().getComponent(ref, Player.getComponentType());
+        updatePageThreadsafe(playerComponent, shouldClear);
     }
 
     @Override
     public void updatePageThreadsafe(Player playerComponent, boolean shouldClear) {
         Ref<EntityStore> ref = this.playerRef.getReference();
-        if (ref != null) {
-            Store<EntityStore> store = ref.getStore();
-            UICommandBuilder commandBuilder = new UICommandBuilder();
-            UIEventBuilder eventBuilder = new UIEventBuilder();
-            delegate.build(ref, commandBuilder, eventBuilder, ref.getStore(), !shouldClear);
-            playerComponent.getPageManager().updateCustomPage(new CustomPage(this.getClass().getName(), false, shouldClear, this.lifetime, commandBuilder.getCommands(), eventBuilder.getEvents()));
-        }
-    }
+        if (ref == null)
+            return;
 
+        UICommandBuilder commandBuilder = new UICommandBuilder();
+        UIEventBuilder eventBuilder = new UIEventBuilder();
+        delegate.build(ref, commandBuilder, eventBuilder, ref.getStore(), !shouldClear);
+        playerComponent.getPageManager().updateCustomPage(new CustomPage(this.getClass().getName(), false, shouldClear, this.lifetime, commandBuilder.getCommands(), eventBuilder.getEvents()));
+    }
 
     public long getRefreshRateMs() {
         return refreshRateMs;
@@ -194,11 +194,11 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
     }
 
     /**
-     * Reloads a dynamic image by its element ID. This will forcibly invalidate the image 
+     * Reloads a dynamic image by its element ID. This will forcibly invalidate the image
      * and re-download (cache still applies to all downloads for 15 seconds!).
-     * 
+     *
      * @param dynamicImageElementId The ID of the dynamic image element.
-     * @param shouldClearPage Whether to clear the page after reloading the image.
+     * @param shouldClearPage       Whether to clear the page after reloading the image.
      */
     public void reloadImage(String dynamicImageElementId, boolean shouldClearPage) {
         reloadImage(dynamicImageElementId, shouldClearPage, true);
@@ -208,8 +208,8 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
      * Reloads a dynamic image by its element ID.
      *
      * @param dynamicImageElementId The ID of the dynamic image element.
-     * @param shouldClearPage Whether to clear the page after reloading the image.
-     * @param forceDownload Whether to force a re-download of the image.
+     * @param shouldClearPage       Whether to clear the page after reloading the image.
+     * @param forceDownload         Whether to force a re-download of the image.
      */
     public void reloadImage(String dynamicImageElementId, boolean shouldClearPage, boolean forceDownload) {
         Ref<EntityStore> ref = this.playerRef.getReference();
@@ -238,7 +238,7 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
             onDismissListener.accept(this, false);
         }
     }
-    
+
     @Override
     public void build(@Nonnull Ref<EntityStore> ref, @Nonnull UICommandBuilder uiCommandBuilder, @Nonnull UIEventBuilder uiEventBuilder, @Nonnull Store<EntityStore> store) {
         startRefreshTask();
