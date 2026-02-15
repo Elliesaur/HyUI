@@ -27,8 +27,11 @@ public class Symbols {
     public final static String OPEN_ANGLE_BRACKET = "<";
     public final static String CLOSE_EXPRESSION = "}}";
     public final static String OPEN_EXPRESSION = "{{";
+    public final static String CLOSE_COMMENTS = "--";
+    public final static String OPEN_COMMENTS = "!--";
 
     // Global symbols
+    public final static String SINGLE_QUOTE = "'";
     public final static String BACK_SLASH = "\\";
     public final static String NEW_LINE = "\n";
     public final static String VARIABLE = "$";
@@ -36,7 +39,6 @@ public class Symbols {
     public final static String COLON = ":";
     public final static String COMMA = ",";
     public final static String QUOTE = "\"";
-    public final static String SINGLE_QUOTE = "'";
     public final static String SLASH = "/";
     public final static String PIPE = "|";
     public final static String DOT = ".";

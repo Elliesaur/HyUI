@@ -94,8 +94,8 @@ class TemplateProcessorTest {
         @Test
         @DisplayName("Should return plain text unchanged")
         void plainText() {
-            String template = "<div>Hello World</div>";
-            assertEquals("<div>Hello World</div>", processor.setTemplate(template).process());
+            String template = "<div>Hello! World<!-- COMMENT --></div>";
+            assertEquals("<div>Hello! World</div>", processor.setTemplate(template).process());
         }
 
         @Test

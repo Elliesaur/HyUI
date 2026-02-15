@@ -66,6 +66,12 @@ public interface Node {
          */
         record DefaultNode(List<ExpressionNode> alternatives) implements ExpressionNode {
         }
+
+        /**
+         * Represents a comment block in the template
+         */
+        record CommentNode(String content) implements ExpressionNode {
+        }
     }
 
     // ---- Control Flow Nodes ----
@@ -93,6 +99,9 @@ public interface Node {
                                   List<Node> children) implements BlockNode {
         }
 
+        /**
+         * Represents an HTML slot element with attributes and children
+         */
         record SlotBlockNode(String name, List<AttributeValueNode> attributes,
                              List<Node> children, boolean output) implements BlockNode {
         }

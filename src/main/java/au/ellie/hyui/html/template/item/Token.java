@@ -63,6 +63,8 @@ public record Token(Type type, String value, int position) {
         OPEN_ANGLE_BRACKET,
         CLOSE_EXPRESSION,
         OPEN_EXPRESSION,
+        CLOSE_COMMENTS,
+        OPEN_COMMENTS,
 
         // Global tokens
         BACK_SLASH,
@@ -94,6 +96,8 @@ public record Token(Type type, String value, int position) {
         put(Symbols.OPEN_ANGLE_BRACKET, OPEN_ANGLE_BRACKET);
         put(Symbols.CLOSE_EXPRESSION, CLOSE_EXPRESSION);
         put(Symbols.OPEN_EXPRESSION, OPEN_EXPRESSION);
+        put(Symbols.CLOSE_COMMENTS, CLOSE_COMMENTS);
+        put(Symbols.OPEN_COMMENTS, OPEN_COMMENTS);
         put(Symbols.BACK_SLASH, BACK_SLASH);
         put(Symbols.NEW_LINE, NEW_LINE);
         put(Symbols.VARIABLE, VARIABLE);

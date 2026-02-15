@@ -86,6 +86,7 @@ public class Evaluator {
      */
     private String evaluateNode(Node node) {
         return switch (node) {
+            case CommentNode _ -> "";
             case MarkerNode marker -> {
                 if (marker.inside() != null)
                     yield evaluateNode(marker.inside());
@@ -114,6 +115,7 @@ public class Evaluator {
      */
     private Object evaluateExpression(ExpressionNode node) {
         return switch (node) {
+            case CommentNode _ -> "";
             case TextNode literal -> literal.content();
             case LiteralNode literal -> literal.value();
             case PropertyAccessNode prop -> evaluatePropertyAccess(prop);

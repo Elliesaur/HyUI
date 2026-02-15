@@ -470,6 +470,10 @@ public class Parser {
     private Node parseTag() {
         advance(); // consume <
 
+        // Html comments
+        if (consume(Type.OPEN_COMMENTS))
+            return parseComment();
+
         // Check for slot input syntax: <:name>
         if (match(Type.COLON))
             return parseSlotTag(true);
@@ -548,6 +552,28 @@ public class Parser {
         return parsed.build(
                 new ComponentBlockNode(tagName, attributes, children)
         );
+    }
+
+    /**
+     * Parse an HTML comment
+     */
+    private Node parseComment() {
+        var builder = new StringBuilder();
+
+        while (hasNext()) {
+            var savedPos = pos;
+
+            if (consume(Type.CLOSE_COMMENTS)) {
+                if (consume(Type.CLOSE_ANGLE_BRACKET))
+                    break;
+
+                pos = savedPos;
+            }
+
+            builder.append(advance().value());
+        }
+
+        return new CommentNode(builder.toString());
     }
 
     /**
