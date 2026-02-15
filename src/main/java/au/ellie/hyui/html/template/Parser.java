@@ -124,7 +124,7 @@ public class Parser {
         }
 
         // Parse expression
-        var expr = parseExpression();
+        var expr = parseExpression(true);
 
         skipWhitespace();
         expect(Type.CLOSE_EXPRESSION, "Expected '}}' after expression");
@@ -166,7 +166,7 @@ public class Parser {
             list = new ArrayList<>();
 
         // Parse control attribute
-        var control = parseIfConditionValue(keyword, Type.CLOSE_EXPRESSION);
+        var control = parseConditionAttribute(keyword, Type.CLOSE_EXPRESSION);
         var body = new ArrayList<Node>();
 
         cleanStandaloneLineWhitespace();
@@ -224,7 +224,7 @@ public class Parser {
      */
     private Node parseForBlock() {
         // Parse control attribute
-        var control = parseForAttributeValue(Type.CLOSE_EXPRESSION);
+        var control = parseControlAttribute(Type.CLOSE_EXPRESSION);
         cleanStandaloneLineWhitespace();
 
         // Parse body
@@ -265,18 +265,18 @@ public class Parser {
     /**
      * Parse an expression (variable, property access, operators, etc.)
      */
-    private ExpressionNode parseExpression() {
-        return parseNullCoalescingExpression();
+    private ExpressionNode parseExpression(boolean initial) {
+        return parseNullCoalescingExpression(initial);
     }
 
     /**
      * Parse null coalescing expression
      */
-    private ExpressionNode parseNullCoalescingExpression() {
+    private ExpressionNode parseNullCoalescingExpression(boolean initial) {
         var alternatives = new ArrayList<ExpressionNode>();
 
         do {
-            alternatives.add(parseOrExpression());
+            alternatives.add(parseOrExpression(initial));
         } while (consumeSymbol(Type.OPERATOR, NULL_COALESCING));
 
         return alternatives.size() == 1 ? alternatives.getFirst() : new DefaultNode(alternatives);
@@ -285,11 +285,11 @@ public class Parser {
     /**
      * Parse OR expression
      */
-    private ExpressionNode parseOrExpression() {
-        var left = parseAndExpression();
+    private ExpressionNode parseOrExpression(boolean initial) {
+        var left = parseAndExpression(initial);
 
         while (consumeSymbol(Type.OPERATOR, OR)) {
-            var right = parseAndExpression();
+            var right = parseAndExpression(initial);
             left = new BinaryOpNode(left, OR, right);
         }
 
@@ -299,11 +299,11 @@ public class Parser {
     /**
      * Parse AND expression
      */
-    private ExpressionNode parseAndExpression() {
-        var left = parseComparisonExpression();
+    private ExpressionNode parseAndExpression(boolean initial) {
+        var left = parseComparisonExpression(initial);
 
         while (consumeSymbol(Type.OPERATOR, AND)) {
-            var right = parseComparisonExpression();
+            var right = parseComparisonExpression(initial);
             left = new BinaryOpNode(left, AND, right);
         }
 
@@ -313,15 +313,15 @@ public class Parser {
     /**
      * Parse comparison expression
      */
-    private ExpressionNode parseComparisonExpression() {
-        var left = parsePipeExpression();
+    private ExpressionNode parseComparisonExpression(boolean initial) {
+        var left = parsePipeExpression(initial);
 
         while (match(Type.COMPARATOR) || matchSymbol(Type.KEYWORD, KEYWORD_IN, KEYWORD_NOT_IN) || match(Type.CLOSE_ANGLE_BRACKET, Type.OPEN_ANGLE_BRACKET, Type.ASSIGN)) {
             var op = advance().value();
             if (consume(Type.ASSIGN))
                 op += ASSIGN;
 
-            var right = parsePipeExpression();
+            var right = parsePipeExpression(false);
             left = new BinaryOpNode(left, op, right);
         }
 
@@ -331,8 +331,8 @@ public class Parser {
     /**
      * Parse pipe expression
      */
-    private ExpressionNode parsePipeExpression() {
-        var expr = parsePrimaryExpression();
+    private ExpressionNode parsePipeExpression(boolean initial) {
+        var expr = parsePrimaryExpression(initial);
         skipWhitespace();
 
         while (consume(Type.PIPE)) {
@@ -350,7 +350,7 @@ public class Parser {
     /**
      * Parse primary expression (literals, variables, property access)
      */
-    private ExpressionNode parsePrimaryExpression() {
+    private ExpressionNode parsePrimaryExpression(boolean initial) {
         skipWhitespace();
 
         // Boolean literals true
@@ -387,7 +387,7 @@ public class Parser {
             return parseVariable();
 
         // Text
-        if (match(Type.TEXT))
+        if (match(Type.TEXT) && !initial)
             return new LiteralNode(advance().value());
 
         throw error("Unexpected token in expression");
@@ -472,7 +472,7 @@ public class Parser {
 
         // Check for slot input syntax: <:name>
         if (match(Type.COLON))
-            return parseSlotInput();
+            return parseSlotTag(true);
 
         // Check for closing tag
         if (match(Type.SLASH))
@@ -485,7 +485,7 @@ public class Parser {
 
         // Check if it's a slot tag
         if (tagName.equals(HTML_TAG_SLOT))
-            return parseSlotOutput();
+            return parseSlotTag(false);
 
         // Parse attributes (including control flow attributes)
         var parsed = parseAttributes();
@@ -551,16 +551,22 @@ public class Parser {
     }
 
     /**
-     * Parse slot output: <slot> or <slot:name>
+     * Parse slot tag, depending on the syntax used:
+     * <pre>
+     *   input: &lt;:name&gt;
+     *   output: &lt;slot&gt; or &lt;slot:name&gt;
+     * </pre>
      */
-    private Node parseSlotOutput() {
+    private Node parseSlotTag(boolean input) {
         String slotName = HTML_SLOT_DEFAULT;
 
         // Check for named slot: <slot:name>
         if (consume(Type.COLON)) {
-            slotName = joinTokens(Type.TEXT, Type.NUMBER, Type.KEYWORD);
-            if (slotName.isEmpty())
-                expect(Type.TEXT, "Expected slot name after 'slot:'");
+            var itemName = joinTokens(Type.TEXT, Type.NUMBER, Type.KEYWORD);
+            if (!itemName.isEmpty())
+                slotName = itemName;
+            else if (!input)
+                throw error("Expected slot name after 'slot:'");
         }
 
         var parsed = parseAttributes();
@@ -570,7 +576,7 @@ public class Parser {
         if (consume(Type.SLASH)) {
             expect(Type.CLOSE_ANGLE_BRACKET, "Expected '>' after '/'");
             return parsed.build(
-                    new SlotBlockNode(slotName, attributes, mutableListOf(), true)
+                    new SlotBlockNode(slotName, attributes, mutableListOf(), !input)
             );
         }
 
@@ -587,7 +593,7 @@ public class Parser {
                 if (consume(Type.SLASH)) {
                     skipWhitespace();
 
-                    if (consumeSymbol(Type.TEXT, "slot")) {
+                    if (input || consumeSymbol(Type.TEXT, "slot")) {
                         if (consume(Type.COLON)) {
                             var closeName = joinTokens(Type.TEXT, Type.NUMBER, Type.KEYWORD);
                             if (closeName.equals(slotName)) {
@@ -595,7 +601,7 @@ public class Parser {
                                 expect(Type.CLOSE_ANGLE_BRACKET, "Expected '>'");
                                 break;
                             }
-                        } else {
+                        } else if (!input) {
                             skipWhitespace();
                             expect(Type.CLOSE_ANGLE_BRACKET, "Expected '>'");
                             break;
@@ -613,66 +619,7 @@ public class Parser {
         stack.pop();
 
         return parsed.build(
-                new SlotBlockNode(slotName, attributes, children, true)
-        );
-    }
-
-    /**
-     * Parse slot input: <:name>content</:name>
-     */
-    private Node parseSlotInput() {
-        advance(); // consume :
-
-        // Allow for <:> as default slot input with no name
-        var slotName = joinTokens(Type.TEXT, Type.NUMBER, Type.KEYWORD);
-        if (slotName.isEmpty())
-            slotName = HTML_SLOT_DEFAULT;
-
-        var parsed = parseAttributes();
-        var attributes = parsed.attributes();
-
-        // Check for self-closing
-        if (consume(Type.SLASH)) {
-            expect(Type.CLOSE_ANGLE_BRACKET, "Expected '>'");
-            return parsed.build(
-                    new SlotBlockNode(slotName, attributes, mutableListOf(), false)
-            );
-        }
-
-        expect(Type.CLOSE_ANGLE_BRACKET, "Expected '>'");
-
-        // Parse content
-        var children = new ArrayList<Node>();
-
-        stack.push(children);
-        while (hasNext()) {
-            if (consume(Type.OPEN_ANGLE_BRACKET)) {
-                int savedPos = pos - 1;
-
-                if (consume(Type.SLASH)) {
-                    skipWhitespace();
-
-                    if (consume(Type.COLON)) {
-                        var closeName = joinTokens(Type.TEXT, Type.NUMBER, Type.KEYWORD);
-                        if (closeName.equals(slotName)) {
-                            skipWhitespace();
-                            expect(Type.CLOSE_ANGLE_BRACKET, "Expected '>'");
-                            break;
-                        }
-                    }
-                }
-
-                pos = savedPos;
-            }
-
-            var child = parseNode();
-            if (child != null)
-                children.add(child);
-        }
-        stack.pop();
-
-        return parsed.build(
-                new SlotBlockNode(slotName, attributes, children, false)
+                new SlotBlockNode(slotName, attributes, children, !input)
         );
     }
 
@@ -723,19 +670,19 @@ public class Parser {
 
                 // Flow attributes: for="$items itemName"
                 if (name.equals(KEYWORD_FOR) && consume(Type.QUOTE)) {
-                    flowAttributes.add(parseForAttributeValue(Type.QUOTE));
+                    flowAttributes.add(parseControlAttribute(Type.QUOTE));
                     continue;
                 }
 
                 // Flow attributes like if="$condition"
                 if (KEYWORD_CONDITIONALS.contains(name) && consume(Type.QUOTE)) {
-                    flowAttributes.add(parseIfConditionValue(name, Type.QUOTE));
+                    flowAttributes.add(parseConditionAttribute(name, Type.QUOTE));
                     continue;
                 }
 
                 // Dynamic attribute: attr={expr}
                 if (consume(Type.OPEN_EXPRESSION)) {
-                    var expr = parseExpression();
+                    var expr = parseExpression(true);
 
                     skipWhitespace();
                     expect(Type.CLOSE_EXPRESSION, "Expected '}}' after attribute expression");
@@ -793,7 +740,7 @@ public class Parser {
      *
      * @param delimiter The expected delimiter type to end the attribute value
      */
-    private ControlAttribute parseForAttributeValue(Type delimiter) {
+    private ControlAttribute parseControlAttribute(Type delimiter) {
         skipWhitespace();
 
         var itemName = "item";
@@ -830,7 +777,7 @@ public class Parser {
                 skipWhitespace();
 
                 // Parse collection
-                collection = parseExpression();
+                collection = parseExpression(false);
 
                 // Extract item name from first variable
                 if (!(firstVar instanceof VariableNode(String name)))
@@ -857,7 +804,7 @@ public class Parser {
      *
      * @param delimiter The expected delimiter type to end the attribute value
      */
-    private ConditionAttribute parseIfConditionValue(String keyword, Type delimiter) {
+    private ConditionAttribute parseConditionAttribute(String keyword, Type delimiter) {
         skipWhitespace();
 
         // Parse condition expression, or use "true" if no condition is provided (e.g. {{if}} or if="")
@@ -866,7 +813,7 @@ public class Parser {
         if (match(delimiter))
             condition = new LiteralNode(true);
         else
-            condition = parseExpression();
+            condition = parseExpression(true);
 
         skipWhitespace();
 
