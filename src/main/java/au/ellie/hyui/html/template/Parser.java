@@ -277,6 +277,7 @@ public class Parser {
 
         do {
             alternatives.add(parseOrExpression(initial));
+            initial = false;
         } while (consumeSymbol(Type.OPERATOR, NULL_COALESCING));
 
         return alternatives.size() == 1 ? alternatives.getFirst() : new DefaultNode(alternatives);
