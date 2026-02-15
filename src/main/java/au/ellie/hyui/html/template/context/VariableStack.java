@@ -98,6 +98,9 @@ public class VariableStack {
                 } else
                     object = resolveVariable(object, defaultValue);
 
+                if (object instanceof Optional<?> optional)
+                    return optional.orElse(null);
+
                 return object;
             }
         }

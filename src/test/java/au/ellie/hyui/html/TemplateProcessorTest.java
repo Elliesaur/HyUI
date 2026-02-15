@@ -7,10 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -311,6 +308,19 @@ class TemplateProcessorTest {
 
             processor.setTemplate("{{$user.id}}");
             assertEquals("", processor.process());
+        }
+
+        @ParameterizedTest
+        @CsvSource({
+                ", default",
+                "Dave, Dave",
+        })
+        @DisplayName("Should return empty string for missing properties")
+        void missingProperties(String value, String expected) {
+            processor.setVariable("user", Optional.ofNullable(value));
+
+            processor.setTemplate("{{$user ?? \"default\"}}");
+            assertEquals(expected, processor.process());
         }
 
         @ParameterizedTest
@@ -1316,7 +1326,7 @@ class TemplateProcessorTest {
         @DisplayName("Should call function with arguments")
         void callFunctionWithArguments() {
             processor.setVariable("products", List.of(
-                    new Product("Weapon", List.of("sword", "axe")),
+                    new TemplateProcessorTest.Product("Weapon", List.of("sword", "axe")),
                     new Product("Potion", List.of("healing", "mana"))
             ));
             processor.setVariable("tags", (stack) -> {
@@ -1346,7 +1356,7 @@ class TemplateProcessorTest {
         @Test
         @DisplayName("Should call function with arguments and dynamic variables")
         void callFunctionWithArgumentsAndDynamic() {
-            final var modulator = new Modulator();
+            final var modulator = new TemplateProcessorTest.Modulator();
 
             processor.setVariable("list", List.of(1, 2, 3, 4));
             processor.setVariable("modulation", (_) -> modulator.increment(), DYNAMIC);
