@@ -23,6 +23,7 @@ import au.ellie.hyui.HyUIPluginLogger;
 import au.ellie.hyui.builders.*;
 import au.ellie.hyui.events.PageRefreshResult;
 import au.ellie.hyui.events.SlotMouseDragCompletedEventData;
+import au.ellie.hyui.html.TemplateProcessor;
 import au.ellie.hyui.types.*;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -74,7 +75,7 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                     return CompletableFuture.runAsync(() -> {
                         PlayerRef playerRef = store.getComponent(ref, PlayerRef.getComponentType());
                         if (playerRef != null) {
-                            openTestGui(playerRef, store);
+                            openReplicate(playerRef, store);
                         }
                     }, world);
                 } else {
@@ -94,7 +95,9 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
             return;
         }
         new PageBuilder(playerRef)
-                .loadHtml("Pages/Replicate.html")
+                .loadHtml("Pages/Replicate.html", new TemplateProcessor()
+                        .setVariable("playerName", "Elyra"))
+                .enableRuntimeTemplateUpdates(true)
                 .open(store);
     }
     

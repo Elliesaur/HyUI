@@ -493,6 +493,13 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
         }
         try {
             HyUIPlugin.getLog().logFinest("Preparing dynamic image from URL: " + url);
+            PngDownloadUtils.CachedAssetInfo cachedAsset = PngDownloadUtils.getCachedAssetInfo(playerUuid, url);
+            if (cachedAsset != null) {
+                dynamicImage.withImagePath(cachedAsset.path());
+                dynamicImage.setSlotIndex(playerUuid, cachedAsset.slotIndex());
+                HyUIPlugin.getLog().logFinest("Dynamic image used cached asset path: " + cachedAsset.path());
+                return;
+            }
             byte[] imageBytes;
             if (dynamicImage instanceof HyvatarImageBuilder hyvatar && !hyvatar.hasCustomImageUrl()) {
                 imageBytes = HyvatarUtils.downloadRenderPng(

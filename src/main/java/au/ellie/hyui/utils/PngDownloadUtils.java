@@ -19,6 +19,8 @@
 package au.ellie.hyui.utils;
 
 import au.ellie.hyui.HyUIPlugin;
+import au.ellie.hyui.assets.DynamicImageAsset;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -86,9 +88,39 @@ public final class PngDownloadUtils {
             return;
         }
         long expiresAtMs = now + (ttlSeconds * 1000L);
-        synchronized (PLAYER_CACHE) {
-            PLAYER_CACHE.put(new PlayerUrlKey(playerUuid, normalizedUrl), new PlayerCacheEntry(bytes, expiresAtMs));
+        PlayerCacheEntry existing = getPlayerCache(playerUuid, normalizedUrl, now);
+        Integer slotIndex = existing != null ? existing.slotIndex() : null;
+        String assetPath = existing != null ? existing.assetPath() : null;
+        putPlayerCache(new PlayerUrlKey(playerUuid, normalizedUrl),
+                new PlayerCacheEntry(bytes, expiresAtMs, slotIndex, assetPath));
+    }
+
+    public static CachedAssetInfo cachePngForPlayer(PlayerRef pRef, String url, byte[] bytes, long ttlSeconds) {
+        if (pRef == null || !pRef.isValid()) {
+            throw new IllegalArgumentException("Player reference cannot be null or invalid.");
         }
+        if (url == null || url.isBlank()) {
+            throw new IllegalArgumentException("URL cannot be null or blank.");
+        }
+        if (bytes == null) {
+            throw new IllegalArgumentException("Image bytes cannot be null.");
+        }
+        String normalizedUrl = normalizeUrl(url);
+        long now = System.currentTimeMillis();
+        if (ttlSeconds <= 0) {
+            removePlayerCache(pRef.getUuid(), normalizedUrl);
+            return null;
+        }
+
+        DynamicImageAsset asset = new DynamicImageAsset(bytes, pRef.getUuid());
+        DynamicImageAsset.sendToPlayer(pRef.getPacketHandler(), DynamicImageAsset.empty(asset.getSlotIndex()));
+        DynamicImageAsset.sendToPlayer(pRef.getPacketHandler(), asset);
+        HyUIPlugin.getLog().logFinest("Dynamic image sent using path: " + asset.getPath());
+
+        long expiresAtMs = now + (ttlSeconds * 1000L);
+        putPlayerCache(new PlayerUrlKey(pRef.getUuid(), normalizedUrl),
+                new PlayerCacheEntry(bytes, expiresAtMs, asset.getSlotIndex(), asset.getPath()));
+        return new CachedAssetInfo(asset.getPath(), asset.getSlotIndex());
     }
 
     public static byte[] prefetchPngForPlayer(java.util.UUID playerUuid, String url, long ttlSeconds)
@@ -98,12 +130,28 @@ public final class PngDownloadUtils {
         return bytes;
     }
 
+    public static CachedAssetInfo prefetchPngForPlayer(PlayerRef pRef, String url, long ttlSeconds)
+            throws IOException, InterruptedException {
+        if (pRef == null || !pRef.isValid()) {
+            throw new IllegalArgumentException("Player reference cannot be null or invalid.");
+        }
+        java.util.UUID playerUuid = pRef.getUuid();
+        byte[] bytes = downloadPng(url, playerUuid);
+        return cachePngForPlayer(pRef, url, bytes, ttlSeconds);
+    }
+
     public static void clearCachedPngForPlayer(java.util.UUID playerUuid) {
         if (playerUuid == null) {
             return;
         }
         synchronized (PLAYER_CACHE) {
-            PLAYER_CACHE.keySet().removeIf(key -> key.playerUuid.equals(playerUuid));
+            PLAYER_CACHE.entrySet().removeIf(entry -> {
+                if (!entry.getKey().playerUuid().equals(playerUuid)) {
+                    return false;
+                }
+                releaseSlot(entry.getKey().playerUuid(), entry.getValue());
+                return true;
+            });
         }
     }
 
@@ -132,14 +180,51 @@ public final class PngDownloadUtils {
                 return entry;
             }
             PLAYER_CACHE.remove(key);
+            releaseSlot(playerUuid, entry);
             return null;
         }
     }
 
     private static void removePlayerCache(java.util.UUID playerUuid, String url) {
         synchronized (PLAYER_CACHE) {
-            PLAYER_CACHE.remove(new PlayerUrlKey(playerUuid, url));
+            PlayerCacheEntry entry = PLAYER_CACHE.remove(new PlayerUrlKey(playerUuid, url));
+            releaseSlot(playerUuid, entry);
         }
+    }
+
+    public static CachedAssetInfo getCachedAssetInfo(java.util.UUID playerUuid, String url) {
+        if (playerUuid == null) {
+            return null;
+        }
+        if (url == null || url.isBlank()) {
+            return null;
+        }
+        String normalizedUrl = normalizeUrl(url);
+        long now = System.currentTimeMillis();
+        PlayerCacheEntry entry = getPlayerCache(playerUuid, normalizedUrl, now);
+        if (entry == null || entry.slotIndex() == null || entry.assetPath() == null) {
+            return null;
+        }
+        return new CachedAssetInfo(entry.assetPath(), entry.slotIndex());
+    }
+
+    private static void putPlayerCache(PlayerUrlKey key, PlayerCacheEntry entry) {
+        synchronized (PLAYER_CACHE) {
+            PlayerCacheEntry existing = PLAYER_CACHE.put(key, entry);
+            if (existing != null && existing.slotIndex() != null) {
+                Integer newSlot = entry.slotIndex();
+                if (newSlot == null || !newSlot.equals(existing.slotIndex())) {
+                    releaseSlot(key.playerUuid(), existing);
+                }
+            }
+        }
+    }
+
+    private static void releaseSlot(java.util.UUID playerUuid, PlayerCacheEntry entry) {
+        if (entry == null || entry.slotIndex() == null) {
+            return;
+        }
+        DynamicImageAsset.releaseSlotIndex(playerUuid, entry.slotIndex());
     }
 
     private static String normalizeUrl(String url) {
@@ -150,5 +235,7 @@ public final class PngDownloadUtils {
 
     private record PlayerUrlKey(java.util.UUID playerUuid, String url) {}
 
-    private record PlayerCacheEntry(byte[] bytes, long expiresAtMs) {}
+    private record PlayerCacheEntry(byte[] bytes, long expiresAtMs, Integer slotIndex, String assetPath) {}
+
+    public record CachedAssetInfo(String path, int slotIndex) {}
 }

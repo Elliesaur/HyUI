@@ -18,7 +18,12 @@
 
 package au.ellie.hyui;
 
+import au.ellie.hyui.builders.HudBuilder;
+import au.ellie.hyui.builders.LabelBuilder;
 import au.ellie.hyui.commands.*;
+import au.ellie.hyui.html.TemplateProcessor;
+import au.ellie.hyui.utils.HyvatarUtils;
+import au.ellie.hyui.utils.PngDownloadUtils;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.event.events.player.PlayerReadyEvent;
@@ -29,6 +34,7 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
+import java.io.IOException;
 
 public class HyUIPlugin extends JavaPlugin {
 
@@ -74,16 +80,27 @@ public class HyUIPlugin extends JavaPlugin {
                 World world = store.getExternalData().getWorld();
                 world.execute(() -> {
                     PlayerRef playerRef = store.getComponent(ref, PlayerRef.getComponentType());
+                    try {
+                        PngDownloadUtils.prefetchPngForPlayer(playerRef, HyvatarUtils.buildRenderUrl(
+                                player.getDisplayName(), 
+                                HyvatarUtils.RenderType.HEAD, 
+                                64, null, null), 18000);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
                     String html = "<hyvatar username='" + player.getDisplayName() + "' size='64'></hyvatar><div style='anchor-width: 400; anchor-height: 50;'><progress value='50' max='100' data-hyui-bar-texture-path='Common/ShopTest.png'></progress></div>";
-                    /*var hud = HudBuilder.detachedHud()
-                            .fromHtml(html)
+                    var tp = new TemplateProcessor();
+                    var hud = HudBuilder.detachedHud()
+                            .fromTemplate(html, tp)
                             .withRefreshRate(1000)
                             .onRefresh((h) -> {
                                 h.getById("text", LabelBuilder.class).ifPresent((builder) -> {
                                     builder.withText("Hello, World! " + System.currentTimeMillis());
                                 });
                             })
-                            .show(playerRef);*/
+                            .show(playerRef);
                 });
 
             });

@@ -41,15 +41,16 @@ public class MultipleHUD {
         }
         return instance;
     }
-
-    public MultipleHUD() {
-        instance = this;
-    }
     
     public HytaleLogger getLogger() {
         return HytaleLogger.forEnclosingClass();
     }
-    
+
+    public MultipleHUD() {
+        instance = this;
+    }
+
+
     public void setCustomHud(Player player, PlayerRef playerRef, String hudIdentifier, CustomUIHud customHud) {
         CustomUIHud currentCustomHud = player.getHudManager().getCustomHud();
         if (currentCustomHud instanceof MultipleCustomUIHud multipleCustomUIHud) {
@@ -70,6 +71,7 @@ public class MultipleHUD {
     }
     public void hideCustomHud(Player player, String hudIdentifier) {
         var currentCustomHud = player.getHudManager().getCustomHud();
+
         if (currentCustomHud instanceof MultipleCustomUIHud multipleCustomUIHud) {
             multipleCustomUIHud.remove(hudIdentifier);
         }

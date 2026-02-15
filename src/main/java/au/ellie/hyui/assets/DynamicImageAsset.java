@@ -2,7 +2,9 @@ package au.ellie.hyui.assets;
 
 import au.ellie.hyui.HyUIPlugin;
 import com.hypixel.hytale.common.util.ArrayUtil;
-import com.hypixel.hytale.protocol.ToClientPacket;
+import com.hypixel.hytale.protocol.Packet;
+// TODO: Pre-release asset sending
+// import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.packets.setup.AssetFinalize;
 import com.hypixel.hytale.protocol.packets.setup.AssetInitialize;
 import com.hypixel.hytale.protocol.packets.setup.AssetPart;
@@ -69,11 +71,11 @@ public class DynamicImageAsset extends CommonAsset {
     };
     private static final UUID DEFAULT_PLAYER_UUID = new UUID(0L, 0L);
     private static final Map<UUID, boolean[]> USED_SLOTS = new HashMap<>();
-
+    
     private final byte[] data;
     private final int slotIndex;
     private final UUID playerUuid;
-
+    
     public DynamicImageAsset(byte[] data) {
         this(data, DEFAULT_PLAYER_UUID);
     }
@@ -89,7 +91,7 @@ public class DynamicImageAsset extends CommonAsset {
         this.playerUuid = normalizePlayerUuid(playerUuid);
         HyUIPlugin.getLog().logFinest("Dynamic image slot allocated: " + slotIndex + " path=" + PATHS[slotIndex]);
     }
-
+    
     public static CommonAsset empty() {
         return CommonAssetRegistry.getByName(PATHS[PATHS.length - 1]);
     }
@@ -117,15 +119,27 @@ public class DynamicImageAsset extends CommonAsset {
     protected CompletableFuture<byte[]> getBlob0() {
         return CompletableFuture.completedFuture(data);
     }
-
+    
     // Copy of CommonAssetModule#sendAssets but adapted to only send 1 asset to a single player
     public static void sendToPlayer(PacketHandler handler, CommonAsset asset) {
         byte[] allBytes = asset.getBlob().join();
         byte[][] parts = ArrayUtil.split(allBytes, 2621440);
-        ToClientPacket[] packets = new ToClientPacket[2 + parts.length];
+        // TODO: Pre-release asset sending.
+        /*ToClientPacket[] packets = new ToClientPacket[1 + parts.length];
         packets[0] = new AssetInitialize(asset.toPacket(), allBytes.length);
 
-        for (int partIndex = 0; partIndex < parts.length; ++partIndex) {
+        for(int partIndex = 0; partIndex < parts.length; ++partIndex) {
+            packets[1 + partIndex] = new AssetPart(parts[partIndex]);
+        }
+
+        // Instead of attaching the final packet to the array, we just send as second param.
+        //packets[packets.length - 1] = new AssetFinalize();
+        handler.write(packets, new AssetFinalize());*/
+
+        Packet[] packets = new Packet[2 + parts.length];
+        packets[0] = new AssetInitialize(asset.toPacket(), allBytes.length);
+
+        for(int partIndex = 0; partIndex < parts.length; ++partIndex) {
             packets[1 + partIndex] = new AssetPart(parts[partIndex]);
         }
 

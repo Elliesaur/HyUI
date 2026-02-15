@@ -228,14 +228,24 @@ public class ProgressBarBuilder extends UIElementBuilder<ProgressBarBuilder> imp
             sb.append("Value: 0.0; ");
             sb.append("} ");
         } else {
+            // This background will be overridden later by the onBuild method.
             sb.append("Background: \"Common/ProgressBar.png\"; ");
             sb.append("ProgressBar #HyUIProgressBar { ");
             String inlineBarTexturePath = barTexturePath != null ? barTexturePath : "Common/ProgressBarFill.png";
             String inlineEffectTexturePath = effectTexturePath != null ? effectTexturePath : "Common/ProgressBarEffect.png";
-            sb.append("BarTexturePath: \"").append(inlineBarTexturePath).append("\"; ");
-            sb.append("EffectTexturePath: \"").append(inlineEffectTexturePath).append("\"; ");
-            //if (color != null)
-            //    sb.append("Color: \"").append(color).append("\"; ");
+            
+            // Do we trust people to effectively manage this? I trust you Mod Author who diligently reads their libraries code :3
+            // Basically, if the bar is null then we use the defaults/whatever overrides given to TPs
+            // If the bar is set, and the bar texture paths are not defaults then we also set the TPs.
+            if (bar == null) {
+                sb.append("BarTexturePath: \"").append(inlineBarTexturePath).append("\"; ");
+                sb.append("EffectTexturePath: \"").append(inlineEffectTexturePath).append("\"; ");
+            } else if (barTexturePath != null || effectTexturePath != null) {
+                if (barTexturePath != null)
+                    sb.append("BarTexturePath: \"").append(inlineBarTexturePath).append("\"; ");
+                if (effectTexturePath != null)
+                    sb.append("EffectTexturePath: \"").append(inlineEffectTexturePath).append("\"; ");
+            }
             sb.append("Value: 0.0; ");
             sb.append("} ");
         }

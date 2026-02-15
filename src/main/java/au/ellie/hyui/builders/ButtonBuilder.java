@@ -380,12 +380,13 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
 
     @Override
     protected boolean isStyleWhitelist() {
+        if (typedStyle != null) return false;
         return true;
     }
 
     @Override
     protected Set<String> getSupportedStyleProperties() {
-        if (isBackButton()) {
+        if (typedStyle != null || isBackButton()) {
             return Set.of();
         }
         Set<String> supported = new HashSet<>(StylePropertySets.merge(

@@ -200,9 +200,11 @@ public class PageBuilder extends InterfaceBuilder<PageBuilder> {
 
                 world.execute(() -> openedPage.reloadImage(id, false, false));
             });
-        } else
+            pageManager.openCustomPage(playerRefParam.getReference(), store, this.lastPage);
+        } else {
             sendDynamicImageIfNeeded(playerRefParam);
-
+            pageManager.openCustomPage(playerRefParam.getReference(), store, this.lastPage);
+        }
         return this.lastPage;
     }
 

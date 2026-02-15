@@ -717,7 +717,7 @@ public interface TagHandler {
                     spans.add(span);
                 }
             } else if (child instanceof TextNode textNode) {
-                String text = textNode.text();
+                String text = textNode.getWholeText();
                 if (!text.isBlank()) {
                     spans.add(Message.raw(text));
                 }
@@ -727,8 +727,8 @@ public interface TagHandler {
     }
 
     default Message buildMessageSpan(Element element) {
-        String text = element.text();
-        if (text == null || text.isBlank()) {
+        String text = element.wholeText();
+        if (text == null) {
             return null;
         }
         Message message = Message.raw(text);

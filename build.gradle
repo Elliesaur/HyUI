@@ -32,7 +32,7 @@ javadoc {
 
 hytale {
     // Versioning
-    patchline = "pre-release"
+    patchline = "release"
 
     // Manifest auto update
     manifest {
