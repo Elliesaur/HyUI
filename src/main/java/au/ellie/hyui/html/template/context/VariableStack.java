@@ -83,7 +83,7 @@ public class VariableStack {
         if (preferDynamicValues && valueResolver != null) {
             Optional<Object> resolved = valueResolver.resolve(name);
             if (resolved.isPresent() && resolved.get() != NULL_SENTINEL)
-                return resolved;
+                return resolved.get();
         }
 
         for (VariableScope scope : stack) {

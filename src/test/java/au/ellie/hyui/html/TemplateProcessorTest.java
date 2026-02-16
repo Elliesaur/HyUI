@@ -450,6 +450,18 @@ class TemplateProcessorTest {
         }
 
         @Test
+        @DisplayName("Should compare optional")
+        void optionalComparison() {
+            processor.setVariable("value", Optional.ofNullable(5));
+
+            processor.setTemplate("{{if $value >= 5}}true{{/if}}");
+            assertEquals("true", processor.process());
+
+            processor.setTemplate("{{$value < 2}}");
+            assertEquals("false", processor.process());
+        }
+
+        @Test
         @DisplayName("Should handle numeric type mixing (int, long, double)")
         void numericTypeMixing() {
             processor.setVariable("a", 5);
