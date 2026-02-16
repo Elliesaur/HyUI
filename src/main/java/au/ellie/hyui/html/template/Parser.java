@@ -695,15 +695,17 @@ public class Parser {
             if (consume(Type.ASSIGN)) {
                 skipWhitespace();
 
-                // Flow attributes: for="$items itemName"
+                // Flow attributes: for="..."
                 if (name.equals(KEYWORD_FOR) && consume(Type.QUOTE)) {
                     flowAttributes.add(parseControlAttribute(Type.QUOTE));
+                    skipWhitespaceAndNewlines();
                     continue;
                 }
 
                 // Flow attributes like if="$condition"
                 if (KEYWORD_CONDITIONALS.contains(name) && consume(Type.QUOTE)) {
                     flowAttributes.add(parseConditionAttribute(name, Type.QUOTE));
+                    skipWhitespaceAndNewlines();
                     continue;
                 }
 

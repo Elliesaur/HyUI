@@ -1379,9 +1379,7 @@ class TemplateProcessorTest {
                     """);
 
             processor.setTemplate(normalize("""
-                    {{for $key in $list}}
-                    <module key={{$key}} {{if $modulation == 0 }} {{if $key < 3 }} active {{/if}} {{/if}} style={{$style}} />
-                    {{/for}}
+                    <module for="$key in $list" key={{$key}} {{if $modulation == 0 }} {{if $key < 3 }} active {{/if}} {{/if}} style={{$style}} />
                     """));
 
             assertEquals(normalize("""
@@ -1389,7 +1387,7 @@ class TemplateProcessorTest {
                     <div style="color: red;">Module 2 -> Active : true</div>
                     <div>Module 3 -> Active : false</div>
                     <div>Module 4 -> Active : false</div>
-                    """), processor.process());
+                    """.replace("\n", "")), processor.process());
         }
     }
 
