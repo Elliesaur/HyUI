@@ -122,22 +122,38 @@ public class Evaluator {
             case BinaryOpNode binary -> evaluateBinaryOp(binary);
             case PipeNode pipe -> evaluatePipe(pipe);
             case DefaultNode def -> evaluateDefault(def);
-            case VariableNode var -> contextStack.getVariable(var.name(), () -> {
-                for (String key : contextStack.getScopeKeys()) {
-                    // Prevent accessing variables from scopes
-                    if (key.startsWith(Symbols.HTML_SLOT_KEY))
-                        continue;
-
-                    try {
-                        return ReflectionUtils.getObjectProperty(contextStack.getVariable(key), var.name());
-                    } catch (Exception _) {
-                        // Ignore and return null
-                    }
-                }
-
-                return null;
-            });
+            case VariableNode var -> evaluateVariable(var);
         };
+    }
+
+    /**
+     * Evaluate a variable reference and return its value from the context stack.
+     *
+     * @param var The variable node to evaluate.
+     * @return The value of the variable, or null if not found.
+     */
+    private Object evaluateVariable(VariableNode var) {
+        var result = contextStack.getVariable(var.name(), () -> {
+            for (String key : contextStack.getScopeKeys()) {
+                // Prevent accessing variables from scopes
+                if (key.startsWith(Symbols.HTML_SLOT_KEY))
+                    continue;
+
+                try {
+                    return ReflectionUtils.getObjectProperty(contextStack.getVariable(key), var.name());
+                } catch (Exception _) {
+                    // Ignore and return null
+                }
+            }
+
+            return null;
+        });
+
+        // Convert negated to boolean and negate
+        if (var.negated())
+            result = !toBoolean(result);
+
+        return result;
     }
 
     /**

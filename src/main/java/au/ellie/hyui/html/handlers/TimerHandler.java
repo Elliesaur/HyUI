@@ -27,11 +27,11 @@ import org.jsoup.nodes.Element;
 
 /**
  * Handler for timer elements in HYUIML.
- *
+ * <p>
  * Supports:
  * - &lt;timer&gt; tag
  * - &lt;span class="timer"&gt; tag
- *
+ * <p>
  * Attributes:
  * - value: Time value in milliseconds (default: 0)
  * - format: Display format (hms, ms, seconds, human, milliseconds)
@@ -51,7 +51,7 @@ public class TimerHandler implements TagHandler {
     public UIElementBuilder<?> handle(Element element, HtmlParser parser) {
         TimerLabelBuilder builder = TimerLabelBuilder.timerLabel();
 
-        applyCommonAttributes(builder, element);
+        applyCommonAttributes(builder, element, parser);
 
         // Parse time value
         if (element.hasAttr("value")) {

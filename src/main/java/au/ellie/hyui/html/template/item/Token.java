@@ -63,10 +63,11 @@ public record Token(Type type, String value, int position) {
         OPEN_ANGLE_BRACKET,
         CLOSE_EXPRESSION,
         OPEN_EXPRESSION,
-        CLOSE_COMMENTS,
-        OPEN_COMMENTS,
+        MARKER_COMMENTS,
 
         // Global tokens
+        SINGLE_QUOTE,
+        EXCLAMATION,
         BACK_SLASH,
         NEW_LINE,
         VARIABLE,
@@ -74,13 +75,12 @@ public record Token(Type type, String value, int position) {
         COLON,
         COMMA,
         QUOTE,
-        SINGLE_QUOTE,
         SLASH,
         PIPE,
         DOT,
+        AT,
 
         // Special
-        COMPARATOR,
         OPERATOR,
         KEYWORD,
         SPACER,
@@ -96,8 +96,8 @@ public record Token(Type type, String value, int position) {
         put(Symbols.OPEN_ANGLE_BRACKET, OPEN_ANGLE_BRACKET);
         put(Symbols.CLOSE_EXPRESSION, CLOSE_EXPRESSION);
         put(Symbols.OPEN_EXPRESSION, OPEN_EXPRESSION);
-        put(Symbols.CLOSE_COMMENTS, CLOSE_COMMENTS);
-        put(Symbols.OPEN_COMMENTS, OPEN_COMMENTS);
+        put(Symbols.MARKER_COMMENTS, MARKER_COMMENTS);
+        put(Symbols.EXCLAMATION, EXCLAMATION);
         put(Symbols.BACK_SLASH, BACK_SLASH);
         put(Symbols.NEW_LINE, NEW_LINE);
         put(Symbols.VARIABLE, VARIABLE);
@@ -109,5 +109,6 @@ public record Token(Type type, String value, int position) {
         put(Symbols.SLASH, SLASH);
         put(Symbols.PIPE, PIPE);
         put(Symbols.DOT, DOT);
+        put(Symbols.AT, AT);
     }};
 }

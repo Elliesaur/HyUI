@@ -179,7 +179,9 @@ public class PageBuilder extends InterfaceBuilder<PageBuilder> {
                 templateHtml,
                 templateProcessor,
                 runtimeTemplateUpdatesEnabled,
-                onDismissListener);
+                onDismissListener,
+                eventListeners
+        );
         this.lastPage.setRefreshRateMs(refreshRateMs);
         this.lastPage.setRefreshListener(refreshListener);
 

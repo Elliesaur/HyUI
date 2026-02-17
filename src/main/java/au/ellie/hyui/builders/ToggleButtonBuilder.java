@@ -23,10 +23,7 @@ import au.ellie.hyui.elements.UIElements;
 import au.ellie.hyui.events.MouseEventData;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventActions;
-import au.ellie.hyui.events.UIEventListener;
 import au.ellie.hyui.types.ButtonStyle;
-import au.ellie.hyui.utils.ParseUtils;
-import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBinding;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
@@ -49,7 +46,7 @@ public class ToggleButtonBuilder extends UIElementBuilder<ToggleButtonBuilder> {
         this.initialValue = false;
     }
 
-    
+
     public static ToggleButtonBuilder toggleButton() {
         return new ToggleButtonBuilder();
     }
@@ -210,12 +207,12 @@ public class ToggleButtonBuilder extends UIElementBuilder<ToggleButtonBuilder> {
             this.initialValue = next;
         }
     }
-    
+
     @Override
     protected Object parseValue(String rawValue) {
         return Boolean.parseBoolean(rawValue);
     }
-    
+
     @Override
     protected void onBuild(UICommandBuilder commands, UIEventBuilder events) {
         String selector = getSelector();
@@ -228,7 +225,8 @@ public class ToggleButtonBuilder extends UIElementBuilder<ToggleButtonBuilder> {
 
         if (listeners.isEmpty()) {
             // To handle data back to the .getValue, we need to add at least one listener.
-            listeners.add(new UIEventListener<Boolean>(CustomUIEventBindingType.ValueChanged, (Boolean v, UIContext ctx) -> {}));
+            addEventListener(CustomUIEventBindingType.ValueChanged, Boolean.class, v -> {
+            });
         }
 
         // Register event listeners
@@ -238,33 +236,33 @@ public class ToggleButtonBuilder extends UIElementBuilder<ToggleButtonBuilder> {
                 HyUIPlugin.getLog().logFinest("Adding ValueChanged event binding for " + selector + " with eventId: " + eventId);
                 events.addEventBinding(CustomUIEventBindingType.ValueChanged, selector,
                         EventData.of("@ValueBool", selector + ".IsChecked")
-                            .append("Target", eventId)
-                            .append("Action", UIEventActions.VALUE_CHANGED), false);
+                                .append("Target", eventId)
+                                .append("Action", UIEventActions.VALUE_CHANGED), false);
             } else if (listener.type() == CustomUIEventBindingType.Activating) {
                 HyUIPlugin.getLog().logFinest("Adding Activating event binding: " + eventId + " for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.Activating, selector,
                         EventData.of("Action", UIEventActions.BUTTON_CLICKED)
-                            .append("Target", eventId), false);
+                                .append("Target", eventId), false);
             } else if (listener.type() == CustomUIEventBindingType.DoubleClicking) {
                 HyUIPlugin.getLog().logFinest("Adding DoubleClicking event binding for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.DoubleClicking, selector,
                         EventData.of("Action", UIEventActions.DOUBLE_CLICKING)
-                            .append("Target", eventId), false);
+                                .append("Target", eventId), false);
             } else if (listener.type() == CustomUIEventBindingType.RightClicking) {
                 HyUIPlugin.getLog().logFinest("Adding RightClicking event binding for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.RightClicking, selector,
                         EventData.of("Action", UIEventActions.RIGHT_CLICKING)
-                            .append("Target", eventId), false);
+                                .append("Target", eventId), false);
             } else if (listener.type() == CustomUIEventBindingType.MouseEntered) {
                 HyUIPlugin.getLog().logFinest("Adding MouseEntered event binding for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.MouseEntered, selector,
                         EventData.of("Action", UIEventActions.MOUSE_ENTERED)
-                            .append("Target", eventId), false);
+                                .append("Target", eventId), false);
             } else if (listener.type() == CustomUIEventBindingType.MouseExited) {
                 HyUIPlugin.getLog().logFinest("Adding MouseExited event binding for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.MouseExited, selector,
                         EventData.of("Action", UIEventActions.MOUSE_EXITED)
-                            .append("Target", eventId), false);
+                                .append("Target", eventId), false);
             }
         });
     }

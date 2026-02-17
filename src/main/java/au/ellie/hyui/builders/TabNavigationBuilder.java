@@ -29,20 +29,24 @@ import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
+
+import static com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType.SelectedTabChanged;
+import static com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType.ValueChanged;
 
 /**
  * Builder for creating tab navigation UI elements.
  * Creates a horizontal row of tab buttons for navigation between different content sections.
- *
+ * <p>
  * Example usage:
+ * <pre>
  * TabNavigationBuilder.tabNavigation()
  *     .withId("main-tabs")
  *     .addTab("inventory", "Inventory")
  *     .addTab("stats", "Statistics", "stats-content")
  *     .addTab("settings", "Settings")
  *     .withSelectedTab("inventory")
+ * </pre>
  */
 public class TabNavigationBuilder extends UIElementBuilder<TabNavigationBuilder>
         implements LayoutModeSupported<TabNavigationBuilder>, BackgroundSupported<TabNavigationBuilder> {
@@ -67,6 +71,7 @@ public class TabNavigationBuilder extends UIElementBuilder<TabNavigationBuilder>
     private int tabsVersion = 0;
     private int lastBuiltTabsVersion = -1;
     private final List<UIElementBuilder<?>> tabButtons = new ArrayList<>();
+
     public TabNavigationBuilder() {
         super(UIElements.GROUP, "Group");
     }
@@ -304,6 +309,13 @@ public class TabNavigationBuilder extends UIElementBuilder<TabNavigationBuilder>
         return true;
     }
 
+    @Override
+    protected CustomUIEventBindingType getEventTypeMapped(CustomUIEventBindingType type) {
+        if (type == ValueChanged)
+            return SelectedTabChanged;
+
+        return type;
+    }
 
     @Override
     protected void onBuild(UICommandBuilder commands, UIEventBuilder events) {
@@ -315,7 +327,7 @@ public class TabNavigationBuilder extends UIElementBuilder<TabNavigationBuilder>
         if ((selectedTabId == null || !hasTab(selectedTabId)) && !tabs.isEmpty()) {
             selectedTabId = tabs.get(0).id();
         }
-        
+
         // TODO Proper hash check on objects.
         boolean tabButtonsMissing = tabsVersion > lastBuiltTabsVersion || (tabButtons.isEmpty() && children.isEmpty()) || tabButtons.size() != children.size();
         if (tabButtonsMissing) {

@@ -38,6 +38,7 @@ import java.util.function.BiConsumer;
 public abstract class HyUInterface implements UIContext {
 
     private final Set<String> dirtyValueIds = new HashSet<>();
+    private final Map<String, BiConsumer<Object, UIContext>> eventListener;
     protected String uiFile;
     protected List<UIElementBuilder<?>> elements;
     protected List<BiConsumer<UICommandBuilder, UIEventBuilder>> editCallbacks;
@@ -53,10 +54,13 @@ public abstract class HyUInterface implements UIContext {
                         List<BiConsumer<UICommandBuilder, UIEventBuilder>> editCallbacks,
                         String templateHtml,
                         TemplateProcessor templateProcessor,
-                        boolean runtimeTemplateUpdatesEnabled) {
+                        boolean runtimeTemplateUpdatesEnabled,
+                        Map<String, BiConsumer<Object, UIContext>> eventListeners
+    ) {
         this.uiFile = uiFile;
         this.elements = elements;
         this.editCallbacks = editCallbacks;
+        this.eventListener = eventListeners;
         this.templateHtml = templateHtml;
         this.templateProcessor = templateProcessor;
         this.runtimeTemplateUpdatesEnabled = runtimeTemplateUpdatesEnabled;
@@ -271,7 +275,7 @@ public abstract class HyUInterface implements UIContext {
                 if (listener.type() == CustomUIEventBindingType.Activating ||
                         listener.type() == CustomUIEventBindingType.Dismissing ||
                         listener.type() == CustomUIEventBindingType.Validating) {
-                    ((UIEventListener<Void>) listener).callback().accept(null, context);
+                    ((UIEventListener<Void>) listener).callback().accept(null, context, listener.type());
                     continue;
                 }
                 if (isSlotEventRelated(listener.type()) ||
@@ -283,7 +287,7 @@ public abstract class HyUInterface implements UIContext {
                         listener.type() == CustomUIEventBindingType.RightClicking
                 ) {
                     Object payload = buildEventPayload(listener.type(), data);
-                    ((UIEventListener<Object>) listener).callback().accept(payload, context);
+                    ((UIEventListener<Object>) listener).callback().accept(payload, context, listener.type());
                     continue;
                 }
                 String rawValue = element.usesRefValue() ? data.getValue("RefValue") : data.getValue("Value");
@@ -299,7 +303,7 @@ public abstract class HyUInterface implements UIContext {
                 }
 
                 if (finalValue != null) {
-                    ((UIEventListener<Object>) listener).callback().accept(finalValue, context);
+                    ((UIEventListener<Object>) listener).callback().accept(finalValue, context, listener.type());
                 }
             }
         }
@@ -443,7 +447,7 @@ public abstract class HyUInterface implements UIContext {
             //return;
         }
         HyUIPlugin.getLog().logFinest("REBUILD: Template refresh");
-        HtmlParser parser = new HtmlParser();
+        HtmlParser parser = new HtmlParser(eventListener);
         String processedHtml = templateProcessor.setTemplate(templateHtml).process(context);
         List<UIElementBuilder<?>> updatedElements = parser.parse(processedHtml);
 

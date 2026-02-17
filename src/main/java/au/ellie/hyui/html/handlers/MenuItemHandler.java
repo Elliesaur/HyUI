@@ -65,7 +65,7 @@ public class MenuItemHandler implements TagHandler {
             builder.withIconAnchor(anchor);
         }
 
-        applyCommonAttributes(builder, element);
+        applyCommonAttributes(builder, element, parser);
         return builder;
     }
 

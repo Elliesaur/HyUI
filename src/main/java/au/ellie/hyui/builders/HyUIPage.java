@@ -36,6 +36,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -61,10 +62,12 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
                     String templateHtml,
                     TemplateProcessor templateProcessor,
                     boolean runtimeTemplateUpdatesEnabled,
-                    BiConsumer<HyUIPage, Boolean> onDismissListener) {
+                    BiConsumer<HyUIPage, Boolean> onDismissListener,
+                    Map<String, BiConsumer<Object, UIContext>> eventListeners
+    ) {
         super(playerRef, lifetime, DynamicPageData.CODEC);
         this.onDismissListener = onDismissListener;
-        this.delegate = new HyUInterface(uiFile, elements, editCallbacks, templateHtml, templateProcessor, runtimeTemplateUpdatesEnabled) {
+        this.delegate = new HyUInterface(uiFile, elements, editCallbacks, templateHtml, templateProcessor, runtimeTemplateUpdatesEnabled, eventListeners) {
         };
     }
 

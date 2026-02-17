@@ -7,6 +7,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -73,7 +76,7 @@ class TemplateProcessorTest {
         }
     }
 
-    class Modulator {
+    static class Modulator {
         public int size;
 
         public int increment() {
@@ -237,16 +240,19 @@ class TemplateProcessorTest {
             assertEquals("Hello 'World'", processor.process());
         }
 
-        @Test
+        @ParameterizedTest
+        @CsvSource({
+                "Alice, true, false",
+                "Bob, false, true"
+        })
         @DisplayName("Should handle single quotes in comparisons")
-        void singleQuotesInComparisons() {
-            processor.setVariable("name", "Alice");
-            processor.setTemplate("{{if $name == 'Alice'}}Match{{else}}No match{{/if}}");
-            assertEquals("Match", processor.process());
+        void singleQuotesInComparisons(String name, String result, String notResult) {
+            processor.setVariable("name", name);
+            processor.setTemplate("{{if $name == 'Alice'}}true{{else}}false{{/if}}");
+            assertEquals(result, processor.process());
 
-            processor.setVariable("name", "Bob");
-            processor.setTemplate("{{if $name == 'Alice'}}Match{{else}}No match{{/if}}");
-            assertEquals("No match", processor.process());
+            processor.setTemplate("{{if $name != 'Alice'}}true{{else}}false{{/if}}");
+            assertEquals(notResult, processor.process());
         }
 
         @ParameterizedTest
@@ -258,6 +264,21 @@ class TemplateProcessorTest {
 
             assertNotNull(result);
             assertFalse(result.isBlank());
+        }
+
+        @ParameterizedTest
+        @CsvSource({
+                ", No value",
+                "value, Has value"
+        })
+        @DisplayName("Should handle negated boolean")
+        void reversedLiterals(String value, String expected) {
+            processor.setVariable("value", value);
+            processor.setTemplate(normalize("""
+                    {{if !$value}}No value{{else}}Has value{{/if}}
+                    """));
+
+            assertEquals(expected, processor.process());
         }
 
         @Test
@@ -452,7 +473,7 @@ class TemplateProcessorTest {
         @Test
         @DisplayName("Should compare optional")
         void optionalComparison() {
-            processor.setVariable("value", Optional.ofNullable(5));
+            processor.setVariable("value", Optional.of(5));
 
             processor.setTemplate("{{if $value >= 5}}true{{/if}}");
             assertEquals("true", processor.process());
@@ -1368,7 +1389,7 @@ class TemplateProcessorTest {
         @Test
         @DisplayName("Should call function with arguments and dynamic variables")
         void callFunctionWithArgumentsAndDynamic() {
-            final var modulator = new TemplateProcessorTest.Modulator();
+            final var modulator = new Modulator();
 
             processor.setVariable("list", List.of(1, 2, 3, 4));
             processor.setVariable("modulation", (_) -> modulator.increment(), DYNAMIC);
@@ -1506,6 +1527,7 @@ class TemplateProcessorTest {
                     """);
 
             processor.setTemplate("<panel content={{ $number }} />");
+
             assertEquals(normalize("""
                     <div style="background-color: #2a2a3e; padding: 10; anchor-width: 120; anchor-height: 60;">
                         <span>Deep Component</span>
@@ -1521,6 +1543,7 @@ class TemplateProcessorTest {
             processor.registerComponent("submit", "<button>{{$label}}</button>");
 
             processor.setTemplate("<submit/>");
+
             assertEquals(
                     "<button>Submit</button>",
                     processor.process()
@@ -1546,12 +1569,11 @@ class TemplateProcessorTest {
             processor.setVariable("mode", "buy");
             processor.setVariable("buyPrice", "100");
             processor.setVariable("sellPrice", "50");
-
             processor.registerComponent("priceDisplay", "<div class=\"price\">{{$amount}}</div>");
 
             processor.setTemplate("<priceDisplay amount=\"{{if $mode == 'buy'}}{{$buyPrice}}{{else}}{{$sellPrice}}{{/if}}\"/>");
 
-            String result = processor.process();
+            var result = processor.process();
             assertTrue(result.contains("<div class=\"price\">100</div>"), "Should show buy price when mode is buy: " + result);
         }
 
@@ -1561,12 +1583,11 @@ class TemplateProcessorTest {
             processor.setVariable("mode", "sell");
             processor.setVariable("buyPrice", "100");
             processor.setVariable("sellPrice", "50");
-
             processor.registerComponent("priceDisplay", "<div class=\"price\">{{$amount}}</div>");
 
             processor.setTemplate("<priceDisplay amount=\"{{if $mode == 'buy'}}{{$buyPrice}}{{else}}{{$sellPrice}}{{/if}}\"/>");
 
-            String result = processor.process();
+            var result = processor.process();
             assertTrue(result.contains("<div class=\"price\">50</div>"), "Should show sell price when mode is sell: " + result);
         }
 
@@ -1576,25 +1597,24 @@ class TemplateProcessorTest {
             processor.setVariable("type", "secondary");
             processor.setVariable("variant", "Dense");
             processor.setVariable("playerAmount", 0);
-
             processor.registerComponent("testBtn", """
-                    <button 
-                        data-type="@{{$type}}-{{$variant}}" 
+                    <button
+                        data-type="@{{$type}}-{{$variant}}"
                         class="{{$class}}">
                         <slot/>
                     </button>
                     """);
 
             processor.setTemplate("""
-                    <testBtn 
-                        type="{{$type}}" 
-                        variant="{{$variant}}" 
+                    <testBtn
+                        type="{{$type}}"
+                        variant="{{$variant}}"
                         class="p-2 {{if $playerAmount <= 0}}hidden{{/if}}">
                         Sell
                     </testBtn>
                     """);
 
-            String result = processor.process();
+            var result = processor.process();
             assertTrue(result.contains("data-type=\"@secondary-Dense\""), "Should have correct data-type: " + result);
             assertTrue(result.contains("class=\"p-2 hidden\""), "Should have hidden class when playerAmount is 0: " + result);
         }
@@ -1602,13 +1622,11 @@ class TemplateProcessorTest {
         @Test
         @DisplayName("Should handle undefined variables in component attributes gracefully")
         void componentWithUndefinedVariablesInAttributes() {
-            // Variables NOT set - should use empty strings
             processor.registerComponent("priceDisplay", "<div class=\"price\">{{$amount}}</div>");
 
             processor.setTemplate("<priceDisplay amount=\"{{if $mode == 'buy'}}{{$buyPrice}}{{else}}{{$sellPrice}}{{/if}}\"/>");
+            var result = processor.process();
 
-            String result = processor.process();
-            // When variables are undefined, they should be empty strings
             assertTrue(result.contains("<div class=\"price\"></div>"),
                     "Should have empty amount when variables are undefined: " + result);
         }
@@ -1617,16 +1635,12 @@ class TemplateProcessorTest {
         @DisplayName("Should show actual behavior with partially defined variables")
         void componentWithPartiallyDefinedVariables() {
             processor.setVariable("mode", "buy");
-            // buyPrice is NOT set, sellPrice is set
             processor.setVariable("sellPrice", "50");
-
             processor.registerComponent("priceDisplay", "<div class=\"price\">Price: {{$amount}}</div>");
 
             processor.setTemplate("<priceDisplay amount=\"{{if $mode == 'buy'}}{{$buyPrice}}{{else}}{{$sellPrice}}{{/if}}\"/>");
+            var result = processor.process();
 
-            String result = processor.process();
-            System.out.println("Result with partially defined vars: " + result);
-            // buyPrice is undefined, so it should be empty string
             assertTrue(result.contains("<div class=\"price\">Price: </div>"),
                     "Should have empty amount when buyPrice is undefined: " + result);
         }
@@ -1692,6 +1706,7 @@ class TemplateProcessorTest {
                         <:footer>Custom Footer</:footer>
                     </panel>
                     """);
+
             assertEquals(normalize("""
                             <div class="panel">
                                 <h1>Custom Header</h1>
@@ -1771,7 +1786,7 @@ class TemplateProcessorTest {
                     </template>
                     """));
 
-            String result = processor.process();
+            var result = processor.process();
             assertTrue(result.contains("Success"));
             assertFalse(result.contains("Warning"));
             assertFalse(result.contains("Error"));
@@ -1809,7 +1824,7 @@ class TemplateProcessorTest {
                     </template>
                     """));
 
-            String result = processor.process();
+            var result = processor.process();
             assertTrue(result.contains("<h1>Title</h1>"));
             assertTrue(result.contains("<p>Paragraph</p>"));
             assertTrue(result.contains("<span>Span</span>"));
@@ -1831,7 +1846,7 @@ class TemplateProcessorTest {
                     </template>
                     """));
 
-            String result = processor.process();
+            var result = processor.process();
             assertTrue(result.contains("<div>Outer</div>"));
             assertTrue(result.contains("<div>Inner</div>"));
             assertFalse(result.contains("<template"));
@@ -1854,7 +1869,7 @@ class TemplateProcessorTest {
                     {{/for}}
                     """));
 
-            String result = processor.process();
+            var result = processor.process();
             assertTrue(result.contains("First"));
             assertFalse(result.contains("Second"));
             assertTrue(result.contains("Third"));
@@ -1880,7 +1895,7 @@ class TemplateProcessorTest {
                     </template>
                     """));
 
-            String result = processor.process();
+            var result = processor.process();
             assertTrue(result.contains("0: A"));
             assertTrue(result.contains("1: B"));
             assertTrue(result.contains("2: C"));
@@ -1948,14 +1963,14 @@ class TemplateProcessorTest {
         @Test
         @DisplayName("Should handle large lists efficiently")
         void largeListPerformance() {
-            List<Integer> largeList = new ArrayList<>();
-            for (int i = 0; i < 1000; i++) largeList.add(i);
+            var largeList = new ArrayList<Integer>();
+            for (var i = 0; i < 1000; i++) largeList.add(i);
             processor.setVariable("numbers", largeList);
 
-            long start = System.currentTimeMillis();
+            var start = System.currentTimeMillis();
             processor.setTemplate("{{for $numbers}}{{$item}},{{/for}}");
-            String result = processor.process();
-            long duration = System.currentTimeMillis() - start;
+            var result = processor.process();
+            var duration = System.currentTimeMillis() - start;
 
             assertTrue(duration < 1000, "Processing 1000 items should complete in less than 1 second");
             assertTrue(result.contains("0,"));
@@ -1965,7 +1980,7 @@ class TemplateProcessorTest {
         @Test
         @DisplayName("Should parse complex templates quickly")
         void complexTemplatePerformance() {
-            String template = normalize("""
+            var template = normalize("""
                     {{for $items}}
                         {{if $item.active}}
                             <div>{{$item.name | uppercase}}</div>
@@ -1973,11 +1988,32 @@ class TemplateProcessorTest {
                     {{/for}}
                     """);
 
-            long start = System.currentTimeMillis();
-            for (int i = 0; i < 100; i++) processor.setTemplate(template).process();
-            long duration = System.currentTimeMillis() - start;
+            var start = System.currentTimeMillis();
+            for (var i = 0; i < 100; i++) processor.setTemplate(template).process();
+            var duration = System.currentTimeMillis() - start;
 
             assertTrue(duration < 1000, "100 iterations should complete in less than 1 second");
+        }
+    }
+
+    // ========== HTML FILES ==========
+
+    @Nested
+    @DisplayName("HTML File Processing")
+    class HtmlFileProcessing {
+
+        @Test
+        @DisplayName("Should process template from HTML file")
+        void processTemplateFromHtmlFile() throws IOException {
+            var htmlContent = Files.readString(Path.of("src/test/resources/Common/UI/Custom/Pages/HyUIHtmlTest.html"));
+
+            processor.setTemplate(htmlContent);
+            var result = processor.process();
+
+            assertTrue(result.contains("background-color: #ff0000;"));
+            assertTrue(result.contains("Text Here That Isnt The Title"));
+            assertTrue(result.contains("data-hyui-frame-height=\"32\""));
+            assertTrue(result.contains("<p>Panel</p>"));
         }
     }
 
@@ -1990,49 +2026,38 @@ class TemplateProcessorTest {
         @Test
         @DisplayName("Should show line and column number for syntax errors")
         void errorWithLineAndColumn() {
-            // Template with an error on line 3
-            String template = """
+            var template = """
                     <div>
                         <span>Hello</span>
                         <input type="range" max={{$value}}" />
                     </div>
                     """;
 
-            var exception = assertThrows(Exception.class, () -> {
+            var message = assertThrows(Exception.class, () -> {
                 processor.setTemplate(template).process();
-            });
+            }).getMessage();
 
-            String message = exception.getMessage();
-            // Should contain line number
             assertTrue(message.contains("line 3"), "Error message should contain line number: " + message);
-            // Should contain column information
             assertTrue(message.contains("column"), "Error message should contain column information: " + message);
-            // Should show the line with error
             assertTrue(message.contains("input"), "Error message should show the line with the error: " + message);
         }
 
         @Test
         @DisplayName("Should show caret pointing to error location")
         void errorWithCaret() {
-            String template = "<div>{{$unknown.property}}</div>";
+            var badTemplate = "<div>{{$var.</div>";
 
-            // This will cause an error during processing (unknown variable)
-            // But we can test parsing errors
-            String badTemplate = "<div>{{$var.</div>";
-
-            var exception = assertThrows(Exception.class, () -> {
+            var message = assertThrows(Exception.class, () -> {
                 processor.setTemplate(badTemplate).process();
-            });
+            }).getMessage();
 
-            String message = exception.getMessage();
-            // Should contain a caret (^) pointing to the error
             assertTrue(message.contains("^"), "Error message should contain a caret: " + message);
         }
 
         @Test
         @DisplayName("Should handle multiline templates in error messages")
         void errorInMultilineTemplate() {
-            String template = normalize("""
+            var template = normalize("""
                     <container>
                         <header>
                             <title>Test</title>
@@ -2043,14 +2068,11 @@ class TemplateProcessorTest {
                     </container>
                     """);
 
-            var exception = assertThrows(Exception.class, () -> {
+            var message = assertThrows(Exception.class, () -> {
                 processor.setTemplate(template).process();
-            });
+            }).getMessage();
 
-            String message = exception.getMessage();
-            // Should show line number (line 6 has the error)
             assertTrue(message.contains("line"), "Error message should contain line number: " + message);
-            // Should show the problematic line
             assertTrue(message.contains("input") || message.contains("value"),
                     "Error message should show the line with the error: " + message);
         }

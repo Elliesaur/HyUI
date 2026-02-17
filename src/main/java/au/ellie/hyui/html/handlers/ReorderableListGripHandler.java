@@ -34,7 +34,7 @@ public class ReorderableListGripHandler implements TagHandler {
     @Override
     public UIElementBuilder<?> handle(Element element, HtmlParser parser) {
         ReorderableListGripBuilder builder = ReorderableListGripBuilder.reorderableListGrip();
-        applyCommonAttributes(builder, element);
+        applyCommonAttributes(builder, element, parser);
         return builder;
     }
 }

@@ -317,7 +317,7 @@ public class Parser {
     private ExpressionNode parseComparisonExpression(boolean initial) {
         var left = parsePipeExpression(initial);
 
-        while (match(Type.COMPARATOR) || matchSymbol(Type.KEYWORD, KEYWORD_IN, KEYWORD_NOT_IN) || match(Type.CLOSE_ANGLE_BRACKET, Type.OPEN_ANGLE_BRACKET, Type.ASSIGN)) {
+        while (matchAll(Type.EXCLAMATION, Type.ASSIGN) || match(Type.CLOSE_ANGLE_BRACKET, Type.OPEN_ANGLE_BRACKET, Type.ASSIGN) || matchSymbol(Type.KEYWORD, KEYWORD_IN, KEYWORD_NOT_IN)) {
             var op = advance().value();
             if (consume(Type.ASSIGN))
                 op += ASSIGN;
@@ -384,7 +384,7 @@ public class Parser {
             return parseStringLiteral(Type.SINGLE_QUOTE, false);
 
         // Variables and property access
-        if (match(Type.VARIABLE))
+        if (match(Type.VARIABLE, Type.EXCLAMATION))
             return parseVariable();
 
         // Text
@@ -403,6 +403,7 @@ public class Parser {
      * </pre>
      */
     private ExpressionNode parseVariable() {
+        var reversed = consume(Type.EXCLAMATION);
         advance(); // consume $
 
         var varName = joinTokens(Type.TEXT, Type.NUMBER, Type.COLON, Type.KEYWORD);
@@ -410,7 +411,7 @@ public class Parser {
             throw error("Expected variable name after '$'");
 
         // Check for property access
-        ExpressionNode expr = new VariableNode(varName);
+        ExpressionNode expr = new VariableNode(varName, reversed);
 
         while (match(Type.DOT)) {
             advance(); // consume .
@@ -447,7 +448,7 @@ public class Parser {
 
         var builder = new StringBuilder();
         while (hasNext()) {
-            if (match(Type.BACK_SLASH) && matchNext(quoteType)) {
+            if (matchAll(Type.BACK_SLASH, quoteType)) {
                 advance(); // consume backslash
                 if (escaped) {
                     advance(); // consume quote
@@ -472,7 +473,7 @@ public class Parser {
         advance(); // consume <
 
         // Html comments
-        if (consume(Type.OPEN_COMMENTS))
+        if (match(Type.EXCLAMATION, Type.MARKER_COMMENTS))
             return parseComment();
 
         // Check for slot input syntax: <:name>
@@ -559,12 +560,15 @@ public class Parser {
      * Parse an HTML comment
      */
     private Node parseComment() {
+        expect(Type.EXCLAMATION, "Expected '!' after '<' for comment");
+        expect(Type.MARKER_COMMENTS, "Expected '--' after '<!' for comment");
+
         var builder = new StringBuilder();
 
         while (hasNext()) {
             var savedPos = pos;
 
-            if (consume(Type.CLOSE_COMMENTS)) {
+            if (consume(Type.MARKER_COMMENTS)) {
                 if (consume(Type.CLOSE_ANGLE_BRACKET))
                     break;
 
@@ -685,7 +689,7 @@ public class Parser {
             }
 
             // Parse attribute name
-            var name = joinTokens(Type.TEXT, Type.NUMBER, Type.KEYWORD);
+            var name = joinTokens(Type.TEXT, Type.NUMBER, Type.KEYWORD, Type.AT);
             if (name.isEmpty())
                 break;
 
@@ -790,7 +794,7 @@ public class Parser {
                     throw error("Expected index variable after comma in for block");
 
                 var indexVar = parseVariable();
-                if (!(indexVar instanceof VariableNode(String indexVarName)))
+                if (!(indexVar instanceof VariableNode(String indexVarName, boolean reversed)))
                     throw error("Expected variable for index in for block");
 
                 indexName = indexVarName;
@@ -809,7 +813,7 @@ public class Parser {
                 collection = parseExpression(false);
 
                 // Extract item name from first variable
-                if (!(firstVar instanceof VariableNode(String name)))
+                if (!(firstVar instanceof VariableNode(String name, boolean reversed)))
                     throw error("Expected variable for item in for block");
 
                 itemName = name;
@@ -903,15 +907,17 @@ public class Parser {
         return false;
     }
 
-    private boolean matchNext(Type... types) {
-        if (pos + 1 >= tokens.size())
-            return false;
+    private boolean matchAll(Type... types) {
+        int index = 0;
 
-        for (var type : types)
-            if (tokens.get(pos + 1).type() == type)
-                return true;
+        for (var type : types) {
+            var token = peek(pos + index++);
 
-        return false;
+            if (token == null || token.type() != type)
+                return false;
+        }
+
+        return true;
     }
 
     private boolean matchSymbol(Type type, String... symbols) {
@@ -1094,6 +1100,7 @@ public class Parser {
             return;
 
         var result = new ArrayList<Node>();
+        var spaces = new ArrayList<Integer>();
         var condition = (ConditionalBlockNode) null;
 
         for (var node : nodes) {
@@ -1103,26 +1110,35 @@ public class Parser {
                     condition = conditionalBlockNode;
                 else if (!Objects.equals(conditionalBlockNode.name(), KEYWORD_IF))
                     condition.branches().addAll(conditionalBlockNode.branches());
+                else {
+                    result.add(condition);
+                    condition = conditionalBlockNode;
+                }
 
                 continue;
             }
 
-            // If we have a chain, group them in front of the current node if it's not blank text
-            if (condition != null && !(node instanceof TextNode(String content) && content.isBlank())) {
-                // Remove preceding blank text only if it's directly between the chain
-                var previousNode = result.isEmpty() ? null : result.getLast();
-                if (previousNode instanceof TextNode(String content) && content.isBlank())
-                    result.removeLast();
+            // Special handling for whitespace nodes between conditional blocks
+            if (condition != null) {
+                var isSpace = node instanceof TextNode(String content) && content.isBlank();
 
-                result.add(condition);
-                condition = null;
+                if (!isSpace) {
+                    result.add(condition);
+                    condition = null;
+                } else
+                    spaces.add(result.size());
             }
 
             result.add(node);
         }
 
+        // Add any remaining condition at the end
         if (condition != null)
             result.add(condition);
+
+        // Clear whitespace
+        for (var spaceIndex : spaces.reversed())
+            result.remove(spaceIndex.intValue());
 
         nodes.clear();
         nodes.addAll(result);

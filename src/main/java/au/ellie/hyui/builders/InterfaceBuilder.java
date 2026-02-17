@@ -33,10 +33,10 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -45,8 +45,9 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
-    protected final Map<String, UIElementBuilder<?>> elementRegistry = new LinkedHashMap<>();
     protected final List<BiConsumer<UICommandBuilder, UIEventBuilder>> editCallbacks = new ArrayList<>();
+    protected final Map<String, BiConsumer<Object, UIContext>> eventListeners = new HashMap<>();
+    protected final Map<String, UIElementBuilder<?>> elementRegistry = new LinkedHashMap<>();
     protected String uiFile;
     protected String templateHtml;
     protected TemplateProcessor templateProcessor;
@@ -86,10 +87,10 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
         this.templateProcessor = null;
         this.runtimeTemplateUpdatesEnabled = false;
         html = addUIStyleToHtml(html, style);
-        new HtmlParser().parseToInterface(this, html);
+        new HtmlParser(eventListeners).parseToInterface(this, html);
         return self();
     }
-    
+
     /**
      * Parses the provided HTML template into this interface with variable substitution and a specific style.
      *
@@ -101,13 +102,13 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
     public T fromTemplate(String html, TemplateProcessor template, UIType style) {
         this.templateHtml = html;
         this.templateProcessor = template;
-        HtmlParser parser = new HtmlParser();
+        HtmlParser parser = new HtmlParser(eventListeners);
         parser.setTemplateProcessor(template);
         html = addUIStyleToHtml(html, style);
         parser.parseToInterface(this, html);
         return self();
     }
-    
+
     /**
      * Parses the provided HTML string into this interface.
      *
@@ -117,7 +118,7 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
     public T fromHtml(String html) {
         return fromHtml(html, UIType.NONE);
     }
-    
+
     /**
      * Parses the provided HTML template into this interface with variable substitution.
      *
@@ -138,7 +139,7 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
     public T fromTemplate(String html, TemplateProcessor template) {
         return fromTemplate(html, template, UIType.NONE);
     }
-    
+
     private String loadHtmlFromResources(String resourceFileName) {
         String normalized = resourceFileName.startsWith("/") ? resourceFileName.substring(1) : resourceFileName;
         List<Path> candidatePaths = List.of(
@@ -168,7 +169,7 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
     }
 
     private String addUIStyleToHtml(String html, UIType style) {
-        String uiStyleFilePath = null;
+        String uiStyleFilePath;
         if (Objects.requireNonNull(style) == UIType.HYWIND) {
             uiStyleFilePath = "/Common/UI/Custom/Pages/Styles/hywind.html";
         } else {
@@ -177,7 +178,7 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
         String contents = loadHtmlFromResources(uiStyleFilePath);
         return contents + "\n\n" + html;
     }
-    
+
     /**
      * Loads an HTML file from resources under Common/UI/Custom and parses it into this interface.
      *
@@ -187,7 +188,7 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
     public T loadHtml(String resourcePath) {
         return loadHtml(resourcePath, UIType.NONE);
     }
-    
+
     /**
      * Loads an HTML file from resources under Common/UI/Custom and parses it into this interface.
      *
@@ -199,7 +200,7 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
         String html = loadHtmlFromResources(resolveCustomResourcePath(resourcePath));
         return fromHtml(html, style);
     }
-    
+
     /**
      * Loads an HTML template from resources under Common/UI/Custom with a template processor.
      *
@@ -223,7 +224,7 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
         String html = loadHtmlFromResources(resolveCustomResourcePath(resourcePath));
         return fromTemplate(html, template, style);
     }
-    
+
     /**
      * Loads an HTML template from resources under Common/UI/Custom with variable substitution.
      *
@@ -248,7 +249,7 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
         String html = loadHtmlFromResources(resolveCustomResourcePath(resourcePath));
         return fromTemplate(html, variables, style);
     }
-    
+
     public T enableRuntimeTemplateUpdates(boolean enabled) {
         this.runtimeTemplateUpdatesEnabled = enabled;
         return self();
@@ -269,7 +270,7 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
     public T fromTemplate(String html, Map<String, ?> variables) {
         return fromTemplate(html, variables, UIType.NONE);
     }
-    
+
     /**
      * Parses the provided HTML template into this interface with variable substitution and a specific style.
      *
@@ -281,7 +282,7 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
     public T fromTemplate(String html, Map<String, ?> variables, UIType style) {
         return fromTemplate(html, new TemplateProcessor().setVariables(variables), style);
     }
-    
+
     private String resolveCustomResourcePath(String resourcePath) {
         if (resourcePath == null || resourcePath.isBlank()) {
             throw new IllegalArgumentException("Resource path cannot be null or blank.");
@@ -292,6 +293,7 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
 
     /**
      * Add an element inside the root node (#HyUIRoot) of the interface.
+     *
      * @param element The element to add to the root node.
      * @return Self, for chaining.
      */
@@ -430,15 +432,27 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
         return addEventListener(id, type, Object.class, callback);
     }
 
+    /**
+     * Registers a custom event listener that can be used on the template.
+     *
+     * @param id       An ID used to reference this event listener in the template (e.g. "myCustomEvent").
+     * @param callback The callback to execute when the event is triggered, with access to the UI context.
+     * @return This builder instance for method chaining.
+     */
+    public T registerEventListener(String id, BiConsumer<Object, UIContext> callback) {
+        this.eventListeners.put(id, callback);
+        return self();
+    }
+
     public T editElement(Consumer<UICommandBuilder> callback) {
         return this.editElement((uiCommandBuilder, _) -> callback.accept(uiCommandBuilder));
     }
-    
+
     public T editElement(BiConsumer<UICommandBuilder, UIEventBuilder> callback) {
         this.editCallbacks.add(callback);
         return self();
     }
-    
+
     protected void sendDynamicImageIfNeeded(PlayerRef pRef) {
         if (pRef == null || !pRef.isValid()) {
             return;
@@ -481,14 +495,14 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
     static void sendDynamicImage(PlayerRef pRef, DynamicImageBuilder dynamicImage) {
         if (pRef == null || dynamicImage == null) {
             HyUIPlugin.getLog().logFinest("REFERENCE WAS INVALID");
-            
+
             return;
         }
         UUID playerUuid = pRef.getUuid();
         String url = dynamicImage.getImageUrl();
         if (url == null || url.isBlank()) {
             HyUIPlugin.getLog().logFinest("URL WAS BLANK OR NULL");
-            
+
             return;
         }
         try {
@@ -533,6 +547,7 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
 
     /**
      * Retrieves the top-level elements of the interface, which are elements with the parent selector "#HyUIRoot".
+     *
      * @return A list of top-level UIElementBuilder instances for use in other builders.
      */
     public List<UIElementBuilder<?>> getTopLevelElements() {
@@ -547,11 +562,11 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
 
     /**
      * Get all elements in the element registry for this builder.
-     * 
+     *
      * @return a list of all elements, irrespective of top-level.
      */
     public List<UIElementBuilder<?>> getElements() {
-        return elementRegistry.values().stream().toList();        
+        return elementRegistry.values().stream().toList();
     }
 
     public String getTemplateHtml() {

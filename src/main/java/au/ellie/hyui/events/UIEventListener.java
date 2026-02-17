@@ -18,8 +18,9 @@
 
 package au.ellie.hyui.events;
 
+import com.hypixel.hytale.function.consumer.TriConsumer;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
-import java.util.function.BiConsumer;
 
-public record UIEventListener<V>(CustomUIEventBindingType type, BiConsumer<V, UIContext> callback) {
+public record UIEventListener<V>(CustomUIEventBindingType type,
+                                 TriConsumer<V, UIContext, CustomUIEventBindingType> callback) {
 }

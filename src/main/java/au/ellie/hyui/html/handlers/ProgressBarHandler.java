@@ -18,7 +18,6 @@
 
 package au.ellie.hyui.html.handlers;
 
-import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.builders.ProgressBarBuilder;
 import au.ellie.hyui.builders.UIElementBuilder;
 import au.ellie.hyui.html.HtmlParser;
@@ -96,7 +95,7 @@ public class ProgressBarHandler implements TagHandler {
             }
         }
 
-        applyCommonAttributes(builder, element);
+        applyCommonAttributes(builder, element, parser);
         return builder;
     }
 }

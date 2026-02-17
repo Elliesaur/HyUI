@@ -46,7 +46,7 @@ public class HotkeyLabelHandler implements TagHandler {
             builder.withInputBindingKeyPrefix(element.attr("input-binding-key-prefix"));
         }
 
-        applyCommonAttributes(builder, element);
+        applyCommonAttributes(builder, element, parser);
         return builder;
     }
 }

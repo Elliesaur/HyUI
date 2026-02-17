@@ -22,6 +22,7 @@ import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.builders.InterfaceBuilder;
 import au.ellie.hyui.builders.LabelBuilder;
 import au.ellie.hyui.builders.UIElementBuilder;
+import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.html.handlers.*;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -31,15 +32,20 @@ import org.jsoup.nodes.TextNode;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.BiConsumer;
 
 /**
  * A modular parser that converts HTML/XML-like language to HyUI builders.
  */
 public class HtmlParser {
+    private final Map<String, BiConsumer<Object, UIContext>> eventListener;
     private final List<TagHandler> handlers = new ArrayList<>();
     private TemplateProcessor templateProcessor;
 
-    public HtmlParser() {
+    public HtmlParser(Map<String, BiConsumer<Object, UIContext>> eventListener) {
+        this.eventListener = eventListener;
+
         // Register default handlers
         registerHandler(new ItemGridHandler());
         registerHandler(new TabContentHandler());
@@ -162,5 +168,9 @@ public class HtmlParser {
             }
         }
         return null;
+    }
+
+    public BiConsumer<Object, UIContext> getEventByName(String value) {
+        return eventListener != null ? eventListener.get(value) : null;
     }
 }

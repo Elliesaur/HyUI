@@ -63,7 +63,8 @@ public class ItemGridHandler implements TagHandler {
         if (element.hasAttr("data-hyui-slots-per-row")) {
             try {
                 builder.withSlotsPerRow(Integer.parseInt(element.attr("data-hyui-slots-per-row")));
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) {
+            }
         }
         if (element.hasAttr("data-hyui-info-display")) {
             String infoDisplayValue = element.attr("data-hyui-info-display");
@@ -88,7 +89,7 @@ public class ItemGridHandler implements TagHandler {
                     element.attr("data-hyui-display-item-quantity")));
         }
 
-        applyCommonAttributes(builder, element);
+        applyCommonAttributes(builder, element, parser);
 
         for (Element child : element.children()) {
             if (child.hasClass("item-grid-slot")) {
@@ -109,7 +110,8 @@ public class ItemGridHandler implements TagHandler {
             if (element.hasAttr("data-hyui-quantity")) {
                 try {
                     quantity = Integer.parseInt(element.attr("data-hyui-quantity"));
-                } catch (NumberFormatException ignored) {}
+                } catch (NumberFormatException ignored) {
+                }
             }
             ItemStack stack = createItemStack(element.attr("data-hyui-item-id"), quantity);
             if (stack != null) {

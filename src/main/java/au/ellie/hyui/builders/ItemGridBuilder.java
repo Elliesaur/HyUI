@@ -23,7 +23,6 @@ import au.ellie.hyui.elements.BackgroundSupported;
 import au.ellie.hyui.elements.LayoutModeSupported;
 import au.ellie.hyui.elements.ScrollbarStyleSupported;
 import au.ellie.hyui.elements.UIElements;
-import au.ellie.hyui.events.UIEventActions;
 import au.ellie.hyui.types.ItemGridInfoDisplayMode;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
@@ -37,6 +36,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+
+import static com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType.*;
 
 /**
  * Builder for the ItemGrid UI element.
@@ -190,12 +191,13 @@ public class ItemGridBuilder extends UIElementBuilder<ItemGridBuilder> implement
 
     /**
      * Retrieves an unmodifiable list of slots in the item grid.
+     *
      * @return An unmodifiable list of slots
      */
     public List<ItemGridSlot> getSlots() {
         return Collections.unmodifiableList(this.slots);
     }
-    
+
     public ItemGridBuilder updateSlot(ItemGridSlot updatedSlot, Integer index) {
         if (updatedSlot == null || index == null || index < 0 || index >= this.slots.size()) {
             return this;
@@ -203,7 +205,7 @@ public class ItemGridBuilder extends UIElementBuilder<ItemGridBuilder> implement
         this.slots.set(index, updatedSlot);
         return this;
     }
-    
+
     public ItemGridBuilder removeSlot(Integer index) {
         if (index == null || index < 0 || index >= this.slots.size()) {
             return this;
@@ -211,7 +213,7 @@ public class ItemGridBuilder extends UIElementBuilder<ItemGridBuilder> implement
         this.slots.remove(index.intValue());
         return this;
     }
-    
+
     public ItemGridSlot getSlot(Integer index) {
         if (index == null || index < 0 || index >= this.slots.size()) {
             return null;
@@ -237,7 +239,7 @@ public class ItemGridBuilder extends UIElementBuilder<ItemGridBuilder> implement
      * Adds an event listener for the SlotMouseEntered event.
      */
     public ItemGridBuilder onSlotMouseEntered(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.SlotMouseEntered, Void.class, v -> callback.run());
+        return addEventListener(SlotMouseEntered, Void.class, v -> callback.run());
     }
 
     /**
@@ -251,9 +253,11 @@ public class ItemGridBuilder extends UIElementBuilder<ItemGridBuilder> implement
     protected boolean supportsStyling() {
         return true;
     }
-    
+
     @Override
-    protected boolean isStyleWhitelist() { return true; }
+    protected boolean isStyleWhitelist() {
+        return true;
+    }
 
     protected Set<String> getSupportedStyleProperties() {
         return StylePropertySets.merge(
@@ -280,13 +284,27 @@ public class ItemGridBuilder extends UIElementBuilder<ItemGridBuilder> implement
     }
 
     @Override
+    protected CustomUIEventBindingType getEventTypeMapped(CustomUIEventBindingType type) {
+        return switch (type) {
+            case Activating -> SlotClicking;
+            case DoubleClicking -> SlotDoubleClicking;
+            case MouseEntered -> SlotMouseEntered;
+            case MouseExited -> SlotMouseExited;
+            case Dropped -> SlotMouseDragCompleted;
+            case DragCancelled -> SlotMouseDragExited;
+            case MouseButtonReleased -> SlotClickReleaseWhileDragging;
+            default -> type;
+        };
+    }
+
+    @Override
     protected void onBuild(UICommandBuilder commands, UIEventBuilder events) {
         String selector = getSelector();
         if (selector == null) return;
 
         applyLayoutMode(commands, selector);
         applyScrollbarStyle(commands, selector);
-        
+
         if (backgroundMode != null) {
             HyUIPlugin.getLog().logFinest("Setting BackgroundMode: " + backgroundMode + " for " + selector);
             commands.set(selector + ".BackgroundMode", backgroundMode);
@@ -341,7 +359,7 @@ public class ItemGridBuilder extends UIElementBuilder<ItemGridBuilder> implement
 
         listeners.forEach(listener -> {
             CustomUIEventBindingType type = listener.type();
-            if (type == CustomUIEventBindingType.Activating 
+            if (type == CustomUIEventBindingType.Activating
                     || type == CustomUIEventBindingType.RightClicking
                     || type == CustomUIEventBindingType.DoubleClicking
                     || type == CustomUIEventBindingType.MouseEntered
@@ -355,7 +373,7 @@ public class ItemGridBuilder extends UIElementBuilder<ItemGridBuilder> implement
                     || type == CustomUIEventBindingType.FocusLost
                     || type == CustomUIEventBindingType.KeyDown
                     || type == CustomUIEventBindingType.SelectedTabChanged
-                )
+            )
                 return;
             String eventId = getEffectiveId();
             HyUIPlugin.getLog().logFinest("Adding " + type.name());
@@ -394,7 +412,7 @@ public class ItemGridBuilder extends UIElementBuilder<ItemGridBuilder> implement
             return null;
         }
         try {
-            return (ItemStack)ITEM_STACK_FIELD.get(slot);
+            return (ItemStack) ITEM_STACK_FIELD.get(slot);
         } catch (IllegalAccessException e) {
             HyUIPlugin.getLog().logFinest("Unable to access ItemGridSlot.itemStack.");
             return null;

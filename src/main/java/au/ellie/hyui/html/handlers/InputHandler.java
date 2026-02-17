@@ -106,7 +106,7 @@ public class InputHandler implements TagHandler {
                 }
                 if (element.hasAttr("data-hyui-reset-transparency-when-changing-color")) {
                     colorBuilder.withResetTransparencyWhenChangingColor(
-                        Boolean.parseBoolean(element.attr("data-hyui-reset-transparency-when-changing-color")));
+                            Boolean.parseBoolean(element.attr("data-hyui-reset-transparency-when-changing-color")));
                 }
                 break;
             case "submit":
@@ -115,7 +115,7 @@ public class InputHandler implements TagHandler {
         }
 
         if (builder != null) {
-            applyCommonAttributes(builder, element);
+            applyCommonAttributes(builder, element, parser);
         }
 
         return builder;
@@ -241,7 +241,7 @@ public class InputHandler implements TagHandler {
             ParseUtils.parseInt(step).ifPresent(builder::withStep);
         }
     }
-    
+
     private void applyIntSliderValues(SliderNumberFieldBuilder builder, String value, String min, String max, String step) {
         if (value != null && !value.isBlank()) {
             ParseUtils.parseInt(value).ifPresent(builder::withValue);
@@ -256,7 +256,7 @@ public class InputHandler implements TagHandler {
             ParseUtils.parseInt(step).ifPresent(builder::withStep);
         }
     }
-    
+
     private void applyNumberFieldAnchor(SliderNumberFieldBuilder builder, Element element) {
         HyUIAnchor anchor = parseAnchor(element, "data-hyui-number-field-anchor-");
         if (anchor != null) {

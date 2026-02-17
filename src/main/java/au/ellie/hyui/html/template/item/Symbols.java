@@ -27,11 +27,11 @@ public class Symbols {
     public final static String OPEN_ANGLE_BRACKET = "<";
     public final static String CLOSE_EXPRESSION = "}}";
     public final static String OPEN_EXPRESSION = "{{";
-    public final static String CLOSE_COMMENTS = "--";
-    public final static String OPEN_COMMENTS = "!--";
+    public final static String MARKER_COMMENTS = "--";
 
     // Global symbols
     public final static String SINGLE_QUOTE = "'";
+    public final static String EXCLAMATION = "!";
     public final static String BACK_SLASH = "\\";
     public final static String NEW_LINE = "\n";
     public final static String VARIABLE = "$";
@@ -42,6 +42,7 @@ public class Symbols {
     public final static String SLASH = "/";
     public final static String PIPE = "|";
     public final static String DOT = ".";
+    public final static String AT = "@";
 
     // Logical operators
     public final static String NULL_COALESCING = "??";
@@ -62,12 +63,6 @@ public class Symbols {
     public final static String GREATER_THAN = ">";
     public final static String LESS_THAN_EQUALS = "<=";
     public final static String GREATER_THAN_EQUALS = ">=";
-
-    // List of all comparators
-    public final static String[] COMPARATORS = new String[]{
-            EQUALS,
-            NOT_EQUALS
-    };
 
     // Keywords
     public final static String KEYWORD_NOT_IN = "not in";

@@ -21,10 +21,12 @@ package au.ellie.hyui.builders;
 import au.ellie.hyui.elements.LayoutModeSupported;
 import au.ellie.hyui.elements.ScrollbarStyleSupported;
 import au.ellie.hyui.elements.UIElements;
+import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 
-import java.util.Set;
+import static com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType.ElementReordered;
+import static com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType.ValueChanged;
 
 /**
  * Builder for ReorderableList UI elements.
@@ -93,6 +95,14 @@ public class ReorderableListBuilder extends UIElementBuilder<ReorderableListBuil
     @Override
     protected boolean isStyleWhitelist() {
         return true;
+    }
+
+    @Override
+    protected CustomUIEventBindingType getEventTypeMapped(CustomUIEventBindingType type) {
+        if (type == ValueChanged)
+            return ElementReordered;
+
+        return type;
     }
 
     @Override

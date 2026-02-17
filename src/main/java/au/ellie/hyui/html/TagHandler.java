@@ -20,17 +20,11 @@ package au.ellie.hyui.html;
 
 import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.builders.*;
-import au.ellie.hyui.elements.BackgroundSupported;
 import au.ellie.hyui.elements.LayoutModeSupported;
-import au.ellie.hyui.types.ButtonStyle;
-import au.ellie.hyui.types.CheckBoxStyle;
-import au.ellie.hyui.types.ColorPickerDropdownBoxStyle;
-import au.ellie.hyui.types.ColorPickerStyle;
-import au.ellie.hyui.types.DefaultStyles;
-import au.ellie.hyui.types.InputFieldStyle;
-import au.ellie.hyui.types.SliderStyle;
+import au.ellie.hyui.types.*;
 import au.ellie.hyui.utils.ParseUtils;
 import au.ellie.hyui.utils.StyleUtils;
+import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.Message;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
@@ -68,7 +62,7 @@ public interface TagHandler {
      * @param builder The builder to apply attributes to.
      * @param element The HTML element containing the attributes.
      */
-    default void applyCommonAttributes(UIElementBuilder<?> builder, Element element) {
+    default void applyCommonAttributes(UIElementBuilder<?> builder, Element element, HtmlParser parser) {
         if (element.hasAttr("id")) {
             builder.withId(element.attr("id"));
         }
@@ -83,7 +77,8 @@ public interface TagHandler {
         if (element.hasAttr("data-hyui-flexweight")) {
             try {
                 builder.withFlexWeight(Integer.parseInt(element.attr("data-hyui-flexweight")));
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) {
+            }
         }
 
         boolean defaultStyleApplied = applyDefaultStyleIfRequested(builder, element);
@@ -121,6 +116,71 @@ public interface TagHandler {
                 builder.withStyle(currentStyle);
             }
         }
+
+        var events = new EventListenerBuilder(builder, parser);
+        for (var attr : element.attributes()) {
+            var key = attr.getKey();
+            if (!key.startsWith("@"))
+                continue;
+
+            var types = key.substring(1).split(":");
+            var callback = attr.getValue();
+            var baseEvent = types[0].toLowerCase();
+            var typeEvent = types.length > 1 ? types[1].toLowerCase() : "";
+
+            switch (baseEvent) {
+                case "key" -> events.add(CustomUIEventBindingType.KeyDown, callback);
+                case "activate" -> events.add(CustomUIEventBindingType.Activating, callback);
+                case "change" -> events.add(CustomUIEventBindingType.ValueChanged, callback);
+                case "mouse" -> {
+                    switch (typeEvent) {
+                        case "enter" -> events.add(CustomUIEventBindingType.MouseEntered, callback);
+                        case "leave" -> events.add(CustomUIEventBindingType.MouseExited, callback);
+                        case "press" -> events.add(CustomUIEventBindingType.SlotClickPressWhileDragging, callback);
+                        case "release" -> events.add(CustomUIEventBindingType.MouseButtonReleased, callback);
+                        default -> {
+                            events.add(CustomUIEventBindingType.MouseEntered, callback);
+                            events.add(CustomUIEventBindingType.MouseExited, callback);
+                        }
+                    }
+                }
+                case "click" -> {
+                    switch (typeEvent) {
+                        case "left" -> events.add(CustomUIEventBindingType.Activating, callback);
+                        case "right" -> events.add(CustomUIEventBindingType.RightClicking, callback);
+                        case "double" -> events.add(CustomUIEventBindingType.DoubleClicking, callback);
+                        default -> {
+                            events.add(CustomUIEventBindingType.Activating, callback);
+                            events.add(CustomUIEventBindingType.RightClicking, callback);
+                            events.add(CustomUIEventBindingType.DoubleClicking, callback);
+                        }
+                    }
+                }
+                case "drag" -> {
+                    switch (typeEvent) {
+                        case "complete" -> events.add(CustomUIEventBindingType.Dropped, callback);
+                        case "cancel" -> events.add(CustomUIEventBindingType.DragCancelled, callback);
+                        default -> {
+                            events.add(CustomUIEventBindingType.Dropped, callback);
+                            events.add(CustomUIEventBindingType.DragCancelled, callback);
+                        }
+                    }
+                }
+                case "validate" -> events.add(CustomUIEventBindingType.Validating, callback);
+                case "dismiss" -> events.add(CustomUIEventBindingType.Dismissing, callback);
+                case "focus" -> {
+                    switch (typeEvent) {
+                        case "gain" -> events.add(CustomUIEventBindingType.FocusGained, callback);
+                        case "lost" -> events.add(CustomUIEventBindingType.FocusLost, callback);
+                        default -> {
+                            events.add(CustomUIEventBindingType.FocusGained, callback);
+                            events.add(CustomUIEventBindingType.FocusLost, callback);
+                        }
+                    }
+                }
+            }
+        }
+        events.build();
 
         if (element.tagName().equalsIgnoreCase("img") || element.tagName().equalsIgnoreCase("hyvatar")) {
             HyUIAnchor anchor = builder.getAnchor();
@@ -255,7 +315,8 @@ public interface TagHandler {
                     try {
                         parsed.style.setLetterSpacing(Integer.parseInt(value));
                         parsed.hasStyle = true;
-                    } catch (NumberFormatException ignored) {}
+                    } catch (NumberFormatException ignored) {
+                    }
                     break;
                 case "white-space":
                     if (value.equalsIgnoreCase("nowrap")) {

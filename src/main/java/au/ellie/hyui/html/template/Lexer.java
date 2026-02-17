@@ -26,7 +26,8 @@ import au.ellie.hyui.utils.StringUtils;
 import java.util.ArrayList;
 import java.util.List;
 
-import static au.ellie.hyui.html.template.item.Symbols.*;
+import static au.ellie.hyui.html.template.item.Symbols.KEYWORDS;
+import static au.ellie.hyui.html.template.item.Symbols.OPERATORS;
 
 public class Lexer {
     private final StringReader reader;
@@ -46,12 +47,6 @@ public class Lexer {
             if (isNumberType())
                 tokens.add(tokenizeNumber());
             else {
-                var comparator = tokenizeArray(COMPARATORS, Type.COMPARATOR);
-                if (comparator != null) {
-                    tokens.add(comparator);
-                    continue;
-                }
-
                 var operator = tokenizeArray(OPERATORS, Type.OPERATOR);
                 if (operator != null) {
                     tokens.add(operator);

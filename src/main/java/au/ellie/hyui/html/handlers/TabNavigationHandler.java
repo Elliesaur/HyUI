@@ -18,15 +18,11 @@
 
 package au.ellie.hyui.html.handlers;
 
-import au.ellie.hyui.builders.HyUIAnchor;
-import au.ellie.hyui.builders.HyUIPatchStyle;
-import au.ellie.hyui.builders.NativeTabNavigationBuilder;
-import au.ellie.hyui.builders.TabNavigationBuilder;
-import au.ellie.hyui.builders.UIElementBuilder;
+import au.ellie.hyui.builders.*;
 import au.ellie.hyui.html.HtmlParser;
 import au.ellie.hyui.html.TagHandler;
-import au.ellie.hyui.types.NativeTab;
 import au.ellie.hyui.types.DefaultStyles;
+import au.ellie.hyui.types.NativeTab;
 import au.ellie.hyui.utils.ParseUtils;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
@@ -37,11 +33,11 @@ import java.util.List;
 
 /**
  * Handler for tab navigation elements in HYUIML.
- *
+ * <p>
  * Supports:
  * - &lt;nav class="tabs"&gt; or &lt;nav class="tab-navigation"&gt;
  * - &lt;div class="tabs"&gt; or &lt;div class="tab-navigation"&gt;
- *
+ * <p>
  * Structure:
  * <pre>
  * &lt;nav class="tabs"&gt;
@@ -50,13 +46,13 @@ import java.util.List;
  *     &lt;button data-tab="tab3"&gt;Tab 3&lt;/button&gt;
  * &lt;/nav&gt;
  * </pre>
- *
+ * <p>
  * Or simplified:
  * <pre>
  * &lt;nav class="tabs" data-tabs="inventory:Inventory:inventory-content,stats:Statistics:stats-content" data-selected="inventory"&gt;
  * &lt;/nav&gt;
  * </pre>
- *
+ * <p>
  * Content can be linked with a third entry in data-tabs or a data-tab-content attribute:
  * <pre>
  * &lt;button data-tab="inventory" data-tab-content="inventory-content"&gt;Inventory&lt;/button&gt;
@@ -68,7 +64,7 @@ public class TabNavigationHandler implements TagHandler {
     public boolean canHandle(Element element) {
         String tagName = element.tagName().toLowerCase();
         return (tagName.equals("nav") || tagName.equals("div")) &&
-               (element.hasClass("tabs") || element.hasClass("tab-navigation") || element.hasClass("native-tab-navigation"));
+                (element.hasClass("tabs") || element.hasClass("tab-navigation") || element.hasClass("native-tab-navigation"));
     }
 
     @Override
@@ -85,7 +81,7 @@ public class TabNavigationHandler implements TagHandler {
             }
 
             applyNativeTabStyle(builder, element);
-            applyCommonAttributes(builder, element);
+            applyCommonAttributes(builder, element, parser);
 
             for (Node childNode : element.childNodes()) {
                 if (childNode instanceof Element childElement) {
@@ -111,7 +107,7 @@ public class TabNavigationHandler implements TagHandler {
         // Custom tab navigation system
         TabNavigationBuilder builder = TabNavigationBuilder.tabNavigation();
 
-        applyCommonAttributes(builder, element);
+        applyCommonAttributes(builder, element, parser);
 
         String selectedTabId = element.hasAttr("data-selected") ? element.attr("data-selected").trim() : null;
         if (selectedTabId != null && selectedTabId.isBlank()) {

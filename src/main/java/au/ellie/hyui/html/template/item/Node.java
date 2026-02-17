@@ -40,7 +40,7 @@ public interface Node {
         /**
          * Represents a variable reference
          */
-        record VariableNode(String name) implements ExpressionNode {
+        record VariableNode(String name, boolean negated) implements ExpressionNode {
         }
 
         /**

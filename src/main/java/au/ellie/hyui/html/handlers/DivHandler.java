@@ -62,7 +62,7 @@ public class DivHandler implements TagHandler {
             builder = GroupBuilder.group();
         }
 
-        applyCommonAttributes(builder, element);
+        applyCommonAttributes(builder, element, parser);
         applyScrollbarStyle(builder, element);
 
         for (Node childNode : element.childNodes()) {
