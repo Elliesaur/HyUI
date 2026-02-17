@@ -26,6 +26,7 @@ import au.ellie.hyui.html.HtmlParser;
 import au.ellie.hyui.html.TemplateProcessor;
 import au.ellie.hyui.utils.HyvatarUtils;
 import au.ellie.hyui.utils.PngDownloadUtils;
+import com.hypixel.hytale.function.consumer.TriConsumer;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
@@ -45,8 +46,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
+    protected final Map<String, TriConsumer<Object, UIContext, CustomUIEventBindingType>> eventListeners = new HashMap<>();
     protected final List<BiConsumer<UICommandBuilder, UIEventBuilder>> editCallbacks = new ArrayList<>();
-    protected final Map<String, BiConsumer<Object, UIContext>> eventListeners = new HashMap<>();
     protected final Map<String, UIElementBuilder<?>> elementRegistry = new LinkedHashMap<>();
     protected String uiFile;
     protected String templateHtml;
@@ -440,6 +441,11 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
      * @return This builder instance for method chaining.
      */
     public T registerEventListener(String id, BiConsumer<Object, UIContext> callback) {
+        this.eventListeners.put(id, (data, context, _) -> callback.accept(data, context));
+        return self();
+    }
+
+    public T registerEventListener(String id, TriConsumer<Object, UIContext, CustomUIEventBindingType> callback) {
         this.eventListeners.put(id, callback);
         return self();
     }

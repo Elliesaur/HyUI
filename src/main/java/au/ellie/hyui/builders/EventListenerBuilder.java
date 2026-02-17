@@ -29,7 +29,7 @@ public class EventListenerBuilder {
             builder.addEventListenerWithContext(entry.getKey(), Object.class, (data, context) -> {
                 var eventCallback = parser.getEventByName(entry.getValue());
                 if (eventCallback != null)
-                    eventCallback.accept(data, context);
+                    eventCallback.accept(data, context, entry.getKey());
                 else
                     HyUIPlugin.getLog().logWarn("No event found with name: " + entry.getValue() + " for event type: " + entry.getKey());
             });

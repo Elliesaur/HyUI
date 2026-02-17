@@ -25,6 +25,7 @@ import au.ellie.hyui.html.HtmlParser;
 import au.ellie.hyui.html.TemplateProcessor;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.function.consumer.TriConsumer;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
@@ -36,9 +37,9 @@ import java.util.*;
 import java.util.function.BiConsumer;
 
 public abstract class HyUInterface implements UIContext {
-
+    private final Map<String, TriConsumer<Object, UIContext, CustomUIEventBindingType>> eventListener;
     private final Set<String> dirtyValueIds = new HashSet<>();
-    private final Map<String, BiConsumer<Object, UIContext>> eventListener;
+
     protected String uiFile;
     protected List<UIElementBuilder<?>> elements;
     protected List<BiConsumer<UICommandBuilder, UIEventBuilder>> editCallbacks;
@@ -55,7 +56,7 @@ public abstract class HyUInterface implements UIContext {
                         String templateHtml,
                         TemplateProcessor templateProcessor,
                         boolean runtimeTemplateUpdatesEnabled,
-                        Map<String, BiConsumer<Object, UIContext>> eventListeners
+                        Map<String, TriConsumer<Object, UIContext, CustomUIEventBindingType>> eventListeners
     ) {
         this.uiFile = uiFile;
         this.elements = elements;

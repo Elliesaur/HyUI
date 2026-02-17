@@ -25,8 +25,10 @@ import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.html.TemplateProcessor;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.function.consumer.TriConsumer;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPage;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
+import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
@@ -63,7 +65,7 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
                     TemplateProcessor templateProcessor,
                     boolean runtimeTemplateUpdatesEnabled,
                     BiConsumer<HyUIPage, Boolean> onDismissListener,
-                    Map<String, BiConsumer<Object, UIContext>> eventListeners
+                    Map<String, TriConsumer<Object, UIContext, CustomUIEventBindingType>> eventListeners
     ) {
         super(playerRef, lifetime, DynamicPageData.CODEC);
         this.onDismissListener = onDismissListener;
