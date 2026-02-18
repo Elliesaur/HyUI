@@ -355,9 +355,9 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
     }
 
     private boolean isMatchingNavigation(TabContentBuilder content, TabNavigationBuilder navigation) {
-        if (!navigation.hasTab(content.getTabId())) {
+        if (!navigation.hasTab(content.getTabId()))
             return false;
-        }
+
         String navId = content.getTabNavigationId();
         return navId == null || navId.isBlank() || navId.equals(navigation.getId());
     }
@@ -367,20 +367,20 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
         if (selectedTabId == null || selectedTabId.isBlank()) {
             var tabs = navigation.getTabs();
             if (!tabs.isEmpty()) {
-                selectedTabId = tabs.get(0).id();
+                selectedTabId = tabs.getFirst().id();
                 navigation.withSelectedTab(selectedTabId);
             }
         }
-        if (selectedTabId != null && !selectedTabId.isBlank()) {
+
+        if (selectedTabId != null && !selectedTabId.isBlank())
             content.withVisible(selectedTabId.equals(content.getTabId()));
-        }
     }
 
     public <E extends UIElementBuilder<E>> Optional<E> getById(String id, Class<E> clazz) {
         UIElementBuilder<?> builder = elementRegistry.get(id);
-        if (builder != null && clazz.isInstance(builder)) {
+        if (clazz.isInstance(builder))
             return Optional.of(clazz.cast(builder));
-        }
+
         return Optional.empty();
     }
 
@@ -389,48 +389,34 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
      * Note: This only works for elements created using the builder API or via HYUIML (.fromHtml).
      * It does not work for elements defined in a .ui file loaded via .fromFile.
      *
-     * @param id         The ID of the element.
-     * @param type       The type of event to listen for.
-     * @param valueClass The class of the value associated with the event.
-     * @param callback   The callback to execute when the event occurs.
-     * @param <V>        The type of the value.
+     * @param id       The ID of the element.
+     * @param type     The type of event to listen for.
+     * @param callback The callback to execute when the event occurs.
+     * @param <V>      The type of the value.
      * @return This builder instance for method chaining.
      */
-    public <V> T addEventListener(String id, CustomUIEventBindingType type, Class<V> valueClass, Consumer<V> callback) {
+    public <V> T addEventListener(String id, CustomUIEventBindingType type, BiConsumer<V, UIContext> callback) {
         UIElementBuilder<?> element = elementRegistry.get(id);
-        if (element == null) {
+        if (element == null)
             throw new IllegalArgumentException("No element found with ID '" + id + "'.");
-        }
-        element.addEventListener(type, valueClass, callback);
-        return self();
-    }
 
-    public T addEventListener(String id, CustomUIEventBindingType type, Consumer<Object> callback) {
-        return addEventListener(id, type, Object.class, callback);
+        element.addEventListenerWithContext(type, callback);
+        return self();
     }
 
     /**
-     * Adds an event listener with access to the UI context.
-     * Note: This only works for elements created using the builder API or via HYUIML (.fromHtml).
-     *
-     * @param id         The ID of the element.
-     * @param type       The type of event to listen for.
-     * @param valueClass The class of the value associated with the event.
-     * @param callback   The callback to execute when the event occurs.
-     * @param <V>        The type of the value.
-     * @return This builder instance for method chaining.
+     * @see #addEventListener(String, CustomUIEventBindingType, BiConsumer)
      */
-    public <V> T addEventListener(String id, CustomUIEventBindingType type, Class<V> valueClass, BiConsumer<V, UIContext> callback) {
-        UIElementBuilder<?> element = elementRegistry.get(id);
-        if (element == null) {
-            throw new IllegalArgumentException("No element found with ID '" + id + "'.");
-        }
-        element.addEventListenerWithContext(type, valueClass, callback);
-        return self();
+    @SuppressWarnings("unchecked")
+    public <V> T addEventListener(String id, CustomUIEventBindingType type, Consumer<V> callback) {
+        return addEventListener(id, type, (value, _) -> callback.accept((V) value));
     }
 
-    public T addEventListener(String id, CustomUIEventBindingType type, BiConsumer<Object, UIContext> callback) {
-        return addEventListener(id, type, Object.class, callback);
+    /**
+     * @see #addEventListener(String, CustomUIEventBindingType, BiConsumer)
+     */
+    public T addEventListener(String id, CustomUIEventBindingType type, Runnable callback) {
+        return addEventListener(id, type, (_, _) -> callback.run());
     }
 
     /**
@@ -438,16 +424,36 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
      *
      * @param id       An ID used to reference this event listener in the template (e.g. "myCustomEvent").
      * @param callback The callback to execute when the event is triggered, with access to the UI context.
+     * @param <V>      The type of the value.
      * @return This builder instance for method chaining.
      */
-    public T registerEventListener(String id, BiConsumer<Object, UIContext> callback) {
-        this.eventListeners.put(id, (data, context, _) -> callback.accept(data, context));
+    @SuppressWarnings("unchecked")
+    public <V> T registerEventListener(String id, TriConsumer<V, UIContext, CustomUIEventBindingType> callback) {
+        this.eventListeners.put(id, (TriConsumer<Object, UIContext, CustomUIEventBindingType>) callback);
         return self();
     }
 
-    public T registerEventListener(String id, TriConsumer<Object, UIContext, CustomUIEventBindingType> callback) {
-        this.eventListeners.put(id, callback);
-        return self();
+    /**
+     * @see #registerEventListener(String, TriConsumer)
+     */
+    @SuppressWarnings("unchecked")
+    public <V> T registerEventListener(String id, BiConsumer<V, UIContext> callback) {
+        return registerEventListener(id, (data, context, _) -> callback.accept((V) data, context));
+    }
+
+    /**
+     * @see #registerEventListener(String, TriConsumer)
+     */
+    @SuppressWarnings("unchecked")
+    public <V> T registerEventListener(String id, Consumer<V> callback) {
+        return registerEventListener(id, (data, _, _) -> callback.accept((V) data));
+    }
+
+    /**
+     * @see #registerEventListener(String, TriConsumer)
+     */
+    public T registerEventListener(String id, Runnable callback) {
+        return registerEventListener(id, (data, _, _) -> callback.run());
     }
 
     public T editElement(Consumer<UICommandBuilder> callback) {

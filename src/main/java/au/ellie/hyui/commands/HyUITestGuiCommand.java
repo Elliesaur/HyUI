@@ -19,101 +19,64 @@
 package au.ellie.hyui.commands;
 
 import au.ellie.hyui.HyUIPlugin;
-import au.ellie.hyui.HyUIPluginLogger;
 import au.ellie.hyui.builders.*;
 import au.ellie.hyui.events.PageRefreshResult;
 import au.ellie.hyui.events.SlotMouseDragCompletedEventData;
+import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.html.TemplateProcessor;
 import au.ellie.hyui.types.*;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.protocol.GameMode;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
-import com.hypixel.hytale.server.core.command.system.basecommands.AbstractAsyncCommand;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.ui.ItemGridSlot;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
-import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 
-import java.awt.*;
+import java.awt.Color;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.hypixel.hytale.server.core.command.commands.player.inventory.InventorySeeCommand.MESSAGE_COMMANDS_ERRORS_PLAYER_NOT_IN_WORLD;
-
-public class HyUITestGuiCommand extends AbstractAsyncCommand {
+public class HyUITestGuiCommand extends AbstractDevCommand {
 
     public HyUITestGuiCommand() {
         super("t", "Opens the HyUI Test GUI");
-        if (!HyUIPluginLogger.IS_DEV) {
-            return;
-        }
-        this.setPermissionGroup(GameMode.Adventure);
     }
 
     @NonNullDecl
     @Override
-    protected CompletableFuture<Void> executeAsync(CommandContext commandContext) {
-        if (!HyUIPluginLogger.IS_DEV) {
-            return CompletableFuture.completedFuture(null);
-        }
-        if (HyUIPluginLogger.IS_DEV) {
-            var sender = commandContext.sender();
-            if (sender instanceof Player player) {
-                player.getWorldMapTracker().tick(0);
-                Ref<EntityStore> ref = player.getReference();
-                if (ref != null && ref.isValid()) {
-                    Store<EntityStore> store = ref.getStore();
-                    World world = store.getExternalData().getWorld();
-                    return CompletableFuture.runAsync(() -> {
-                        PlayerRef playerRef = store.getComponent(ref, PlayerRef.getComponentType());
-                        if (playerRef != null) {
-                            openReplicate(playerRef, store);
-                        }
-                    }, world);
-                } else {
-                    commandContext.sendMessage(MESSAGE_COMMANDS_ERRORS_PLAYER_NOT_IN_WORLD);
-                    return CompletableFuture.completedFuture(null);
-                }
-            } else {
-                return CompletableFuture.completedFuture(null);
-            }
-        } else {
-            return CompletableFuture.completedFuture(null);
-        }
+    protected CompletableFuture<Void> executeDev(Player player, Ref<EntityStore> ref, CommandContext commandContext) {
+        var store = ref.getStore();
+        var world = store.getExternalData().getWorld();
+
+        return CompletableFuture.runAsync(() -> {
+            var playerRef = store.getComponent(ref, PlayerRef.getComponentType());
+            if (playerRef != null)
+                openReplicate(playerRef, store);
+        }, world);
     }
-    
+
     private void openReplicate(PlayerRef playerRef, Store<EntityStore> store) {
-        if (!HyUIPluginLogger.IS_DEV) {
-            return;
-        }
         new PageBuilder(playerRef)
                 .loadHtml("Pages/Replicate.html", new TemplateProcessor()
                         .setVariable("playerName", "Elyra"))
                 .enableRuntimeTemplateUpdates(true)
                 .open(store);
     }
-    
+
     private void openTestGuiMinimal(PlayerRef playerRef, Store<EntityStore> store) {
-        if (!HyUIPluginLogger.IS_DEV) {
-            return;
-        }
         new PageBuilder(playerRef)
                 .fromFile("Pages/EllieAU_HyUI_Placeholder.ui")
                 .open(store);
     }
-    private void openHtmlTestGui(PlayerRef playerRef, Store<EntityStore> store) {
-        if (!HyUIPluginLogger.IS_DEV) {
-            return;
-        }
 
+    private void openHtmlTestGui(PlayerRef playerRef, Store<EntityStore> store) {
         // Resource file: Common/UI/Custom/Pages/HyUIHtmlTest.html
         /*html = """
                     <div class="page-overlay">
@@ -231,8 +194,8 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
         //HyUIHud hudInstance = HudBuilder.detachedHud()
         //        .fromHtml(html)
         //        .show(playerRef, store);
-        AtomicInteger clicks = new AtomicInteger();
-        PageBuilder builder = PageBuilder.detachedPage()
+        var clicks = new AtomicInteger();
+        var builder = PageBuilder.detachedPage()
                 .loadHtml("Pages/HyUIHtmlTest.html")
                 /*.addEventListener("itemgrid", CustomUIEventBindingType.Dropped, (data, ctx) -> {
                     HyUIPlugin.getLog().logInfo("Item dropped on grid.");
@@ -259,9 +222,9 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                 })
                 .addEventListener("btn1", CustomUIEventBindingType.Activating, (data, ctx) -> {
                     playerRef.sendMessage(Message.raw("Button clicked via PageBuilder ID lookup!: " +
-                    ctx.getValue("myInput", String.class).orElse("N/A")));
+                            ctx.getValue("myInput", String.class).orElse("N/A")));
                     HyUIPlugin.getLog().logFinest("Clicked button.");
-                    ctx.getById("label", LabelBuilder.class).ifPresent(lb -> { 
+                    ctx.getById("label", LabelBuilder.class).ifPresent(lb -> {
                         lb.withText("ClicksA: " + String.valueOf(clicks.incrementAndGet()));
                         HyUIPlugin.getLog().logFinest("Found label builder.");
                         ctx.updatePage(true);
@@ -278,14 +241,14 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                         playerRef.sendMessage(Message.raw("Dropdown VALUE: " + val2));
                         // SETTING VALUE
                         //lb.withValue("Entry3");
-                        
+
                     });
 
                 })
-                .addEventListener("myInput", CustomUIEventBindingType.ValueChanged, String.class, (val) -> {
+                .addEventListener("myInput", CustomUIEventBindingType.ValueChanged, (Class<?> val) -> {
                     playerRef.sendMessage(Message.raw("Input changed to: " + val));
                 })
-                .addEventListener("myDropdown", CustomUIEventBindingType.ValueChanged, String.class, (val) -> {
+                .addEventListener("myDropdown", CustomUIEventBindingType.ValueChanged, (String val) -> {
                     playerRef.sendMessage(Message.raw("Dropdown changed to: " + val));
                 });
 
@@ -296,19 +259,14 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
             });
         });*/
         builder.open(playerRef, store);
-        for (String s : builder.getCommandLog()) {
+        for (String s : builder.getCommandLog())
             HyUIPlugin.getLog().logFinest(s);
-        }
     }
 
     private void openHtmlTestGui2(PlayerRef playerRef, Store<EntityStore> store) {
-        if (!HyUIPluginLogger.IS_DEV) {
-            return;
-        }
-        
-        PageBuilder builder = PageBuilder.detachedPage()
+        var builder = PageBuilder.detachedPage()
                 .loadHtml("Pages/ItemGridTest.html")
-                .addEventListener("itemgrid", CustomUIEventBindingType.SlotMouseDragCompleted, SlotMouseDragCompletedEventData.class, (data, ctx) -> {
+                .addEventListener("itemgrid", CustomUIEventBindingType.SlotMouseDragCompleted, (SlotMouseDragCompletedEventData data, UIContext _) -> {
                     playerRef.sendMessage(Message.raw("Mouse drag completed on item grid: " + data.getSlotIndex()));
                     playerRef.sendMessage(Message.raw("Mouse drag completed on item grid: " + data.getItemStackId()));
                 })
@@ -317,33 +275,30 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                     a.ifPresent(aDouble -> HyUIPlugin.getLog().logFinest("Price input is: " + aDouble));
                 })
                 .withLifetime(CustomPageLifetime.CanDismiss);
-        
+
         builder.getById("itemgrid", ItemGridBuilder.class).ifPresent(ig -> {
             ig.addSlot(new ItemGridSlot(new ItemStack("Ore_Gold", 25)));
             ig.addSlot(new ItemGridSlot(new ItemStack("Ore_Iron", 25)));
         });
-        for (CustomUIEventBindingType typeName : CustomUIEventBindingType.values()) {
+
+        for (var typeName : CustomUIEventBindingType.values()) {
             builder.addEventListener("itemgrid", typeName, (data, ctx) -> {
                 playerRef.sendMessage(Message.raw("Event triggered: " + typeName.name()));
             });
         }
-        for (CustomUIEventBindingType typeName : CustomUIEventBindingType.values()) {
+
+        for (var typeName : CustomUIEventBindingType.values()) {
             builder.addEventListener("itemslot", typeName, (data, ctx) -> {
                 playerRef.sendMessage(Message.raw("Event triggered: " + typeName.name()));
             });
         }
+
         builder.open(playerRef, store);
-        for (String s : builder.getCommandLog()) {
+        for (String s : builder.getCommandLog())
             HyUIPlugin.getLog().logFinest(s);
-        }
     }
 
-
     private void openTestGuiFromScratch(PlayerRef playerRef, Store<EntityStore> store) {
-        if (!HyUIPluginLogger.IS_DEV) {
-            return;
-        }
-
         PageBuilder.detachedPage()
                 .withLifetime(CustomPageLifetime.CanDismiss)
                 .addElement(PageOverlayBuilder.pageOverlay()
@@ -360,11 +315,8 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                 .open(playerRef, store);
 
     }
-    private void openTestGui(PlayerRef playerRef, Store<EntityStore> store) {
-        if (!HyUIPluginLogger.IS_DEV) {
-            return;
-        }
 
+    private void openTestGui(PlayerRef playerRef, Store<EntityStore> store) {
         new PageBuilder(playerRef)
                 .fromFile("Pages/EllieAU_HyUI_Placeholder.ui")
                 .editElement((commandBuilder) -> {
@@ -490,16 +442,16 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                         .addChild(ButtonBuilder.textButton()
                                 .withText("Button with Icon")
                                 .withStyle(ButtonStyle.primaryStyle()
-                                    .withDefault(
-                                            new ButtonStyleState()
-                                                    .withBackground(
-                                                            new HyUIPatchStyle().setTexturePath("Pages/Assets/Tab.png")))
-                                    .withHovered(
-                                            new ButtonStyleState()
-                                                    .withBackground(
-                                                            new HyUIPatchStyle().setTexturePath("Pages/Assets/TabOverlay.png"))
-                                                    )
-                                    )
+                                        .withDefault(
+                                                new ButtonStyleState()
+                                                        .withBackground(
+                                                                new HyUIPatchStyle().setTexturePath("Pages/Assets/Tab.png")))
+                                        .withHovered(
+                                                new ButtonStyleState()
+                                                        .withBackground(
+                                                                new HyUIPatchStyle().setTexturePath("Pages/Assets/TabOverlay.png"))
+                                        )
+                                )
                                 .onDoubleClicking((mouseEventData) -> {
                                     playerRef.sendMessage(Message.raw("Button with Icon double clicked: " + mouseEventData));
                                 })
@@ -512,7 +464,7 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                                 .onMouseExited((mouseEventData) -> {
                                     HyUIPlugin.getLog().logFinest("Button with Icon mouse exited: " + mouseEventData);
                                 }))
-                                //.withItemIcon(ItemIconBuilder.itemIcon().withItemId("Items/IronSword.png")))
+                        //.withItemIcon(ItemIconBuilder.itemIcon().withItemId("Items/IronSword.png")))
                         .addChild(ContainerBuilder.container()
                                 .withId("MyContainer")
                                 .withTitleText("Custom Title")
@@ -634,14 +586,15 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                                         .addChild(LabelBuilder.label()
                                                 .withText("Pane B"))))
                         .addChild(NativeTabNavigationBuilder.nativeTabNavigation()
-                                .withId("NativeTabNavigationExample")
-                                .withSelectedTab("NativeTabOne")
-                                .withStyle(DefaultStyles.textTopTabsStyle())
-                                .withAllowUnselection(false)
-                                .onSelectedTabChanged((a) -> {})
-                                .withAnchor(new HyUIAnchor().setWidth(260).setHeight(36))
-                                .addTab(new NativeTab().withId("NativeTabOne").withText("HELLO"))
-                                .addTab(new NativeTab().withId("NativeTabTwo").withText("SECOND"))
+                                        .withId("NativeTabNavigationExample")
+                                        .withSelectedTab("NativeTabOne")
+                                        .withStyle(DefaultStyles.textTopTabsStyle())
+                                        .withAllowUnselection(false)
+                                        .onSelectedTabChanged((a) -> {
+                                        })
+                                        .withAnchor(new HyUIAnchor().setWidth(260).setHeight(36))
+                                        .addTab(new NativeTab().withId("NativeTabOne").withText("HELLO"))
+                                        .addTab(new NativeTab().withId("NativeTabTwo").withText("SECOND"))
                                 
                                 /*.addChild(NativeTabButtonBuilder.nativeTabButton()
                                         .withId("NativeTabOne")

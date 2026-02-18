@@ -21,36 +21,27 @@
         <div class="container-contents" style="layout-mode: Top;">
             <div style="layout-mode: Left; padding: 6;">
                 <label style="anchor-width: 80;">Region</label>
-                <select id="region" data-hyui-showlabel="true" value="Forest">
-                    <option value="Forest" {{#if region == Forest}}selected{{/if}}>Forest</option>
-                    <option value="Desert" {{#if region == Desert}}selected{{/if}}>Desert</option>
-                    <option value="Tundra" {{#if region == Tundra}}selected{{/if}}>Tundra</option>
+                <select @change="refresh" id="region" data-hyui-showlabel="true" value="Forest">
+                    <option value="Forest" {{if $region == Forest}}selected{{/if}}>Forest</option>
+                    <option value="Desert" {{if $region == Desert}}selected{{/if}}>Desert</option>
+                    <option value="Tundra" {{if $region == Tundra}}selected{{/if}}>Tundra</option>
                 </select>
 
                 <label style="anchor-width: 80; padding-left: 10;">Min</label>
-                <input id="minLevel" type="number" value="1" style="anchor-width: 60;" />
+                <input @change="refresh" id="minLevel" type="number" value="1" style="anchor-width: 60;" />
 
-                <button id="close-board" class="secondary-button" style="padding-left: 10;">Close</button>
+                <button @activate="close" id="close-board" class="secondary-button" style="padding-left: 10;">Close</button>
             </div>
 
-            <p style="padding: 4;">Filters: {{$region|Unknown}} / Min {{$minLevel|1}}</p>
+            <p style="padding: 4;">Filters: {{$region ?? "Unknown"}} / Min {{$minLevel ?? 1}}</p>
 
-            {{#if minLevel >= 6}}
-            <p style="color: #4CAF50;">Elite filters on. Good luck.</p>
-            {{else}}
-            <p style="color: #888888;">Standard filters.</p>
-            {{/if}}
+            <p if="$minLevel >= 6" style="color: #4CAF50;">Elite filters on. Good luck.</p>
+            <p else style="color: #888888;">Standard filters.</p>
 
-            {{#if region == Tundra}}
-            <p style="color: #66ccff;">Tundra picks are icy.</p>
-            {{else}}
-            <!-- We need something here, so the system knows that we want to add an element -->
-            {{/if}}
+            <p if="$region == Tundra" style="color: #66ccff;">Tundra picks are icy.</p>
 
             <div id="list" style="layout-mode: Top; padding: 6;">
-                {{#each bounties}}
-                {{@bountyCard:title={{$title}},level={{$level}},rarity={{$rarity}}}}
-                {{/each}}
+                <bountyCard for="$bounties" title={{$title}} level={{$level}} rarity={{$rarity}} />
             </div>
         </div>
     </div>

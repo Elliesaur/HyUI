@@ -965,17 +965,17 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
     }
 
     @SuppressWarnings("unchecked")
-    public <V> T addEventListener(CustomUIEventBindingType type, Class<V> valueClass, Consumer<V> callback) {
+    public <V> T addEventListener(CustomUIEventBindingType type, Consumer<V> callback) {
         return addEventListenerInternal(type, callback);
     }
 
     @SuppressWarnings("unchecked")
-    public <V> T addEventListenerWithContext(CustomUIEventBindingType type, Class<V> valueClass, BiConsumer<V, UIContext> callback) {
+    public <V> T addEventListenerWithContext(CustomUIEventBindingType type, BiConsumer<V, UIContext> callback) {
         return addEventListenerInternal(type, callback);
     }
 
     @SuppressWarnings("unchecked")
-    public <V> T addEventListenerWithContext(CustomUIEventBindingType type, Class<V> valueClass, TriConsumer<V, UIContext, CustomUIEventBindingType> callback) {
+    public <V> T addEventListenerWithContext(CustomUIEventBindingType type, TriConsumer<V, UIContext, CustomUIEventBindingType> callback) {
         return addEventListenerInternal(type, callback);
     }
 

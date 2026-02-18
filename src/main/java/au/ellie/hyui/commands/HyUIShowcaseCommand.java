@@ -18,17 +18,15 @@
 
 package au.ellie.hyui.commands;
 
-import au.ellie.hyui.HyUIPluginLogger;
 import au.ellie.hyui.builders.DynamicImageBuilder;
 import au.ellie.hyui.builders.PageBuilder;
 import au.ellie.hyui.html.TemplateProcessor;
+import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.protocol.GameMode;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
-import com.hypixel.hytale.server.core.command.system.basecommands.AbstractAsyncCommand;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -40,45 +38,27 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class HyUIShowcaseCommand extends AbstractAsyncCommand {
+public class HyUIShowcaseCommand extends AbstractDevCommand {
 
     public HyUIShowcaseCommand() {
         super("showcase", "Opens the HyUI 0.5.0 feature showcase");
-        if (!HyUIPluginLogger.IS_DEV)
-            return;
-
-        this.setPermissionGroup(GameMode.Adventure);
     }
 
     @NonNullDecl
     @Override
-    protected CompletableFuture<Void> executeAsync(@NonNullDecl CommandContext commandContext) {
-        if (!HyUIPluginLogger.IS_DEV)
-            return CompletableFuture.completedFuture(null);
+    protected CompletableFuture<Void> executeDev(Player player, Ref<EntityStore> ref, CommandContext commandContext) {
+        var store = ref.getStore();
+        var world = store.getExternalData().getWorld();
 
-        if (commandContext.sender() instanceof Player player) {
-            var ref = player.getReference();
+        return CompletableFuture.runAsync(() -> {
+            var playerRef = store.getComponent(ref, PlayerRef.getComponentType());
 
-            if (ref != null && ref.isValid()) {
-                var store = ref.getStore();
-                var world = store.getExternalData().getWorld();
-
-                return CompletableFuture.runAsync(() -> {
-                    var playerRef = store.getComponent(ref, PlayerRef.getComponentType());
-
-                    if (playerRef != null)
-                        openShowcase(playerRef, store);
-                }, world);
-            }
-        }
-
-        return CompletableFuture.completedFuture(null);
+            if (playerRef != null)
+                openShowcase(playerRef, store);
+        }, world);
     }
 
     private void openShowcase(PlayerRef playerRef, Store<EntityStore> store) {
-        if (!HyUIPluginLogger.IS_DEV)
-            return;
-
         // Track click count for demo button
         var clickCount = new AtomicInteger(0);
 
@@ -92,7 +72,7 @@ public class HyUIShowcaseCommand extends AbstractAsyncCommand {
                 .withLifetime(CustomPageLifetime.CanDismiss);
 
         // Interactive demo button
-        builder.registerEventListener("demo-button", (data, uiCtx) -> {
+        builder.registerEventListener("demo-button", (_, uiCtx) -> {
             var count = clickCount.incrementAndGet();
             playerRef.sendMessage(Message.raw("[Showcase] Button clicked " + count + " times!"));
 
@@ -115,9 +95,6 @@ public class HyUIShowcaseCommand extends AbstractAsyncCommand {
     }
 
     private TemplateProcessor createTemplateProcessor(PlayerRef playerRef) {
-        if (!HyUIPluginLogger.IS_DEV)
-            return null;
-
         var items = List.of(
                 new ShowcaseItem("Crude Pickaxe", 6, "Common", new ShowcaseMeta("Starter", "Crafted")),
                 new ShowcaseItem("Stone Hammer", 12, "Rare", new ShowcaseMeta("Journeyman", "Loot")),
@@ -174,9 +151,6 @@ public class HyUIShowcaseCommand extends AbstractAsyncCommand {
     }
 
     private String createShowcaseHtml() {
-        if (!HyUIPluginLogger.IS_DEV)
-            return "";
-
         return """
                 <div style="background-color: #1a1a2e(0.95); anchor: 0; padding: 20; flex-direction: column;">
                     <!-- Header -->
@@ -418,69 +392,9 @@ public class HyUIShowcaseCommand extends AbstractAsyncCommand {
                 """;
     }
 
-    private static final class ShowcaseItem {
-        private final String name;
-        private final int power;
-        private final String rarity;
-        private final ShowcaseMeta meta;
-
-        private ShowcaseItem(String name, int power, String rarity, ShowcaseMeta meta) {
-            this.name = name;
-            this.power = power;
-            this.rarity = rarity;
-            this.meta = meta;
-        }
-
-        public String getName() {
-            if (!HyUIPluginLogger.IS_DEV) {
-                return null;
-            }
-            return name;
-        }
-
-        public int getPower() {
-            if (!HyUIPluginLogger.IS_DEV) {
-                return 0;
-            }
-            return power;
-        }
-
-        public String getRarity() {
-            if (!HyUIPluginLogger.IS_DEV) {
-                return null;
-            }
-            return rarity;
-        }
-
-        public ShowcaseMeta getMeta() {
-            if (!HyUIPluginLogger.IS_DEV) {
-                return null;
-            }
-            return meta;
-        }
+    private record ShowcaseItem(String name, int power, String rarity, ShowcaseMeta meta) {
     }
 
-    private static final class ShowcaseMeta {
-        private final String tier;
-        private final String source;
-
-        private ShowcaseMeta(String tier, String source) {
-            this.tier = tier;
-            this.source = source;
-        }
-
-        public String getTier() {
-            if (!HyUIPluginLogger.IS_DEV) {
-                return null;
-            }
-            return tier;
-        }
-
-        public String getSource() {
-            if (!HyUIPluginLogger.IS_DEV) {
-                return null;
-            }
-            return source;
-        }
+    private record ShowcaseMeta(String tier, String source) {
     }
 }
