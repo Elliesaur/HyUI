@@ -21,16 +21,15 @@ package au.ellie.hyui.builders;
 import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.elements.BackgroundSupported;
 import au.ellie.hyui.elements.LayoutModeSupported;
-import au.ellie.hyui.events.MouseEventData;
-import au.ellie.hyui.events.UIEventActions;
 import au.ellie.hyui.elements.UIElements;
+import au.ellie.hyui.events.MouseEventData;
 import au.ellie.hyui.events.UIContext;
+import au.ellie.hyui.events.UIEventActions;
 import au.ellie.hyui.theme.Theme;
 import au.ellie.hyui.types.ButtonStyle;
 import au.ellie.hyui.types.ButtonStyleState;
 import au.ellie.hyui.types.TextButtonStyle;
 import au.ellie.hyui.types.TextButtonStyleState;
-import au.ellie.hyui.utils.PropertyBatcher;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
@@ -43,10 +42,10 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
- * Builder for creating button UI elements. 
+ * Builder for creating button UI elements.
  * Buttons are interactive elements that can trigger actions when clicked.
  */
-public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements 
+public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
         LayoutModeSupported<ButtonBuilder>,
         BackgroundSupported<ButtonBuilder> {
     private String text;
@@ -62,7 +61,7 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
         super(UIElements.BUTTON, UIElements.BUTTON);
         withWrappingGroup(true);
     }
-    
+
     /**
      * You do not need to call this.
      */
@@ -78,7 +77,7 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
 
     /**
      * You do not need to call this.
-     * 
+     *
      * @param theme
      * @param elementPath
      */
@@ -124,7 +123,7 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
     }
 
     /**
-     * Creates a ButtonBuilder instance for a secondary text button styled with the GAME_THEME and 
+     * Creates a ButtonBuilder instance for a secondary text button styled with the GAME_THEME and
      * the SECONDARY_TEXT_BUTTON element.
      *
      * @return a ButtonBuilder configured for creating a secondary text button with predefined theme and style.
@@ -132,9 +131,9 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
     public static ButtonBuilder secondaryTextButton() {
         return new ButtonBuilder(Theme.GAME_THEME, UIElements.SECONDARY_TEXT_BUTTON);
     }
-    
+
     /**
-     * Creates a ButtonBuilder instance for a small secondary text button styled with the GAME_THEME and 
+     * Creates a ButtonBuilder instance for a small secondary text button styled with the GAME_THEME and
      * the SMALL_SECONDARY_TEXT_BUTTON element.
      *
      * @return a ButtonBuilder configured for creating a small secondary text button with predefined theme and style.
@@ -142,9 +141,9 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
     public static ButtonBuilder smallSecondaryTextButton() {
         return new ButtonBuilder(Theme.GAME_THEME, UIElements.SMALL_SECONDARY_TEXT_BUTTON);
     }
-    
+
     /**
-     * Creates a ButtonBuilder instance for a tertiary text button styled with the GAME_THEME and 
+     * Creates a ButtonBuilder instance for a tertiary text button styled with the GAME_THEME and
      * the TERTIARY_TEXT_BUTTON element.
      *
      * @return a ButtonBuilder configured for creating a tertiary text button with predefined theme and style.
@@ -154,7 +153,7 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
     }
 
     /**
-     * Creates a ButtonBuilder instance for a small tertiary text button styled with the GAME_THEME and 
+     * Creates a ButtonBuilder instance for a small tertiary text button styled with the GAME_THEME and
      * the SMALL_TERTIARY_TEXT_BUTTON element.
      *
      * @return a ButtonBuilder configured for creating a small tertiary text button with predefined theme and style.
@@ -162,9 +161,9 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
     public static ButtonBuilder smallTertiaryTextButton() {
         return new ButtonBuilder(Theme.GAME_THEME, UIElements.SMALL_TERTIARY_TEXT_BUTTON);
     }
-    
+
     /**
-     * Creates a ButtonBuilder instance for a cancel text button styled with the GAME_THEME and 
+     * Creates a ButtonBuilder instance for a cancel text button styled with the GAME_THEME and
      * the CANCEL_TEXT_BUTTON element.
      *
      * @return a ButtonBuilder configured for creating a cancel text button with predefined theme and style.
@@ -180,7 +179,7 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
     public static ButtonBuilder rawButton() {
         return new ButtonBuilder(Theme.GAME_THEME, UIElements.BUTTON);
     }
-    
+
     /**
      * Sets the text for the button being built. Replaces any other text.
      *
@@ -250,110 +249,109 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
     }
 
     /**
-     * Adds an event listener to this button. This allows the button to respond to specific UI events
-     * that are triggered during interaction.
+     * Adds an event listener to this button.
      *
-     * @param type the type of UI event to listen for, specified as a {@link CustomUIEventBindingType}
-     * @param callback a callback function to handle the event, expressed as a {@link Consumer<Void>}
+     * @param type     the type of event to listen for
+     * @param callback the callback to execute when the event is triggered
      * @return the current instance of {@code ButtonBuilder} for method chaining
      */
     public ButtonBuilder addEventListener(CustomUIEventBindingType type, Consumer<Void> callback) {
-        return addEventListener(type, Void.class, callback);
+        return addEventListenerWithContext(type, (_, _, _) -> callback.accept(null));
     }
 
     /**
      * Adds an event listener to this button with access to the UI context.
      *
-     * @param type the type of UI event to listen for, specified as a {@link CustomUIEventBindingType}
-     * @param callback a callback function to handle the event, expressed as a {@link BiConsumer<Void, UIContext>}
+     * @param type     the type of event to listen for
+     * @param callback the callback to execute when the event is triggered, which accepts the UI context as a parameter
      * @return the current instance of {@code ButtonBuilder} for method chaining
      */
     public ButtonBuilder addEventListener(CustomUIEventBindingType type, BiConsumer<Void, UIContext> callback) {
-        return addEventListenerWithContext(type, Void.class, callback);
+        return addEventListenerWithContext(type, (_, context, _) -> callback.accept(null, context));
     }
 
     /**
      * Adds an event listener for the DoubleClicking event.
      */
     public ButtonBuilder onDoubleClicking(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.DoubleClicking, callback);
     }
 
     /**
      * Adds an event listener for the DoubleClicking event.
      */
     public ButtonBuilder onDoubleClicking(Consumer<MouseEventData> callback) {
-        return addEventListener(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.DoubleClicking, callback);
     }
 
     /**
      * Adds an event listener for the DoubleClicking event with context.
      */
     public ButtonBuilder onDoubleClicking(BiConsumer<MouseEventData, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.DoubleClicking, callback);
     }
 
     /**
      * Adds an event listener for the RightClicking event.
      */
     public ButtonBuilder onRightClicking(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.RightClicking, callback);
     }
 
     /**
      * Adds an event listener for the RightClicking event.
      */
     public ButtonBuilder onRightClicking(Consumer<MouseEventData> callback) {
-        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, callback);
     }
 
     /**
      * Adds an event listener for the RightClicking event with context.
      */
     public ButtonBuilder onRightClicking(BiConsumer<MouseEventData, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, callback);
     }
 
     /**
      * Adds an event listener for the MouseEntered event.
      */
     public ButtonBuilder onMouseEntered(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.MouseEntered, MouseEventData.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.MouseEntered, callback);
     }
 
     /**
      * Adds an event listener for the MouseEntered event.
      */
     public ButtonBuilder onMouseEntered(Consumer<MouseEventData> callback) {
-        return addEventListener(CustomUIEventBindingType.MouseEntered, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseEntered, callback);
     }
 
     /**
      * Adds an event listener for the MouseEntered event with context.
      */
     public ButtonBuilder onMouseEntered(BiConsumer<MouseEventData, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.MouseEntered, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseEntered, callback);
     }
 
     /**
      * Adds an event listener for the MouseExited event.
      */
     public ButtonBuilder onMouseExited(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.MouseExited, MouseEventData.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.MouseExited, callback);
     }
 
     /**
      * Adds an event listener for the MouseExited event.
      */
     public ButtonBuilder onMouseExited(Consumer<MouseEventData> callback) {
-        return addEventListener(CustomUIEventBindingType.MouseExited, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseExited, callback);
     }
 
     /**
      * Adds an event listener for the MouseExited event with context.
      */
     public ButtonBuilder onMouseExited(BiConsumer<MouseEventData, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.MouseExited, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseExited, callback);
     }
 
     @Override
@@ -424,10 +422,10 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
     protected void onBuild(UICommandBuilder commands, UIEventBuilder events) {
         String selector = getSelector();
         if (selector == null) return;
-        
+
         // Make sure we apply the layout mode to the wrapping group, not the button itself.
         applyLayoutMode(commands, "#" + getEffectiveId());
-        
+
         if (text != null && isTextButtonElement()) {
             HyUIPlugin.getLog().logFinest("Setting Text: " + text + " for " + selector);
             commands.set(selector + ".Text", text);
@@ -443,7 +441,7 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
             commands.set(selector + ".Overscroll", overscroll);
         }
 
-        if ( hyUIStyle == null && typedStyle == null  && style != null && !isBackButton()) {
+        if (hyUIStyle == null && typedStyle == null && style != null && !isBackButton()) {
             HyUIPlugin.getLog().logFinest("Setting Style: " + style + " for " + selector);
             commands.set(selector + ".Style", style);
         }
@@ -452,41 +450,41 @@ public class ButtonBuilder extends UIElementBuilder<ButtonBuilder> implements
             if (listener.type() == CustomUIEventBindingType.Activating) {
                 String eventId = getEffectiveId();
                 HyUIPlugin.getLog().logFinest("Adding Activating event binding: " + eventId + " for " + selector);
-                events.addEventBinding(CustomUIEventBindingType.Activating, selector, 
+                events.addEventBinding(CustomUIEventBindingType.Activating, selector,
                         EventData.of("Action", UIEventActions.BUTTON_CLICKED)
-                            .append("Target", eventId), 
+                                .append("Target", eventId),
                         false);
             } else if (listener.type() == CustomUIEventBindingType.DoubleClicking && !isBackButton()) {
                 String eventId = getEffectiveId();
                 HyUIPlugin.getLog().logFinest("Adding DoubleClicking event binding for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.DoubleClicking, selector,
                         EventData.of("Action", UIEventActions.DOUBLE_CLICKING)
-                            .append("Target", eventId), false);
+                                .append("Target", eventId), false);
             } else if (listener.type() == CustomUIEventBindingType.RightClicking && !isBackButton()) {
                 String eventId = getEffectiveId();
                 HyUIPlugin.getLog().logFinest("Adding RightClicking event binding for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.RightClicking, selector,
                         EventData.of("Action", UIEventActions.RIGHT_CLICKING)
-                            .append("Target", eventId), false);
-            } else if (listener.type() == CustomUIEventBindingType.MouseEntered  && !isBackButton()) {
+                                .append("Target", eventId), false);
+            } else if (listener.type() == CustomUIEventBindingType.MouseEntered && !isBackButton()) {
                 String eventId = getEffectiveId();
                 HyUIPlugin.getLog().logFinest("Adding MouseEntered event binding for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.MouseEntered, selector,
                         EventData.of("Action", UIEventActions.MOUSE_ENTERED)
-                            .append("Target", eventId), false);
-            } else if (listener.type() == CustomUIEventBindingType.MouseExited  && !isBackButton()) {
+                                .append("Target", eventId), false);
+            } else if (listener.type() == CustomUIEventBindingType.MouseExited && !isBackButton()) {
                 String eventId = getEffectiveId();
                 HyUIPlugin.getLog().logFinest("Adding MouseExited event binding for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.MouseExited, selector,
                         EventData.of("Action", UIEventActions.MOUSE_EXITED)
-                            .append("Target", eventId), false);
+                                .append("Target", eventId), false);
             }
         });
     }
 
     private boolean isTextButtonElement() {
         var typeSelector = getButtonTypeSelector(elementPath);
-        
+
         return typeSelector.contains("TextButton");
     }
 

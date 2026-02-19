@@ -18,7 +18,11 @@
 
 package au.ellie.hyui.html.template.item;
 
+import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public interface Node {
 
@@ -80,7 +84,61 @@ public interface Node {
         /**
          * Represents an if / else-if / else control structure
          */
-        record ConditionalBlockNode(String name, List<ConditionalBranch> branches) implements BlockNode {
+        class ConditionalBlockNode implements BlockNode {
+            private final List<ConditionalBranch> branches;
+            private final String name;
+
+            private Map<String, Integer> tags;
+
+            public ConditionalBlockNode(String name, List<ConditionalBranch> branches) {
+                this.branches = branches;
+                this.name = name;
+            }
+
+            public Map<String, Integer> getTags() {
+                if (tags == null) {
+                    tags = new HashMap<>();
+
+                    for (var branch : branches) {
+                        var local = getLocal(branch);
+
+                        for (var entry : local.entrySet()) {
+                            var tag = entry.getKey();
+                            var count = entry.getValue();
+                            if (tags.containsKey(tag) && tags.get(tag) >= count)
+                                count = tags.get(tag);
+
+                            tags.put(tag, count);
+                        }
+                    }
+                }
+
+                return tags;
+            }
+
+            @NonNullDecl
+            private HashMap<String, Integer> getLocal(ConditionalBranch branch) {
+                var local = new HashMap<String, Integer>();
+                for (var node : branch.body) {
+                    switch (node) {
+                        case ComponentBlockNode c -> local.put(c.tag, local.getOrDefault(c.tag, 0) + 1);
+                        case SlotBlockNode s -> local.put(s.name, local.getOrDefault(s.name, 0) + 1);
+                        default -> {
+                            // Ignore other nodes
+                        }
+                    }
+                }
+                return local;
+            }
+
+            public String name() {
+                return name;
+            }
+
+            public List<ConditionalBranch> branches() {
+                return branches;
+            }
+
             public record ConditionalBranch(ExpressionNode condition, List<Node> body) {
             }
         }

@@ -31,6 +31,7 @@ import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
+
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -114,98 +115,98 @@ public class ActionButtonBuilder extends UIElementBuilder<ActionButtonBuilder> {
      * Adds an event listener for the Activating event.
      */
     public ActionButtonBuilder onActivating(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.Activating, Void.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.Activating, callback);
     }
 
     /**
      * Adds an event listener for the Activating event with context.
      */
     public ActionButtonBuilder onActivating(BiConsumer<Void, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.Activating, Void.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.Activating, callback);
     }
 
     /**
      * Adds an event listener for the DoubleClicking event.
      */
     public ActionButtonBuilder onDoubleClicking(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.DoubleClicking, callback);
     }
 
     /**
      * Adds an event listener for the DoubleClicking event.
      */
     public ActionButtonBuilder onDoubleClicking(Consumer<MouseEventData> callback) {
-        return addEventListener(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.DoubleClicking, callback);
     }
 
     /**
      * Adds an event listener for the DoubleClicking event with context.
      */
     public ActionButtonBuilder onDoubleClicking(BiConsumer<MouseEventData, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.DoubleClicking, callback);
     }
 
     /**
      * Adds an event listener for the RightClicking event.
      */
     public ActionButtonBuilder onRightClicking(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.RightClicking, callback);
     }
 
     /**
      * Adds an event listener for the RightClicking event.
      */
     public ActionButtonBuilder onRightClicking(Consumer<MouseEventData> callback) {
-        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, callback);
     }
 
     /**
      * Adds an event listener for the RightClicking event with context.
      */
     public ActionButtonBuilder onRightClicking(BiConsumer<MouseEventData, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, callback);
     }
 
     /**
      * Adds an event listener for the MouseEntered event.
      */
     public ActionButtonBuilder onMouseEntered(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.MouseEntered, MouseEventData.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.MouseEntered, callback);
     }
 
     /**
      * Adds an event listener for the MouseEntered event.
      */
     public ActionButtonBuilder onMouseEntered(Consumer<MouseEventData> callback) {
-        return addEventListener(CustomUIEventBindingType.MouseEntered, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseEntered, callback);
     }
 
     /**
      * Adds an event listener for the MouseEntered event with context.
      */
     public ActionButtonBuilder onMouseEntered(BiConsumer<MouseEventData, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.MouseEntered, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseEntered, callback);
     }
 
     /**
      * Adds an event listener for the MouseExited event.
      */
     public ActionButtonBuilder onMouseExited(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.MouseExited, MouseEventData.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.MouseExited, callback);
     }
 
     /**
      * Adds an event listener for the MouseExited event.
      */
     public ActionButtonBuilder onMouseExited(Consumer<MouseEventData> callback) {
-        return addEventListener(CustomUIEventBindingType.MouseExited, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseExited, callback);
     }
 
     /**
      * Adds an event listener for the MouseExited event with context.
      */
     public ActionButtonBuilder onMouseExited(BiConsumer<MouseEventData, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.MouseExited, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseExited, callback);
     }
 
     @Override
@@ -283,27 +284,27 @@ public class ActionButtonBuilder extends UIElementBuilder<ActionButtonBuilder> {
                 HyUIPlugin.getLog().logFinest("Adding Activating event binding: " + eventId + " for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.Activating, selector,
                         EventData.of("Action", UIEventActions.BUTTON_CLICKED)
-                            .append("Target", eventId), false);
+                                .append("Target", eventId), false);
             } else if (listener.type() == CustomUIEventBindingType.DoubleClicking) {
                 HyUIPlugin.getLog().logFinest("Adding DoubleClicking event binding for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.DoubleClicking, selector,
                         EventData.of("Action", UIEventActions.DOUBLE_CLICKING)
-                            .append("Target", eventId), false);
+                                .append("Target", eventId), false);
             } else if (listener.type() == CustomUIEventBindingType.RightClicking) {
                 HyUIPlugin.getLog().logFinest("Adding RightClicking event binding for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.RightClicking, selector,
                         EventData.of("Action", UIEventActions.RIGHT_CLICKING)
-                            .append("Target", eventId), false);
+                                .append("Target", eventId), false);
             } else if (listener.type() == CustomUIEventBindingType.MouseEntered) {
                 HyUIPlugin.getLog().logFinest("Adding MouseEntered event binding for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.MouseEntered, selector,
                         EventData.of("Action", UIEventActions.MOUSE_ENTERED)
-                            .append("Target", eventId), false);
+                                .append("Target", eventId), false);
             } else if (listener.type() == CustomUIEventBindingType.MouseExited) {
                 HyUIPlugin.getLog().logFinest("Adding MouseExited event binding for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.MouseExited, selector,
                         EventData.of("Action", UIEventActions.MOUSE_EXITED)
-                            .append("Target", eventId), false);
+                                .append("Target", eventId), false);
             }
         });
     }

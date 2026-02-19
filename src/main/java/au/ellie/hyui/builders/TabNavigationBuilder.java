@@ -350,7 +350,7 @@ public class TabNavigationBuilder extends UIElementBuilder<TabNavigationBuilder>
 
             tabButton.withId(tab.id());
             applyTabButtonText(tabButton, tab.label());
-            tabButton.addEventListenerWithContext(CustomUIEventBindingType.Activating, Void.class, (_, ctx) -> {
+            tabButton.addEventListenerWithContext(CustomUIEventBindingType.Activating, (_, ctx) -> {
                 applyTabSelection(ctx, tab.id());
                 ctx.updatePage(true);
             });

@@ -23,7 +23,6 @@ import au.ellie.hyui.elements.BackgroundSupported;
 import au.ellie.hyui.elements.LayoutModeSupported;
 import au.ellie.hyui.elements.ScrollbarStyleSupported;
 import au.ellie.hyui.elements.UIElements;
-import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventActions;
 import au.ellie.hyui.theme.Theme;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
@@ -32,18 +31,16 @@ import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 
 import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 /**
- * Builder for creating group UI elements. 
+ * Builder for creating group UI elements.
  * Groups can be used to organize and layout other UI elements.
- * 
+ * <p>
  * This directly translates to a {@code Group {}}
  */
-public class GroupBuilder extends UIElementBuilder<GroupBuilder> implements 
-        LayoutModeSupported<GroupBuilder>, 
-        BackgroundSupported<GroupBuilder>, 
+public class GroupBuilder extends UIElementBuilder<GroupBuilder> implements
+        LayoutModeSupported<GroupBuilder>,
+        BackgroundSupported<GroupBuilder>,
         ScrollbarStyleSupported<GroupBuilder> {
     private String layoutMode;
     private String scrollbarStyleReference;
@@ -65,10 +62,10 @@ public class GroupBuilder extends UIElementBuilder<GroupBuilder> implements
     public static GroupBuilder group() {
         return new GroupBuilder();
     }
-    
+
     /**
      * Sets the layout mode for the group.
-     * 
+     *
      * @param layoutMode The layout mode to set.
      * @return This builder instance for method chaining.
      */
@@ -77,12 +74,12 @@ public class GroupBuilder extends UIElementBuilder<GroupBuilder> implements
         this.layoutMode = layoutMode;
         return this;
     }
-    
+
     @Override
     public String getLayoutMode() {
         return this.layoutMode;
     }
-    
+
     @Override
     public GroupBuilder withScrollbarStyle(String document, String styleReference) {
         this.scrollbarStyleDocument = document;
@@ -104,14 +101,14 @@ public class GroupBuilder extends UIElementBuilder<GroupBuilder> implements
      * Adds an event listener for the Validating event.
      */
     public GroupBuilder onValidating(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.Validating, Void.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.Validating, callback);
     }
 
     /**
      * Adds an event listener for the Dismissing event.
      */
     public GroupBuilder onDismissing(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.Dismissing, Void.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.Dismissing, callback);
     }
 
     @Override
@@ -144,13 +141,13 @@ public class GroupBuilder extends UIElementBuilder<GroupBuilder> implements
                 HyUIPlugin.getLog().logFinest("Adding Validating event binding for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.Validating, selector,
                         EventData.of("Action", UIEventActions.VALIDATING)
-                            .append("Target", eventId), false);
+                                .append("Target", eventId), false);
             } else if (listener.type() == CustomUIEventBindingType.Dismissing) {
                 HyUIPlugin.getLog().logFinest("Adding Dismissing event binding for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.Dismissing, selector,
                         EventData.of("Action", UIEventActions.DISMISSING)
-                            .append("Target", eventId), false);
-            } 
+                                .append("Target", eventId), false);
+            }
         });
     }
 }

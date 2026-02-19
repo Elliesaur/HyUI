@@ -116,7 +116,16 @@ public class HudBuilder extends InterfaceBuilder<HudBuilder> {
     public HyUIHud show(@Nonnull PlayerRef playerRefParam) {
         String name = "HYUIHUD" + System.currentTimeMillis();
         sendDynamicImageIfNeeded(playerRefParam);
-        this.lastHud = new HyUIHud(name, playerRefParam, uiFile, getTopLevelElements(), editCallbacks, templateHtml, templateProcessor, runtimeTemplateUpdatesEnabled);
+        this.lastHud = new HyUIHud(
+                name, 
+                playerRefParam, 
+                uiFile, 
+                getTopLevelElements(), 
+                editCallbacks, 
+                templateHtml, 
+                templateProcessor, 
+                runtimeTemplateUpdatesEnabled, 
+                this);
         this.lastHud.setRefreshRateMs(refreshRateMs);
         this.lastHud.setRefreshListener(refreshListener);
         HyUIPlugin.getLog().logFinest("Adding to a MultiHud: " + name);

@@ -81,6 +81,9 @@ public interface TagHandler {
             }
         }
 
+        // Default to visible unless explicitly hidden by style or attribute
+        builder.withVisible(true);
+
         boolean defaultStyleApplied = applyDefaultStyleIfRequested(builder, element);
 
         if (element.hasAttr("style")) {

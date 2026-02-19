@@ -34,14 +34,11 @@ public class HyUIUpdateHudCommand extends AbstractDevCommand {
     }
 
     @NonNullDecl
-    @Override
     protected CompletableFuture<Void> executeDev(Player player, Ref<EntityStore> ref, CommandContext commandContext) {
         var store = ref.getStore();
         var world = store.getExternalData().getWorld();
 
-        return CompletableFuture.runAsync(() -> {
-            updateHuds();
-        }, world);
+        return CompletableFuture.runAsync(this::updateHuds, world);
     }
 
     private void updateHuds() {
@@ -51,6 +48,8 @@ public class HyUIUpdateHudCommand extends AbstractDevCommand {
             hud.getById("Hello", LabelBuilder.class).ifPresent(label -> {
                 label.withText(String.valueOf(millis));
             });
+
+            hud.refreshOrRerender(false, false);
         }
     }
 }

@@ -661,18 +661,18 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
                     StringBuilder paddingMarkup = new StringBuilder();
                     if (padding.getLeft() != null) paddingMarkup.append("Left: ").append(padding.getLeft());
                     if (padding.getTop() != null) {
-                        if (paddingMarkup.length() > 0) paddingMarkup.append(", ");
+                        if (!paddingMarkup.isEmpty()) paddingMarkup.append(", ");
                         paddingMarkup.append("Top: ").append(padding.getTop());
                     }
                     if (padding.getRight() != null) {
-                        if (paddingMarkup.length() > 0) paddingMarkup.append(", ");
+                        if (!paddingMarkup.isEmpty()) paddingMarkup.append(", ");
                         paddingMarkup.append("Right: ").append(padding.getRight());
                     }
                     if (padding.getBottom() != null) {
-                        if (paddingMarkup.length() > 0) paddingMarkup.append(", ");
+                        if (!paddingMarkup.isEmpty()) paddingMarkup.append(", ");
                         paddingMarkup.append("Bottom: ").append(padding.getBottom());
                     }
-                    if (paddingMarkup.length() > 0) {
+                    if (!paddingMarkup.isEmpty()) {
                         inlineMarkup.append("Padding: (").append(paddingMarkup).append("); ");
                     }
                 }
@@ -965,32 +965,22 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
     }
 
     @SuppressWarnings("unchecked")
-    public <V> T addEventListener(CustomUIEventBindingType type, Consumer<V> callback) {
-        return addEventListenerInternal(type, callback);
+    public T addEventListener(CustomUIEventBindingType type, Runnable callback) {
+        return addEventListenerWithContext(type, (val, _, _) -> callback.run());
+    }
+
+    @SuppressWarnings("unchecked")
+    public <V> T addEventListenerWithContext(CustomUIEventBindingType type, Consumer<V> callback) {
+        return addEventListenerWithContext(type, (val, _, _) -> ((Consumer<Object>) callback).accept(val));
     }
 
     @SuppressWarnings("unchecked")
     public <V> T addEventListenerWithContext(CustomUIEventBindingType type, BiConsumer<V, UIContext> callback) {
-        return addEventListenerInternal(type, callback);
+        return addEventListenerWithContext(type, (val, context, _) -> ((BiConsumer<Object, UIContext>) callback).accept(val, context));
     }
 
     @SuppressWarnings("unchecked")
     public <V> T addEventListenerWithContext(CustomUIEventBindingType type, TriConsumer<V, UIContext, CustomUIEventBindingType> callback) {
-        return addEventListenerInternal(type, callback);
-    }
-
-    @SuppressWarnings("unchecked")
-    protected <V> T addEventListenerInternal(CustomUIEventBindingType type, Consumer<V> callback) {
-        return addEventListenerInternal(type, (val, _, _) -> ((Consumer<Object>) callback).accept(val));
-    }
-
-    @SuppressWarnings("unchecked")
-    protected <V> T addEventListenerInternal(CustomUIEventBindingType type, BiConsumer<V, UIContext> callback) {
-        return addEventListenerInternal(type, (val, context, _) -> ((BiConsumer<Object, UIContext>) callback).accept(val, context));
-    }
-
-    @SuppressWarnings("unchecked")
-    protected <V> T addEventListenerInternal(CustomUIEventBindingType type, TriConsumer<V, UIContext, CustomUIEventBindingType> callback) {
         this.listeners.add(new UIEventListener<>(type, callback));
         return (T) this;
     }

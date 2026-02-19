@@ -95,5 +95,7 @@ public class HyUIAddHudCommand extends AbstractDevCommand {
         hud2.getById("Hello", LabelBuilder.class).ifPresent((builder) ->
                 builder.withText("Hello, BAD! " + System.currentTimeMillis())
         );
+
+        HUD_INSTANCES.add(hud2);
     }
 }

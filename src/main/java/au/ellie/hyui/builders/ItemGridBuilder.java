@@ -225,28 +225,28 @@ public class ItemGridBuilder extends UIElementBuilder<ItemGridBuilder> implement
      * Adds an event listener for the SlotDoubleClicking event.
      */
     public ItemGridBuilder onSlotDoubleClicking(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.SlotDoubleClicking, Void.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.SlotDoubleClicking, callback);
     }
 
     /**
      * Adds an event listener for the DragCancelled event.
      */
     public ItemGridBuilder onDragCancelled(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.DragCancelled, Void.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.DragCancelled, callback);
     }
 
     /**
      * Adds an event listener for the SlotMouseEntered event.
      */
     public ItemGridBuilder onSlotMouseEntered(Runnable callback) {
-        return addEventListener(SlotMouseEntered, Void.class, v -> callback.run());
+        return addEventListener(SlotMouseEntered, callback);
     }
 
     /**
      * Adds an event listener for the SlotMouseExited event.
      */
     public ItemGridBuilder onSlotMouseExited(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.SlotMouseExited, Void.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.SlotMouseExited, callback);
     }
 
     @Override

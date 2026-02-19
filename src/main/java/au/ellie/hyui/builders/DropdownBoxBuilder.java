@@ -73,10 +73,10 @@ public class DropdownBoxBuilder extends UIElementBuilder<DropdownBoxBuilder> {
 
     /**
      * Sets the initial selected value for the dropdown box.
-     * 
+     * <p>
      * WARNING: The value must correspond to the "name" of one of the entries added via {@link #addEntry} or {@link #withEntries}.
      * If the value does not exist in the entries, the dropdown may exhibit unexpected behavior or fail to show the selection.
-     * 
+     *
      * @param value The name of the entry to select.
      * @return This builder instance for method chaining.
      */
@@ -174,11 +174,11 @@ public class DropdownBoxBuilder extends UIElementBuilder<DropdownBoxBuilder> {
     }
 
     public DropdownBoxBuilder addEventListener(CustomUIEventBindingType type, Consumer<String> callback) {
-        return addEventListener(type, String.class, callback);
+        return addEventListenerWithContext(type, callback);
     }
 
     public DropdownBoxBuilder addEventListener(CustomUIEventBindingType type, BiConsumer<String, UIContext> callback) {
-        return addEventListenerWithContext(type, String.class, callback);
+        return addEventListenerWithContext(type, callback);
     }
 
     @Override
@@ -317,7 +317,8 @@ public class DropdownBoxBuilder extends UIElementBuilder<DropdownBoxBuilder> {
         }
         if (listeners.isEmpty()) {
             // To handle data back to the .getValue, we need to add at least one listener.
-            addEventListener(CustomUIEventBindingType.ValueChanged, (_, _) -> {});
+            addEventListener(CustomUIEventBindingType.ValueChanged, (_, _) -> {
+            });
         }
         listeners.forEach(listener -> {
             if (listener.type() == CustomUIEventBindingType.ValueChanged) {

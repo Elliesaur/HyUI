@@ -19,6 +19,7 @@
 package au.ellie.hyui.utils;
 
 import au.ellie.hyui.HyUIPlugin;
+import au.ellie.hyui.builders.HyUIHud;
 import com.hypixel.hytale.common.plugin.PluginIdentifier;
 import com.hypixel.hytale.common.semver.Semver;
 import com.hypixel.hytale.common.semver.SemverRange;
@@ -30,16 +31,18 @@ import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Handles MultiHUD operations by checking for existing plugins using MultipleHUD and hooking their copy over ours.
  */
 public class MultiHudWrapper {
-    
+
     private static Class<?> mhudClass;
     private static Semver mhudSemver;
     private static boolean useOwnMHUD;
-    
+
     private static Object getInstance() {
         Class<?> multipleHudClass = getMultipleHudClass();
         if (multipleHudClass == null) {
@@ -93,6 +96,36 @@ public class MultiHudWrapper {
         return multipleHudClass;
     }
 
+    public static List<HyUIHud> getHuds(Player player, PlayerRef playerRef) {
+        List<HyUIHud> huds = new ArrayList<>();
+        if (!useOwnMHUD) {
+            CustomUIHud currentHud = player.getHudManager().getCustomHud();
+            if (currentHud != null && currentHud.getClass().getName().endsWith("MultipleCustomUIHud")) {
+                try {
+                    java.lang.reflect.Field customHudsField = currentHud.getClass().getDeclaredField("customHuds");
+                    customHudsField.setAccessible(true);
+                    java.util.Map<String, CustomUIHud> customHuds = (java.util.Map<String, CustomUIHud>) customHudsField.get(currentHud);
+                    for (CustomUIHud hud : customHuds.values()) {
+                        if (hud instanceof HyUIHud) {
+                            huds.add((HyUIHud) hud);
+                        }
+                    }
+                } catch (NoSuchFieldException | IllegalAccessException e) {
+                    HyUIPlugin.getLog().logFinest("Failed to access customHuds via reflection: " + e.getMessage());
+                }
+            }
+        } else {
+            var ourHuds = au.ellie.hyui.utils.multiplehud.MultipleHUD.getInstance().getCustomHuds(player);
+            for (var hud : ourHuds.entrySet()) {
+                if (!(hud.getValue() instanceof HyUIHud)) {
+                    continue;
+                }
+                huds.add((HyUIHud) hud.getValue());
+            }
+        }
+        return huds;
+    }
+
     public static void setCustomHud(Player player, PlayerRef playerRef, String name, CustomUIHud hud) {
         if (!useOwnMHUD) {
             var instance = getInstance();
@@ -107,7 +140,7 @@ public class MultiHudWrapper {
             au.ellie.hyui.utils.multiplehud.MultipleHUD.getInstance().setCustomHud(player, playerRef, name, hud);
         }
     }
-    
+
     public static void hideCustomHud(Player player, PlayerRef playerRef, String name) {
         if (!useOwnMHUD) {
             var instance = getInstance();

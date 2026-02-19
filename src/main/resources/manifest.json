@@ -1,7 +1,7 @@
 {
     "Group": "Ellie",
     "Name": "HyUI",
-    "Version": "0.8.7",
+    "Version": "0.8.8",
     "Description": "A library for mods that helps build GUIs faster and better.",
     "Authors": [
         {
@@ -11,7 +11,7 @@
         }
     ],
     "Website": "ellie.au",
-    "ServerVersion": "*",
+    "ServerVersion": "2026.02.18-f3b8fff95",
     "Dependencies": {
         
     },

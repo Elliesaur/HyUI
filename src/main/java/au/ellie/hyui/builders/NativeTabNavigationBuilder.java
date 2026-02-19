@@ -84,14 +84,14 @@ public class NativeTabNavigationBuilder extends UIElementBuilder<NativeTabNaviga
      * Adds an event listener for the SelectedTabChanged event.
      */
     public NativeTabNavigationBuilder onSelectedTabChanged(Consumer<SelectedTabChangedEventData> callback) {
-        return addEventListener(CustomUIEventBindingType.SelectedTabChanged, SelectedTabChangedEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.SelectedTabChanged, callback);
     }
 
     /**
      * Adds an event listener for the SelectedTabChanged event with context.
      */
     public NativeTabNavigationBuilder onSelectedTabChanged(BiConsumer<SelectedTabChangedEventData, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.SelectedTabChanged, SelectedTabChangedEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.SelectedTabChanged, callback);
     }
 
     @Override
@@ -171,7 +171,7 @@ public class NativeTabNavigationBuilder extends UIElementBuilder<NativeTabNaviga
                 HyUIPlugin.getLog().logFinest("Adding SelectedTabChanged event binding for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.SelectedTabChanged, selector,
                         EventData.of("Action", UIEventActions.SELECTED_TAB_CHANGED)
-                            .append("Target", eventId), false);
+                                .append("Target", eventId), false);
             }
         });
     }

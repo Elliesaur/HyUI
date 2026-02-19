@@ -19,10 +19,10 @@
 package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
+import au.ellie.hyui.elements.UIElements;
 import au.ellie.hyui.events.MouseEventData;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventActions;
-import au.ellie.hyui.elements.UIElements;
 import au.ellie.hyui.utils.PropertyBatcher;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.ui.Value;
@@ -75,41 +75,39 @@ public class FloatSliderBuilder extends UIElementBuilder<FloatSliderBuilder> {
     }
 
     public FloatSliderBuilder addEventListener(CustomUIEventBindingType type, Consumer<Float> callback) {
-        return addEventListener(type, Float.class, callback);
+        return addEventListenerWithContext(type, callback);
     }
 
     public FloatSliderBuilder addEventListener(CustomUIEventBindingType type, BiConsumer<Float, UIContext> callback) {
-        return addEventListenerWithContext(type, Float.class, callback);
+        return addEventListenerWithContext(type, callback);
     }
 
     /**
      * Adds an event listener for the MouseButtonReleased event.
      */
     public FloatSliderBuilder onMouseButtonReleased(Consumer<MouseEventData> callback) {
-        return addEventListener(CustomUIEventBindingType.MouseButtonReleased, MouseEventData.class,
-                callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseButtonReleased, callback);
     }
-    
+
     /**
      * Adds an event listener for the MouseButtonReleased event.
      */
     public FloatSliderBuilder onMouseButtonReleased(BiConsumer<MouseEventData, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.MouseButtonReleased, MouseEventData.class,
-                callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseButtonReleased, callback);
     }
-    
+
     /**
      * Adds an event listener for the ValueChanged event.
      */
     public FloatSliderBuilder onValueChanged(Consumer<Float> callback) {
-        return addEventListener(CustomUIEventBindingType.ValueChanged, Float.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.ValueChanged, callback);
     }
 
     /**
      * Adds an event listener for the ValueChanged event with context.
      */
     public FloatSliderBuilder onValueChanged(BiConsumer<Float, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.ValueChanged, Float.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.ValueChanged, callback);
     }
 
     @Override
@@ -180,18 +178,19 @@ public class FloatSliderBuilder extends UIElementBuilder<FloatSliderBuilder> {
             commands.set(selector + ".Value", value);
         }
 
-        if ( hyUIStyle == null && typedStyle == null  && style != null) {
+        if (hyUIStyle == null && typedStyle == null && style != null) {
             HyUIPlugin.getLog().logFinest("Setting Style for FloatSlider " + selector);
             commands.set(selector + ".Style", style);
         } else if (hyUIStyle == null && typedStyle != null) {
             PropertyBatcher.endSet(selector + ".Style", filterStyleDocument(typedStyle.toBsonDocument()), commands);
-        } else if ( hyUIStyle == null && typedStyle == null ) {
+        } else if (hyUIStyle == null && typedStyle == null) {
             HyUIPlugin.getLog().logFinest("Setting Style for FloatSlider to DefaultSliderStyle " + selector);
             commands.set(selector + ".Style", Value.ref("Common.ui", "DefaultSliderStyle"));
         }
         if (listeners.isEmpty()) {
             // To handle data back to the .getValue, we need to add at least one listener.
-            addEventListener(CustomUIEventBindingType.ValueChanged, (Float v, UIContext ctx) -> {});
+            addEventListener(CustomUIEventBindingType.ValueChanged, (Float v, UIContext ctx) -> {
+            });
         }
 
         // Register event listeners
@@ -201,7 +200,7 @@ public class FloatSliderBuilder extends UIElementBuilder<FloatSliderBuilder> {
                 HyUIPlugin.getLog().logFinest("Adding MouseButtonReleased event binding for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.MouseButtonReleased, selector,
                         EventData.of("Action", UIEventActions.MOUSE_BUTTON_RELEASED)
-                            .append("Target", eventId), false);
+                                .append("Target", eventId), false);
             } else if (listener.type() == CustomUIEventBindingType.ValueChanged) {
                 HyUIPlugin.getLog().logFinest("Adding ValueChanged event binding for " + selector + " with eventId: " + eventId);
                 events.addEventBinding(CustomUIEventBindingType.ValueChanged, selector,

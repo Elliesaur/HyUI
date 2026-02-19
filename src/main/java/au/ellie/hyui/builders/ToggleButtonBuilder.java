@@ -65,112 +65,112 @@ public class ToggleButtonBuilder extends UIElementBuilder<ToggleButtonBuilder> {
      * Adds an event listener for the ValueChanged event (toggle state change).
      */
     public ToggleButtonBuilder onValueChanged(Consumer<Boolean> callback) {
-        return addEventListener(CustomUIEventBindingType.ValueChanged, Boolean.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.ValueChanged, callback);
     }
 
     /**
      * Adds an event listener for the ValueChanged event with context.
      */
     public ToggleButtonBuilder onValueChanged(BiConsumer<Boolean, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.ValueChanged, Boolean.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.ValueChanged, callback);
     }
 
     /**
      * Adds an event listener for the Activating event.
      */
     public ToggleButtonBuilder onActivating(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.Activating, Void.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.Activating, callback);
     }
 
     /**
      * Adds an event listener for the Activating event with context.
      */
     public ToggleButtonBuilder onActivating(BiConsumer<Void, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.Activating, Void.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.Activating, callback);
     }
 
     /**
      * Adds an event listener for the DoubleClicking event.
      */
     public ToggleButtonBuilder onDoubleClicking(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.DoubleClicking, callback);
     }
 
     /**
      * Adds an event listener for the DoubleClicking event.
      */
     public ToggleButtonBuilder onDoubleClicking(Consumer<MouseEventData> callback) {
-        return addEventListener(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.DoubleClicking, callback);
     }
 
     /**
      * Adds an event listener for the DoubleClicking event with context.
      */
     public ToggleButtonBuilder onDoubleClicking(BiConsumer<MouseEventData, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.DoubleClicking, callback);
     }
 
     /**
      * Adds an event listener for the RightClicking event.
      */
     public ToggleButtonBuilder onRightClicking(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.RightClicking, callback);
     }
 
     /**
      * Adds an event listener for the RightClicking event.
      */
     public ToggleButtonBuilder onRightClicking(Consumer<MouseEventData> callback) {
-        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, callback);
     }
 
     /**
      * Adds an event listener for the RightClicking event with context.
      */
     public ToggleButtonBuilder onRightClicking(BiConsumer<MouseEventData, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, callback);
     }
 
     /**
      * Adds an event listener for the MouseEntered event.
      */
     public ToggleButtonBuilder onMouseEntered(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.MouseEntered, MouseEventData.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.MouseEntered, callback);
     }
 
     /**
      * Adds an event listener for the MouseEntered event.
      */
     public ToggleButtonBuilder onMouseEntered(Consumer<MouseEventData> callback) {
-        return addEventListener(CustomUIEventBindingType.MouseEntered, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseEntered, callback);
     }
 
     /**
      * Adds an event listener for the MouseEntered event with context.
      */
     public ToggleButtonBuilder onMouseEntered(BiConsumer<MouseEventData, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.MouseEntered, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseEntered, callback);
     }
 
     /**
      * Adds an event listener for the MouseExited event.
      */
     public ToggleButtonBuilder onMouseExited(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.MouseExited, MouseEventData.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.MouseExited, callback);
     }
 
     /**
      * Adds an event listener for the MouseExited event.
      */
     public ToggleButtonBuilder onMouseExited(Consumer<MouseEventData> callback) {
-        return addEventListener(CustomUIEventBindingType.MouseExited, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseExited, callback);
     }
 
     /**
      * Adds an event listener for the MouseExited event with context.
      */
     public ToggleButtonBuilder onMouseExited(BiConsumer<MouseEventData, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.MouseExited, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseExited, callback);
     }
 
     @Override
@@ -225,7 +225,7 @@ public class ToggleButtonBuilder extends UIElementBuilder<ToggleButtonBuilder> {
 
         if (listeners.isEmpty()) {
             // To handle data back to the .getValue, we need to add at least one listener.
-            addEventListener(CustomUIEventBindingType.ValueChanged, Boolean.class, v -> {
+            addEventListener(CustomUIEventBindingType.ValueChanged, () -> {
             });
         }
 

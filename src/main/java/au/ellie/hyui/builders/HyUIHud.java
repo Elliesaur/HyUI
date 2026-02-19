@@ -24,6 +24,7 @@ import au.ellie.hyui.html.TemplateProcessor;
 import au.ellie.hyui.utils.MultiHudWrapper;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.protocol.Asset;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
@@ -61,10 +62,11 @@ public class HyUIHud extends CustomUIHud implements UIContext {
                    List<BiConsumer<UICommandBuilder, UIEventBuilder>> editCallbacks,
                    String templateHtml,
                    TemplateProcessor templateProcessor,
-                   boolean runtimeTemplateUpdatesEnabled) {
+                   boolean runtimeTemplateUpdatesEnabled,
+                   InterfaceBuilder<?> rootElementBuilder) {
         super(playerRef);
         this.name = name;
-        this.delegate = new HyUInterface(uiFile, elements, editCallbacks, templateHtml, templateProcessor, runtimeTemplateUpdatesEnabled, null) {
+        this.delegate = new HyUInterface(uiFile, elements, editCallbacks, templateHtml, templateProcessor, runtimeTemplateUpdatesEnabled, rootElementBuilder, null) {
         };
     }
 
@@ -103,12 +105,13 @@ public class HyUIHud extends CustomUIHud implements UIContext {
         long now = System.currentTimeMillis();
         long rate = getRefreshRateMs();
 
-        if (rate > 0) {
-            if (now - lastRefreshTime >= rate) {
-                triggerRefresh();
-                refreshOrRerender(true, false);
-                lastRefreshTime = now;
-            }
+        if (rate > 0 && now - lastRefreshTime >= rate) {
+            if (refreshTask.isCancelled())
+                return;
+
+            triggerRefresh();
+            refreshOrRerender(true, false);
+            lastRefreshTime = now;
         }
     }
 
@@ -152,7 +155,7 @@ public class HyUIHud extends CustomUIHud implements UIContext {
      * @param updatedHudBuilder The builder containing updated HUD configuration.
      */
     public void update(HudBuilder updatedHudBuilder) {
-        UICommandBuilder builder = configureFrom(updatedHudBuilder);
+        configureFrom(updatedHudBuilder);
         refreshOrRerender(true, false);
     }
 
@@ -187,10 +190,10 @@ public class HyUIHud extends CustomUIHud implements UIContext {
     public void removeUnsafe() {
         var player = getPlayer();
         if (player == null) return;
+        refreshTask.cancel(true);
 
         MultiHudWrapper.hideCustomHud(player, getPlayerRef(), this.name);
         HyUIPlugin.getLog().logFinest("HUD removed: " + this.name);
-        refreshTask.cancel(false);
     }
 
     /**
@@ -333,12 +336,16 @@ public class HyUIHud extends CustomUIHud implements UIContext {
         isHidden = !isHidden;
     }
 
-    private UICommandBuilder configureFrom(HudBuilder updatedHudBuilder) {
-        UICommandBuilder builder = new UICommandBuilder();
+    private void configureFrom(HudBuilder updatedHudBuilder) {
+        delegate.templateHtml = updatedHudBuilder.templateHtml;
+        delegate.templateProcessor = updatedHudBuilder.templateProcessor;
+        delegate.runtimeTemplateUpdatesEnabled = updatedHudBuilder.runtimeTemplateUpdatesEnabled;
+        delegate.elementValues.clear();
+        delegate.dirtyValueIds.clear();
+        delegate.hasBuilt = false;
         delegate.setEditCallbacks(updatedHudBuilder.editCallbacks);
         delegate.setElements(updatedHudBuilder.getTopLevelElements());
         delegate.setUiFile(updatedHudBuilder.uiFile);
-        return builder;
     }
 
     private void safeAdd() {
@@ -397,5 +404,31 @@ public class HyUIHud extends CustomUIHud implements UIContext {
         });
     }
 
-    // TODO: HUD release images.
+    public void reopenFromAsset(Player player, PlayerRef playerRef, Store<EntityStore> store, Asset asset) {
+        if (delegate.willReopenFromAsset(player, playerRef, store, asset)) {
+            // Remove ours.
+            if (refreshTask != null && !refreshTask.isCancelled())
+                refreshTask.cancel(false);
+
+            delegate.releaseDynamicImages(playerRef.getUuid());
+            var newHudBuilder = (HudBuilder) delegate.reopenFromAsset(player, playerRef, store, asset);
+            this.configureFrom(newHudBuilder);
+            // Get dynamic images working...
+            newHudBuilder.sendDynamicImageIfNeeded(playerRef);
+
+            // Forcibly rebuild from scratch.
+            var uiCommandBuilder = new UICommandBuilder();
+            delegate.buildFromCommandBuilder(uiCommandBuilder, false, new UIEventBuilder());
+            this.update(false, uiCommandBuilder);
+
+            // What the fuck Hytale
+            if (refreshRateMs <= 0)
+                // Why do you make Ellie do this?
+                refreshOrRerender(true, true);
+
+            // Finally, start refresh task again.
+            // Dry your tears Ellie, it will all be over soon...
+            startRefreshTask();
+        }
+    }
 }

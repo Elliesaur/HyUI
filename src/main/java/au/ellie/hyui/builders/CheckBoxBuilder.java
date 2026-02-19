@@ -19,10 +19,9 @@
 package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
+import au.ellie.hyui.elements.UIElements;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventActions;
-import au.ellie.hyui.elements.UIElements;
-import au.ellie.hyui.utils.PropertyBatcher;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
@@ -41,7 +40,7 @@ public class CheckBoxBuilder extends UIElementBuilder<CheckBoxBuilder> {
 
     /**
      * Constructs a new instance of {@code CheckBoxBuilder}.
-     * The builder is pre-configured to create a checkbox UI element with a label, 
+     * The builder is pre-configured to create a checkbox UI element with a label,
      * wrapped within a grouping element.
      */
     public CheckBoxBuilder() {
@@ -91,7 +90,7 @@ public class CheckBoxBuilder extends UIElementBuilder<CheckBoxBuilder> {
     }*/
 
     /**
-     * Registers an event listener for the checkbox being constructed. The listener is triggered 
+     * Registers an event listener for the checkbox being constructed. The listener is triggered
      * based on the specified event type and executes the provided callback when the event occurs.
      *
      * @param type     the type of UI event to bind the listener to, such as value changes or activation
@@ -99,7 +98,7 @@ public class CheckBoxBuilder extends UIElementBuilder<CheckBoxBuilder> {
      * @return the {@code CheckBoxBuilder} instance for method chaining, allowing further configuration
      */
     public CheckBoxBuilder addEventListener(CustomUIEventBindingType type, Consumer<Boolean> callback) {
-        return addEventListener(type, Boolean.class, callback);
+        return addEventListenerWithContext(type, callback);
     }
 
     /**
@@ -110,7 +109,7 @@ public class CheckBoxBuilder extends UIElementBuilder<CheckBoxBuilder> {
      * @return This CheckBoxBuilder instance for method chaining.
      */
     public CheckBoxBuilder addEventListener(CustomUIEventBindingType type, BiConsumer<Boolean, UIContext> callback) {
-        return addEventListenerWithContext(type, Boolean.class, callback);
+        return addEventListenerWithContext(type, callback);
     }
 
     @Override
@@ -168,27 +167,28 @@ public class CheckBoxBuilder extends UIElementBuilder<CheckBoxBuilder> {
             commands.set(selector + " #CheckBox.Value", value);
         }
 
-        if ( hyUIStyle == null && typedStyle == null  && style != null) {
+        if (hyUIStyle == null && typedStyle == null && style != null) {
             HyUIPlugin.getLog().logFinest("Setting Style: " + style + " for " + selector);
             commands.set(selector + ".Style", style);
-        } 
+        }
         // WE CANNOT set the underlying style of the child checkbox element.
         /*else if (hyUIStyle == null && typedStyle != null) {
             PropertyBatcher.endSet(selector + ".Style", filterStyleDocument(typedStyle.toBsonDocument()), commands);
         }*/
-        
+
         if (listeners.isEmpty()) {
             // To handle data back to the .getValue, we need to add at least one listener.
-            addEventListener(CustomUIEventBindingType.ValueChanged, (_, _) -> {});
+            addEventListener(CustomUIEventBindingType.ValueChanged, (_, _) -> {
+            });
         }
         listeners.forEach(listener -> {
             if (listener.type() == CustomUIEventBindingType.ValueChanged) {
                 String eventId = getEffectiveId();
                 HyUIPlugin.getLog().logFinest("Adding ValueChanged event binding for " + selector + " #CheckBox with eventId: " + eventId);
-                events.addEventBinding(CustomUIEventBindingType.ValueChanged, selector + " #CheckBox", 
+                events.addEventBinding(CustomUIEventBindingType.ValueChanged, selector + " #CheckBox",
                         EventData.of("@ValueBool", selector + " #CheckBox.Value")
-                            .append("Target", eventId)
-                            .append("Action", UIEventActions.VALUE_CHANGED),
+                                .append("Target", eventId)
+                                .append("Action", UIEventActions.VALUE_CHANGED),
                         false);
             }
         });

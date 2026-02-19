@@ -286,19 +286,39 @@ public class Evaluator {
      * @return The resulting string after evaluation.
      */
     private String evaluateIfBlock(ConditionalBlockNode node) {
+        var rendered = new HashMap<String, Integer>();
+        var result = new StringBuilder();
+
         for (var branch : node.branches()) {
             var conditionValue = evaluateExpression(branch.condition());
 
             if (toBoolean(conditionValue)) {
-                var result = new StringBuilder();
-                for (Node child : branch.body())
+                for (Node child : branch.body()) {
                     result.append(evaluateNode(child));
 
-                return result.toString();
+                    switch (child) {
+                        case ComponentBlockNode c -> rendered.put(c.tag(), rendered.getOrDefault(c.tag(), 0) + 1);
+                        case SlotBlockNode s -> rendered.put(s.name(), rendered.getOrDefault(s.name(), 0) + 1);
+                        default -> {
+                            // Ignore other nodes
+                        }
+                    }
+                }
+
+                break;
             }
         }
 
-        return "";
+        // Dirty fix for conditionally rendering components and slots that are used in other branches but not rendered in the taken branch
+        for (var entry : node.getTags().entrySet()) {
+            var count = entry.getValue() - rendered.getOrDefault(entry.getKey(), 0);
+            while (count > 0) {
+                result.append("<").append(entry.getKey()).append(" style=\"display:none\"></").append(entry.getKey()).append(">");
+                count--;
+            }
+        }
+
+        return result.toString();
     }
 
     /**

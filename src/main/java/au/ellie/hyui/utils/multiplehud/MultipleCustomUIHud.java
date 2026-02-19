@@ -192,4 +192,8 @@ public class MultipleCustomUIHud extends CustomUIHud {
         commandBuilder.remove("#MultipleHUD #" + normalizedId);
         update(false, commandBuilder);
     }
+
+    public HashMap<String, CustomUIHud> getCustomHuds() {
+        return customHuds;
+    }
 }

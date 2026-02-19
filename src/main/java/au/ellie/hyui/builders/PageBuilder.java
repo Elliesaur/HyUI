@@ -180,6 +180,7 @@ public class PageBuilder extends InterfaceBuilder<PageBuilder> {
                 templateProcessor,
                 runtimeTemplateUpdatesEnabled,
                 onDismissListener,
+                this,
                 eventListeners
         );
         this.lastPage.setRefreshRateMs(refreshRateMs);

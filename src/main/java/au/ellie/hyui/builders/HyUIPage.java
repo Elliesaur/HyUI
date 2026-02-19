@@ -26,6 +26,7 @@ import au.ellie.hyui.html.TemplateProcessor;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.function.consumer.TriConsumer;
+import com.hypixel.hytale.protocol.Asset;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPage;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
@@ -65,12 +66,19 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
                     TemplateProcessor templateProcessor,
                     boolean runtimeTemplateUpdatesEnabled,
                     BiConsumer<HyUIPage, Boolean> onDismissListener,
+                    InterfaceBuilder<?> rootElementBuilder,
                     Map<String, TriConsumer<Object, UIContext, CustomUIEventBindingType>> eventListeners
+
     ) {
         super(playerRef, lifetime, DynamicPageData.CODEC);
         this.onDismissListener = onDismissListener;
-        this.delegate = new HyUInterface(uiFile, elements, editCallbacks, templateHtml, templateProcessor, runtimeTemplateUpdatesEnabled, eventListeners) {
+        this.delegate = new HyUInterface(uiFile, elements, editCallbacks, templateHtml, templateProcessor, runtimeTemplateUpdatesEnabled, rootElementBuilder, eventListeners) {
         };
+    }
+
+    public void reopenFromAsset(Player player, PlayerRef ref, Store<EntityStore> store, Asset asset) {
+        //this.close();
+        delegate.reopenFromAsset(player, ref, store, asset);
     }
 
     private void startRefreshTask() {
@@ -203,6 +211,9 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
      * and re-download (cache still applies to all downloads for 15 seconds!).
      *
      * @param dynamicImageElementId The ID of the dynamic image element.
+     * @param shouldClearPage       Whether to clear the page after reloading the image.
+     * Reloads a dynamic image by its element ID. This will forcibly invalidate the image
+     *
      * @param shouldClearPage       Whether to clear the page after reloading the image.
      */
     public void reloadImage(String dynamicImageElementId, boolean shouldClearPage) {

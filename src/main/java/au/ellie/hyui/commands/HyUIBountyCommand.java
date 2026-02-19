@@ -224,7 +224,7 @@ public class HyUIBountyCommand extends AbstractDevCommand {
         builder.registerEventListener("refresh", (value, ctx) -> {
             // If we don't save our state here for object, it will reset to default upon updatePage(true) calling.
             // YOU are responsible for tracking state. NOT HYUI!
-            ctx.updatePage(true);
+            ctx.updatePage(false);
         });
 
         builder.registerEventListener("close", (ignored, ctx) -> {

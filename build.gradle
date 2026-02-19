@@ -37,6 +37,9 @@ hytale {
     // Manifest auto update
     manifest {
         version = project.version.toString()
+        // Pre-release 2026.02.11-891910c77
+        // Release 2026.02.17-255364b8e, 2026.02.18-f3b8fff95
+        serverVersion = "2026.02.18-f3b8fff95"
         author(author_name, "ellie@ellie.au", "https://ellie.au")
         optionalDependencies.put("Buuz135:MultipleHUD", "*");
     }

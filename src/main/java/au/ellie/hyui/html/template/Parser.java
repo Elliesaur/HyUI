@@ -700,15 +700,19 @@ public class Parser {
                 skipWhitespace();
 
                 // Flow attributes: for="..."
-                if (name.equals(KEYWORD_FOR) && consume(Type.QUOTE)) {
-                    flowAttributes.add(parseControlAttribute(Type.QUOTE));
+                if (name.equals(KEYWORD_FOR) && match(Type.QUOTE, Type.SINGLE_QUOTE)) {
+                    var quoteType = advance().type();
+
+                    flowAttributes.add(parseControlAttribute(quoteType));
                     skipWhitespaceAndNewlines();
                     continue;
                 }
 
                 // Flow attributes like if="$condition"
-                if (KEYWORD_CONDITIONALS.contains(name) && consume(Type.QUOTE)) {
-                    flowAttributes.add(parseConditionAttribute(name, Type.QUOTE));
+                if (KEYWORD_CONDITIONALS.contains(name) && match(Type.QUOTE, Type.SINGLE_QUOTE)) {
+                    var quoteType = advance().type();
+
+                    flowAttributes.add(parseConditionAttribute(name, quoteType));
                     skipWhitespaceAndNewlines();
                     continue;
                 }
@@ -724,11 +728,12 @@ public class Parser {
                 }
 
                 // mixed attribute: attr="value {{$expr}} value"
-                else if (consume(Type.QUOTE)) {
-                    var parts = new ArrayList<>();
+                else if (match(Type.QUOTE, Type.SINGLE_QUOTE)) {
+                    var quoteType = advance().type();
                     var builder = new StringBuilder();
+                    var parts = new ArrayList<>();
 
-                    while (hasNext() && !match(Type.QUOTE)) {
+                    while (hasNext() && !match(quoteType)) {
                         if (match(Type.OPEN_EXPRESSION)) {
                             if (!builder.isEmpty()) {
                                 parts.add(builder.toString());
@@ -744,7 +749,7 @@ public class Parser {
                     if (!builder.isEmpty())
                         parts.add(builder.toString());
 
-                    expect(Type.QUOTE, "Expected closing quote");
+                    expect(quoteType, "Expected closing quote");
                     attributes.add(new MixedAttributeNode(name, parts));
                 }
 

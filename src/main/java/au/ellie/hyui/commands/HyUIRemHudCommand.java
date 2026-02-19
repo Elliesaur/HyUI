@@ -36,7 +36,8 @@ public class HyUIRemHudCommand extends AbstractDevCommand {
     @NonNullDecl
     @Override
     protected CompletableFuture<Void> executeDev(Player player, Ref<EntityStore> ref, CommandContext commandContext) {
-        HyUIAddHudCommand.TEST.remove();
+        if (HyUIAddHudCommand.TEST != null)
+            HyUIAddHudCommand.TEST.remove();
 
         if (HyUIAddHudCommand.HUD_INSTANCES.isEmpty())
             commandContext.sendMessage(Message.raw("No HUDs to remove!"));

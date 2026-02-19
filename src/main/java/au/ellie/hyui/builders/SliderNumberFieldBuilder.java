@@ -19,9 +19,9 @@
 package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
+import au.ellie.hyui.elements.UIElements;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventActions;
-import au.ellie.hyui.elements.UIElements;
 import au.ellie.hyui.types.InputFieldStyle;
 import au.ellie.hyui.types.SliderStyle;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
@@ -87,12 +87,12 @@ public class SliderNumberFieldBuilder extends UIElementBuilder<SliderNumberField
         return this;
     }
 
-    public SliderNumberFieldBuilder addEventListener(CustomUIEventBindingType type, Consumer<Double> callback) {
-        return addEventListener(type, Double.class, callback);
+    public SliderNumberFieldBuilder addEventListener(CustomUIEventBindingType type, Consumer<Integer> callback) {
+        return addEventListenerWithContext(type, callback);
     }
 
-    public SliderNumberFieldBuilder addEventListener(CustomUIEventBindingType type, BiConsumer<Double, UIContext> callback) {
-        return addEventListenerWithContext(type, Double.class, callback);
+    public SliderNumberFieldBuilder addEventListener(CustomUIEventBindingType type, BiConsumer<Integer, UIContext> callback) {
+        return addEventListenerWithContext(type, callback);
     }
 
     @Override
@@ -168,7 +168,8 @@ public class SliderNumberFieldBuilder extends UIElementBuilder<SliderNumberField
         }
 
         if (listeners.isEmpty()) {
-            addEventListener(CustomUIEventBindingType.ValueChanged, (_, _) -> {});
+            addEventListener(CustomUIEventBindingType.ValueChanged, (_, _) -> {
+            });
         }
         listeners.forEach(listener -> {
             if (listener.type() == CustomUIEventBindingType.ValueChanged) {

@@ -21,7 +21,7 @@
         <div class="container-contents" style="layout-mode: Top;">
             <div style="layout-mode: Left; padding: 6;">
                 <label style="anchor-width: 80;">Region</label>
-                <select @change="refresh" id="region" data-hyui-showlabel="true" value="Forest">
+                <select @change="refresh" id="region" data-hyui-showlabel="true" value="Forest" style="anchor-width: 230; anchor-height: 40;">
                     <option value="Forest" {{if $region == Forest}}selected{{/if}}>Forest</option>
                     <option value="Desert" {{if $region == Desert}}selected{{/if}}>Desert</option>
                     <option value="Tundra" {{if $region == Tundra}}selected{{/if}}>Tundra</option>
@@ -41,7 +41,7 @@
             <p if="$region == Tundra" style="color: #66ccff;">Tundra picks are icy.</p>
 
             <div id="list" style="layout-mode: Top; padding: 6;">
-                <bountyCard for="$bounties" title={{$title}} level={{$level}} rarity={{$rarity}} />
+                <bountyCard for="$bounties" title={{$item.title}} level={{$level}} rarity={{$rarity}} />
             </div>
         </div>
     </div>

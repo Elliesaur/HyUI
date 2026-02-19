@@ -6,6 +6,8 @@ import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 
 import javax.annotation.Nonnull;
+import java.util.HashMap;
+import java.util.HashSet;
 
 /*
 
@@ -75,5 +77,14 @@ public class MultipleHUD {
         if (currentCustomHud instanceof MultipleCustomUIHud multipleCustomUIHud) {
             multipleCustomUIHud.remove(hudIdentifier);
         }
+    }
+    
+    public HashMap<String, CustomUIHud> getCustomHuds(Player player) {
+        var currentCustomHud = player.getHudManager().getCustomHud();
+
+        if (currentCustomHud instanceof MultipleCustomUIHud multipleCustomUIHud) {
+            return multipleCustomUIHud.getCustomHuds();
+        }
+        return new HashMap<>();
     }
 }

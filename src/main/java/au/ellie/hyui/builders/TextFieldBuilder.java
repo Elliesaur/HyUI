@@ -19,12 +19,11 @@
 package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
+import au.ellie.hyui.elements.ScrollbarStyleSupported;
+import au.ellie.hyui.elements.UIElements;
 import au.ellie.hyui.events.MouseEventData;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventActions;
-import au.ellie.hyui.elements.BackgroundSupported;
-import au.ellie.hyui.elements.ScrollbarStyleSupported;
-import au.ellie.hyui.elements.UIElements;
 import au.ellie.hyui.theme.Theme;
 import au.ellie.hyui.types.InputFieldDecorationStyle;
 import au.ellie.hyui.types.InputFieldStyle;
@@ -68,7 +67,7 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
 
     /**
      * DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING.
-     *
+     * <p>
      * Not normally used, only used when creating a text field element from scratch.
      */
     public TextFieldBuilder() {
@@ -78,8 +77,9 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
 
     /**
      * DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING.
-     *
+     * <p>
      * Constructor for creating a text field element with a specified theme.
+     *
      * @param theme The theme to use for the text field element.
      */
     public TextFieldBuilder(Theme theme) {
@@ -92,9 +92,10 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
 
     /**
      * DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING.
-     *
+     * <p>
      * Constructor for creating a text field element with a specified theme and element path.
-     * @param theme The theme to use for the text field element.
+     *
+     * @param theme       The theme to use for the text field element.
      * @param elementPath The path to the UI element definition file.
      */
     public TextFieldBuilder(Theme theme, String elementPath) {
@@ -112,6 +113,7 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
 
     /**
      * Creates a text input field with the game theme.
+     *
      * @return A new TextFieldBuilder instance configured for text input.
      */
     public static TextFieldBuilder textInput() {
@@ -120,6 +122,7 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
 
     /**
      * Creates a multiline text input field with the game theme.
+     *
      * @return A new TextFieldBuilder instance configured for multiline input.
      */
     public static TextFieldBuilder multilineTextField() {
@@ -133,6 +136,7 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
 
     /**
      * Creates a compact text field element.
+     *
      * @return A new TextFieldBuilder instance configured for compact text input.
      */
     public static TextFieldBuilder compactTextField() {
@@ -143,6 +147,7 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
 
     /**
      * Sets the initial value of the text field.
+     *
      * @param value The initial value to set for the text field.
      * @return This TextFieldBuilder instance for method chaining.
      */
@@ -154,6 +159,7 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
 
     /**
      * Sets the placeholder text for the text field.
+     *
      * @param placeholderText The placeholder text to set.
      * @return This TextFieldBuilder instance for method chaining.
      */
@@ -164,6 +170,7 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
 
     /**
      * Sets the style for the placeholder text.
+     *
      * @param placeholderStyle The style reference for the placeholder text.
      * @return This TextFieldBuilder instance for method chaining.
      */
@@ -183,6 +190,7 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
 
     /**
      * Sets the style for the placeholder text.
+     *
      * @param placeholderStyle The style reference for the placeholder text.
      * @return This TextFieldBuilder instance for method chaining.
      */
@@ -192,6 +200,7 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
 
     /**
      * Sets the input field decoration style.
+     *
      * @param decoration The decoration style to apply.
      * @return This TextFieldBuilder instance for method chaining.
      */
@@ -202,6 +211,7 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
 
     /**
      * Sets the maximum length of the text field.
+     *
      * @param maxLength The maximum length to set.
      * @return This TextFieldBuilder instance for method chaining.
      */
@@ -212,6 +222,7 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
 
     /**
      * Sets the maximum visible lines for the text field.
+     *
      * @param maxVisibleLines The maximum number of visible lines to set.
      * @return This TextFieldBuilder instance for method chaining.
      */
@@ -222,6 +233,7 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
 
     /**
      * Sets whether the text field is read-only.
+     *
      * @param readOnly Whether the field should be read-only.
      * @return This TextFieldBuilder instance for method chaining.
      */
@@ -232,6 +244,7 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
 
     /**
      * Sets whether the text field is in password mode.
+     *
      * @param password Whether password mode should be enabled.
      * @return This TextFieldBuilder instance for method chaining.
      */
@@ -242,6 +255,7 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
 
     /**
      * Sets the character to display in password mode.
+     *
      * @param passwordChar The password character to set.
      * @return This TextFieldBuilder instance for method chaining.
      */
@@ -252,6 +266,7 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
 
     /**
      * Sets whether the text field should automatically grow with content.
+     *
      * @param autoGrow Whether the field should automatically grow.
      * @return This TextFieldBuilder instance for method chaining.
      */
@@ -262,6 +277,7 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
 
     /**
      * Sets the background patch style for the text field.
+     *
      * @param background The background patch style to use.
      * @return This TextFieldBuilder instance for method chaining.
      */
@@ -280,6 +296,7 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
 
     /**
      * Sets the background style reference for the text field.
+     *
      * @param styleReference The style reference (e.g., "InputBoxBackground").
      * @return This TextFieldBuilder instance for method chaining.
      */
@@ -290,7 +307,8 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
 
     /**
      * Sets the background style reference for the text field from a document.
-     * @param document The style document (e.g., "Common.ui").
+     *
+     * @param document       The style document (e.g., "Common.ui").
      * @param styleReference The style reference (e.g., "InputBoxBackground").
      * @return This TextFieldBuilder instance for method chaining.
      */
@@ -303,6 +321,7 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
 
     /**
      * Sets the padding used for the text contents.
+     *
      * @param padding The content padding to apply.
      * @return This TextFieldBuilder instance for method chaining.
      */
@@ -345,14 +364,14 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
     /**
      * Adds an event listener to the text field builder for handling a specific type of UI event.
      *
-     * @param type The type of the event to bind the listener to. This specifies what kind of UI event 
-     *             should trigger the provided callback.
-     * @param callback The function to be executed when the specified event is triggered. The callback 
+     * @param type     The type of the event to bind the listener to. This specifies what kind of UI event
+     *                 should trigger the provided callback.
+     * @param callback The function to be executed when the specified event is triggered. The callback
      *                 processes a string argument associated with the event.
      * @return This TextFieldBuilder instance for method chaining.
      */
     public TextFieldBuilder addEventListener(CustomUIEventBindingType type, Consumer<String> callback) {
-        return addEventListener(type, String.class, callback);
+        return addEventListenerWithContext(type, callback);
     }
 
     /**
@@ -363,28 +382,28 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
      * @return This TextFieldBuilder instance for method chaining.
      */
     public TextFieldBuilder addEventListener(CustomUIEventBindingType type, BiConsumer<String, UIContext> callback) {
-        return addEventListenerWithContext(type, String.class, callback);
+        return addEventListenerWithContext(type, callback);
     }
 
     /**
      * Adds an event listener for the RightClicking event.
      */
     public TextFieldBuilder onRightClicking(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.RightClicking, callback);
     }
 
     /**
      * Adds an event listener for the RightClicking event.
      */
     public TextFieldBuilder onRightClicking(Consumer<MouseEventData> callback) {
-        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, callback);
     }
 
     /**
      * Adds an event listener for the RightClicking event with context.
      */
     public TextFieldBuilder onRightClicking(BiConsumer<MouseEventData, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, callback);
     }
 
     @Override
@@ -490,17 +509,21 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
         if (backgroundStyleReference != null && backgroundStyleDocument != null) {
             commands.set(selector + ".Background", Value.ref(backgroundStyleDocument, backgroundStyleReference));
         }
-        
+
         applyScrollbarStyle(commands, selector);
 
         if (contentPadding != null) {
-            if (contentPadding.getLeft() != null) commands.set(selector + ".ContentPadding.Left", contentPadding.getLeft());
-            if (contentPadding.getTop() != null) commands.set(selector + ".ContentPadding.Top", contentPadding.getTop());
-            if (contentPadding.getRight() != null) commands.set(selector + ".ContentPadding.Right", contentPadding.getRight());
-            if (contentPadding.getBottom() != null) commands.set(selector + ".ContentPadding.Bottom", contentPadding.getBottom());
+            if (contentPadding.getLeft() != null)
+                commands.set(selector + ".ContentPadding.Left", contentPadding.getLeft());
+            if (contentPadding.getTop() != null)
+                commands.set(selector + ".ContentPadding.Top", contentPadding.getTop());
+            if (contentPadding.getRight() != null)
+                commands.set(selector + ".ContentPadding.Right", contentPadding.getRight());
+            if (contentPadding.getBottom() != null)
+                commands.set(selector + ".ContentPadding.Bottom", contentPadding.getBottom());
         }
 
-        if ( hyUIStyle == null && typedStyle == null  && style != null) {
+        if (hyUIStyle == null && typedStyle == null && style != null) {
             HyUIPlugin.getLog().logFinest("Setting Style: " + style + " for " + selector);
             commands.set(selector + ".Style", style);
         } else if (hyUIStyle == null && typedStyle != null) {
@@ -508,12 +531,16 @@ public class TextFieldBuilder extends UIElementBuilder<TextFieldBuilder>
         }
         if (listeners.isEmpty()) {
             // To handle data back to the .getValue, we need to add at least one listener.
-            addEventListener(CustomUIEventBindingType.ValueChanged, (_, _) -> {});
+            addEventListener(CustomUIEventBindingType.ValueChanged, (_, _) -> {
+            });
             if (!isMultiline) {
-                addEventListener(CustomUIEventBindingType.FocusLost, (_, _) -> {});
-                addEventListener(CustomUIEventBindingType.FocusGained, (_, _) -> {});
+                addEventListener(CustomUIEventBindingType.FocusLost, (_, _) -> {
+                });
+                addEventListener(CustomUIEventBindingType.FocusGained, (_, _) -> {
+                });
                 // Causes target element in custom UI event binding is not marked as bindable.
-                addEventListener(CustomUIEventBindingType.Validating, (_, _) -> {});
+                addEventListener(CustomUIEventBindingType.Validating, (_, _) -> {
+                });
             }
         }
         listeners.forEach(listener -> {

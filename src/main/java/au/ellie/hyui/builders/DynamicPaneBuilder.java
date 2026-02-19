@@ -19,7 +19,6 @@
 package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
-import au.ellie.hyui.elements.UIElements;
 import au.ellie.hyui.events.MouseEventData;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventActions;
@@ -82,49 +81,49 @@ public class DynamicPaneBuilder extends UIElementBuilder<DynamicPaneBuilder> {
      * Adds an event listener for the MouseButtonReleased event.
      */
     public DynamicPaneBuilder onMouseButtonReleased(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.MouseButtonReleased, MouseEventData.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.MouseButtonReleased, callback);
     }
 
     /**
      * Adds an event listener for the MouseButtonReleased event.
      */
     public DynamicPaneBuilder onMouseButtonReleased(Consumer<MouseEventData> callback) {
-        return addEventListener(CustomUIEventBindingType.MouseButtonReleased, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseButtonReleased, callback);
     }
 
     /**
      * Adds an event listener for the MouseButtonReleased event with context.
      */
     public DynamicPaneBuilder onMouseButtonReleased(BiConsumer<MouseEventData, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.MouseButtonReleased, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseButtonReleased, callback);
     }
 
     /**
      * Adds an event listener for the Validating event.
      */
     public DynamicPaneBuilder onValidating(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.Validating, Void.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.Validating, callback);
     }
 
     /**
      * Adds an event listener for the Dismissing event.
      */
     public DynamicPaneBuilder onDismissing(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.Dismissing, Void.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.Dismissing, callback);
     }
 
     /**
      * Adds an event listener for the Scrolled event.
      */
     public DynamicPaneBuilder onScrolled(Consumer<Float> callback) {
-        return addEventListener(CustomUIEventBindingType.ValueChanged, Float.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.ValueChanged, callback);
     }
 
     /**
      * Adds an event listener for the Scrolled event with context.
      */
     public DynamicPaneBuilder onScrolled(BiConsumer<Float, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.ValueChanged, Float.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.ValueChanged, callback);
     }
 
     @Override
@@ -185,23 +184,23 @@ public class DynamicPaneBuilder extends UIElementBuilder<DynamicPaneBuilder> {
                 HyUIPlugin.getLog().logFinest("Adding MouseButtonReleased event binding for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.MouseButtonReleased, selector,
                         EventData.of("Action", UIEventActions.MOUSE_BUTTON_RELEASED)
-                            .append("Target", eventId), false);
+                                .append("Target", eventId), false);
             } else if (listener.type() == CustomUIEventBindingType.Validating) {
                 HyUIPlugin.getLog().logFinest("Adding Validating event binding for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.Validating, selector,
                         EventData.of("Action", UIEventActions.VALIDATING)
-                            .append("Target", eventId), false);
+                                .append("Target", eventId), false);
             } else if (listener.type() == CustomUIEventBindingType.Dismissing) {
                 HyUIPlugin.getLog().logFinest("Adding Dismissing event binding for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.Dismissing, selector,
                         EventData.of("Action", UIEventActions.DISMISSING)
-                            .append("Target", eventId), false);
+                                .append("Target", eventId), false);
             } else if (listener.type() == CustomUIEventBindingType.ValueChanged) {
                 // Scrolled event uses ValueChanged type
                 HyUIPlugin.getLog().logFinest("Adding Scrolled event binding for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.ValueChanged, selector,
                         EventData.of("Action", UIEventActions.SCROLLED)
-                            .append("Target", eventId), false);
+                                .append("Target", eventId), false);
             }
         });
     }
