@@ -18,8 +18,8 @@
 
 package au.ellie.hyui.html.handlers;
 
-import au.ellie.hyui.builders.ReorderableListBuilder;
 import au.ellie.hyui.builders.LabelBuilder;
+import au.ellie.hyui.builders.ReorderableListBuilder;
 import au.ellie.hyui.builders.UIElementBuilder;
 import au.ellie.hyui.elements.ScrollbarStyleSupported;
 import au.ellie.hyui.html.HtmlParser;
@@ -40,7 +40,7 @@ public class ReorderableListHandler implements TagHandler {
     @Override
     public UIElementBuilder<?> handle(Element element, HtmlParser parser) {
         ReorderableListBuilder builder = ReorderableListBuilder.reorderableList();
-        applyCommonAttributes(builder, element);
+        applyCommonAttributes(builder, element, parser);
         applyScrollbarStyle(builder, element);
 
         for (Node childNode : element.childNodes()) {

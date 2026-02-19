@@ -26,6 +26,7 @@ import au.ellie.hyui.html.HtmlParser;
 import au.ellie.hyui.html.TemplateProcessor;
 import au.ellie.hyui.utils.HyvatarUtils;
 import au.ellie.hyui.utils.PngDownloadUtils;
+import com.hypixel.hytale.function.consumer.TriConsumer;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
@@ -33,10 +34,10 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -45,8 +46,9 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
-    protected final Map<String, UIElementBuilder<?>> elementRegistry = new LinkedHashMap<>();
+    protected final Map<String, TriConsumer<Object, UIContext, CustomUIEventBindingType>> eventListeners = new HashMap<>();
     protected final List<BiConsumer<UICommandBuilder, UIEventBuilder>> editCallbacks = new ArrayList<>();
+    protected final Map<String, UIElementBuilder<?>> elementRegistry = new LinkedHashMap<>();
     protected String uiFile;
     protected String templateHtml;
     protected TemplateProcessor templateProcessor;
@@ -88,10 +90,10 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
         this.templateProcessor = null;
         this.runtimeTemplateUpdatesEnabled = false;
         html = addUIStyleToHtml(html, style);
-        new HtmlParser().parseToInterface(this, html);
+        new HtmlParser(eventListeners).parseToInterface(this, html);
         return self();
     }
-    
+
     /**
      * Parses the provided HTML template into this interface with variable substitution and a specific style.
      *
@@ -103,13 +105,13 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
     public T fromTemplate(String html, TemplateProcessor template, UIType style) {
         this.templateHtml = html;
         this.templateProcessor = template;
-        HtmlParser parser = new HtmlParser();
+        HtmlParser parser = new HtmlParser(eventListeners);
         parser.setTemplateProcessor(template);
         html = addUIStyleToHtml(html, style);
         parser.parseToInterface(this, html);
         return self();
     }
-    
+
     /**
      * Parses the provided HTML string into this interface.
      *
@@ -119,7 +121,7 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
     public T fromHtml(String html) {
         return fromHtml(html, UIType.NONE);
     }
-    
+
     /**
      * Parses the provided HTML template into this interface with variable substitution.
      *
@@ -140,13 +142,12 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
     public T fromTemplate(String html, TemplateProcessor template) {
         return fromTemplate(html, template, UIType.NONE);
     }
-    
+
     private String loadHtmlFromResources(String resourceFileName) {
-        if (!resourceFileName.equals("/Common/UI/Custom/Pages/Styles/hywind.html")) {
+        if (!resourceFileName.equals("/Common/UI/Custom/Pages/Styles/hywind.html"))
             htmlFilePath = resourceFileName;
-        }
         String normalized = resourceFileName.startsWith("/") ? resourceFileName.substring(1) : resourceFileName;
-        
+
         List<Path> candidatePaths = List.of(
                 Paths.get("src/main/resources").resolve(normalized),
                 Paths.get("..", "src", "main", "resources").resolve(normalized),
@@ -177,16 +178,15 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
 
     private String addUIStyleToHtml(String html, UIType style) {
         uiStyleFilePath = null;
-        if (Objects.requireNonNull(style) == UIType.HYWIND) {
+        if (Objects.requireNonNull(style) == UIType.HYWIND)
             uiStyleFilePath = "/Common/UI/Custom/Pages/Styles/hywind.html";
-            
-        } else {
+        else
             return html;
-        }
-        String contents = loadHtmlFromResources(uiStyleFilePath);
+
+        var contents = loadHtmlFromResources(uiStyleFilePath);
         return contents + "\n\n" + html;
     }
-    
+
     /**
      * Loads an HTML file from resources under Common/UI/Custom and parses it into this interface.
      *
@@ -196,7 +196,7 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
     public T loadHtml(String resourcePath) {
         return loadHtml(resourcePath, UIType.NONE);
     }
-    
+
     /**
      * Loads an HTML file from resources under Common/UI/Custom and parses it into this interface.
      *
@@ -208,7 +208,7 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
         String html = loadHtmlFromResources(resolveCustomResourcePath(resourcePath));
         return fromHtml(html, style);
     }
-    
+
     /**
      * Loads an HTML template from resources under Common/UI/Custom with a template processor.
      *
@@ -232,7 +232,7 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
         String html = loadHtmlFromResources(resolveCustomResourcePath(resourcePath));
         return fromTemplate(html, template, style);
     }
-    
+
     /**
      * Loads an HTML template from resources under Common/UI/Custom with variable substitution.
      *
@@ -257,7 +257,7 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
         String html = loadHtmlFromResources(resolveCustomResourcePath(resourcePath));
         return fromTemplate(html, variables, style);
     }
-    
+
     public T enableRuntimeTemplateUpdates(boolean enabled) {
         this.runtimeTemplateUpdatesEnabled = enabled;
         return self();
@@ -278,7 +278,7 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
     public T fromTemplate(String html, Map<String, ?> variables) {
         return fromTemplate(html, variables, UIType.NONE);
     }
-    
+
     /**
      * Parses the provided HTML template into this interface with variable substitution and a specific style.
      *
@@ -290,7 +290,7 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
     public T fromTemplate(String html, Map<String, ?> variables, UIType style) {
         return fromTemplate(html, new TemplateProcessor().setVariables(variables), style);
     }
-    
+
     private String resolveCustomResourcePath(String resourcePath) {
         if (resourcePath == null || resourcePath.isBlank()) {
             throw new IllegalArgumentException("Resource path cannot be null or blank.");
@@ -301,6 +301,7 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
 
     /**
      * Add an element inside the root node (#HyUIRoot) of the interface.
+     *
      * @param element The element to add to the root node.
      * @return Self, for chaining.
      */
@@ -361,9 +362,9 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
     }
 
     private boolean isMatchingNavigation(TabContentBuilder content, TabNavigationBuilder navigation) {
-        if (!navigation.hasTab(content.getTabId())) {
+        if (!navigation.hasTab(content.getTabId()))
             return false;
-        }
+
         String navId = content.getTabNavigationId();
         return navId == null || navId.isBlank() || navId.equals(navigation.getId());
     }
@@ -373,20 +374,20 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
         if (selectedTabId == null || selectedTabId.isBlank()) {
             var tabs = navigation.getTabs();
             if (!tabs.isEmpty()) {
-                selectedTabId = tabs.get(0).id();
+                selectedTabId = tabs.getFirst().id();
                 navigation.withSelectedTab(selectedTabId);
             }
         }
-        if (selectedTabId != null && !selectedTabId.isBlank()) {
+
+        if (selectedTabId != null && !selectedTabId.isBlank())
             content.withVisible(selectedTabId.equals(content.getTabId()));
-        }
     }
 
     public <E extends UIElementBuilder<E>> Optional<E> getById(String id, Class<E> clazz) {
         UIElementBuilder<?> builder = elementRegistry.get(id);
-        if (builder != null && clazz.isInstance(builder)) {
+        if (clazz.isInstance(builder))
             return Optional.of(clazz.cast(builder));
-        }
+
         return Optional.empty();
     }
 
@@ -395,59 +396,82 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
      * Note: This only works for elements created using the builder API or via HYUIML (.fromHtml).
      * It does not work for elements defined in a .ui file loaded via .fromFile.
      *
-     * @param id         The ID of the element.
-     * @param type       The type of event to listen for.
-     * @param valueClass The class of the value associated with the event.
-     * @param callback   The callback to execute when the event occurs.
-     * @param <V>        The type of the value.
+     * @param id       The ID of the element.
+     * @param type     The type of event to listen for.
+     * @param callback The callback to execute when the event occurs.
+     * @param <V>      The type of the value.
      * @return This builder instance for method chaining.
      */
-    public <V> T addEventListener(String id, CustomUIEventBindingType type, Class<V> valueClass, Consumer<V> callback) {
+    public <V> T addEventListener(String id, CustomUIEventBindingType type, BiConsumer<V, UIContext> callback) {
         UIElementBuilder<?> element = elementRegistry.get(id);
-        if (element == null) {
+        if (element == null)
             throw new IllegalArgumentException("No element found with ID '" + id + "'.");
-        }
-        element.addEventListener(type, valueClass, callback);
-        return self();
-    }
 
-    public T addEventListener(String id, CustomUIEventBindingType type, Consumer<Object> callback) {
-        return addEventListener(id, type, Object.class, callback);
+        element.addEventListenerWithContext(type, callback);
+        return self();
     }
 
     /**
-     * Adds an event listener with access to the UI context.
-     * Note: This only works for elements created using the builder API or via HYUIML (.fromHtml).
+     * @see #addEventListener(String, CustomUIEventBindingType, BiConsumer)
+     */
+    @SuppressWarnings("unchecked")
+    public <V> T addEventListener(String id, CustomUIEventBindingType type, Consumer<V> callback) {
+        return addEventListener(id, type, (value, _) -> callback.accept((V) value));
+    }
+
+    /**
+     * @see #addEventListener(String, CustomUIEventBindingType, BiConsumer)
+     */
+    public T addEventListener(String id, CustomUIEventBindingType type, Runnable callback) {
+        return addEventListener(id, type, (_, _) -> callback.run());
+    }
+
+    /**
+     * Registers a custom event listener that can be used on the template.
      *
-     * @param id         The ID of the element.
-     * @param type       The type of event to listen for.
-     * @param valueClass The class of the value associated with the event.
-     * @param callback   The callback to execute when the event occurs.
-     * @param <V>        The type of the value.
+     * @param id       An ID used to reference this event listener in the template (e.g. "myCustomEvent").
+     * @param callback The callback to execute when the event is triggered, with access to the UI context.
+     * @param <V>      The type of the value.
      * @return This builder instance for method chaining.
      */
-    public <V> T addEventListener(String id, CustomUIEventBindingType type, Class<V> valueClass, BiConsumer<V, UIContext> callback) {
-        UIElementBuilder<?> element = elementRegistry.get(id);
-        if (element == null) {
-            throw new IllegalArgumentException("No element found with ID '" + id + "'.");
-        }
-        element.addEventListenerWithContext(type, valueClass, callback);
+    @SuppressWarnings("unchecked")
+    public <V> T registerEventListener(String id, TriConsumer<V, UIContext, CustomUIEventBindingType> callback) {
+        this.eventListeners.put(id, (TriConsumer<Object, UIContext, CustomUIEventBindingType>) callback);
         return self();
     }
 
-    public T addEventListener(String id, CustomUIEventBindingType type, BiConsumer<Object, UIContext> callback) {
-        return addEventListener(id, type, Object.class, callback);
+    /**
+     * @see #registerEventListener(String, TriConsumer)
+     */
+    @SuppressWarnings("unchecked")
+    public <V> T registerEventListener(String id, BiConsumer<V, UIContext> callback) {
+        return registerEventListener(id, (data, context, _) -> callback.accept((V) data, context));
+    }
+
+    /**
+     * @see #registerEventListener(String, TriConsumer)
+     */
+    @SuppressWarnings("unchecked")
+    public <V> T registerEventListener(String id, Consumer<V> callback) {
+        return registerEventListener(id, (data, _, _) -> callback.accept((V) data));
+    }
+
+    /**
+     * @see #registerEventListener(String, TriConsumer)
+     */
+    public T registerEventListener(String id, Runnable callback) {
+        return registerEventListener(id, (data, _, _) -> callback.run());
     }
 
     public T editElement(Consumer<UICommandBuilder> callback) {
         return this.editElement((uiCommandBuilder, _) -> callback.accept(uiCommandBuilder));
     }
-    
+
     public T editElement(BiConsumer<UICommandBuilder, UIEventBuilder> callback) {
         this.editCallbacks.add(callback);
         return self();
     }
-    
+
     public void sendDynamicImageIfNeeded(PlayerRef pRef) {
         if (pRef == null || !pRef.isValid()) {
             return;
@@ -490,14 +514,14 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
     static void sendDynamicImage(PlayerRef pRef, DynamicImageBuilder dynamicImage) {
         if (pRef == null || dynamicImage == null) {
             HyUIPlugin.getLog().logFinest("REFERENCE WAS INVALID");
-            
+
             return;
         }
         UUID playerUuid = pRef.getUuid();
         String url = dynamicImage.getImageUrl();
         if (url == null || url.isBlank()) {
             HyUIPlugin.getLog().logFinest("URL WAS BLANK OR NULL");
-            
+
             return;
         }
         try {
@@ -542,6 +566,7 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
 
     /**
      * Retrieves the top-level elements of the interface, which are elements with the parent selector "#HyUIRoot".
+     *
      * @return A list of top-level UIElementBuilder instances for use in other builders.
      */
     public List<UIElementBuilder<?>> getTopLevelElements() {
@@ -556,11 +581,11 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
 
     /**
      * Get all elements in the element registry for this builder.
-     * 
+     *
      * @return a list of all elements, irrespective of top-level.
      */
     public List<UIElementBuilder<?>> getElements() {
-        return elementRegistry.values().stream().toList();        
+        return elementRegistry.values().stream().toList();
     }
 
     public String getTemplateHtml() {

@@ -23,7 +23,6 @@ import au.ellie.hyui.events.MouseEventData;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventActions;
 import au.ellie.hyui.types.LayoutMode;
-import au.ellie.hyui.utils.PropertyBatcher;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
@@ -94,98 +93,98 @@ public class NativeTabButtonBuilder extends UIElementBuilder<NativeTabButtonBuil
      * Adds an event listener for the Activating event.
      */
     public NativeTabButtonBuilder onActivating(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.Activating, Void.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.Activating, callback);
     }
 
     /**
      * Adds an event listener for the Activating event with context.
      */
     public NativeTabButtonBuilder onActivating(BiConsumer<Void, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.Activating, Void.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.Activating, callback);
     }
 
     /**
      * Adds an event listener for the DoubleClicking event.
      */
     public NativeTabButtonBuilder onDoubleClicking(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.DoubleClicking, callback);
     }
 
     /**
      * Adds an event listener for the DoubleClicking event.
      */
     public NativeTabButtonBuilder onDoubleClicking(Consumer<MouseEventData> callback) {
-        return addEventListener(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.DoubleClicking, callback);
     }
 
     /**
      * Adds an event listener for the DoubleClicking event with context.
      */
     public NativeTabButtonBuilder onDoubleClicking(BiConsumer<MouseEventData, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.DoubleClicking, callback);
     }
 
     /**
      * Adds an event listener for the RightClicking event.
      */
     public NativeTabButtonBuilder onRightClicking(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.RightClicking, callback);
     }
 
     /**
      * Adds an event listener for the RightClicking event.
      */
     public NativeTabButtonBuilder onRightClicking(Consumer<MouseEventData> callback) {
-        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, callback);
     }
 
     /**
      * Adds an event listener for the RightClicking event with context.
      */
     public NativeTabButtonBuilder onRightClicking(BiConsumer<MouseEventData, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, callback);
     }
 
     /**
      * Adds an event listener for the MouseEntered event.
      */
     public NativeTabButtonBuilder onMouseEntered(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.MouseEntered, MouseEventData.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.MouseEntered, callback);
     }
 
     /**
      * Adds an event listener for the MouseEntered event.
      */
     public NativeTabButtonBuilder onMouseEntered(Consumer<MouseEventData> callback) {
-        return addEventListener(CustomUIEventBindingType.MouseEntered, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseEntered, callback);
     }
 
     /**
      * Adds an event listener for the MouseEntered event with context.
      */
     public NativeTabButtonBuilder onMouseEntered(BiConsumer<MouseEventData, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.MouseEntered, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseEntered, callback);
     }
 
     /**
      * Adds an event listener for the MouseExited event.
      */
     public NativeTabButtonBuilder onMouseExited(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.MouseExited, MouseEventData.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.MouseExited, callback);
     }
 
     /**
      * Adds an event listener for the MouseExited event.
      */
     public NativeTabButtonBuilder onMouseExited(Consumer<MouseEventData> callback) {
-        return addEventListener(CustomUIEventBindingType.MouseExited, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseExited, callback);
     }
 
     /**
      * Adds an event listener for the MouseExited event with context.
      */
     public NativeTabButtonBuilder onMouseExited(BiConsumer<MouseEventData, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.MouseExited, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseExited, callback);
     }
 
     @Override
@@ -248,27 +247,27 @@ public class NativeTabButtonBuilder extends UIElementBuilder<NativeTabButtonBuil
                 HyUIPlugin.getLog().logFinest("Adding Activating event binding: " + eventId + " for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.Activating, selector,
                         EventData.of("Action", UIEventActions.BUTTON_CLICKED)
-                            .append("Target", eventId), false);
+                                .append("Target", eventId), false);
             } else if (listener.type() == CustomUIEventBindingType.DoubleClicking) {
                 HyUIPlugin.getLog().logFinest("Adding DoubleClicking event binding for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.DoubleClicking, selector,
                         EventData.of("Action", UIEventActions.DOUBLE_CLICKING)
-                            .append("Target", eventId), false);
+                                .append("Target", eventId), false);
             } else if (listener.type() == CustomUIEventBindingType.RightClicking) {
                 HyUIPlugin.getLog().logFinest("Adding RightClicking event binding for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.RightClicking, selector,
                         EventData.of("Action", UIEventActions.RIGHT_CLICKING)
-                            .append("Target", eventId), false);
+                                .append("Target", eventId), false);
             } else if (listener.type() == CustomUIEventBindingType.MouseEntered) {
                 HyUIPlugin.getLog().logFinest("Adding MouseEntered event binding for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.MouseEntered, selector,
                         EventData.of("Action", UIEventActions.MOUSE_ENTERED)
-                            .append("Target", eventId), false);
+                                .append("Target", eventId), false);
             } else if (listener.type() == CustomUIEventBindingType.MouseExited) {
                 HyUIPlugin.getLog().logFinest("Adding MouseExited event binding for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.MouseExited, selector,
                         EventData.of("Action", UIEventActions.MOUSE_EXITED)
-                            .append("Target", eventId), false);
+                                .append("Target", eventId), false);
             }
         });
     }

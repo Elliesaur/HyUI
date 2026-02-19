@@ -49,9 +49,9 @@ public class ImgHandler implements TagHandler {
             }
             builder = image;
         }
-        
-        applyCommonAttributes(builder, element);
-        
+
+        applyCommonAttributes(builder, element, parser);
+
         return builder;
     }
 }

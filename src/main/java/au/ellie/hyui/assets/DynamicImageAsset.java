@@ -125,7 +125,7 @@ public class DynamicImageAsset extends CommonAsset {
     public static void sendToPlayer(PacketHandler handler, CommonAsset asset) {
         byte[] allBytes = asset.getBlob().join();
         byte[][] parts = ArrayUtil.split(allBytes, 2621440);
-        
+
         ToClientPacket[] packets = new ToClientPacket[1 + parts.length];
         packets[0] = new AssetInitialize(asset.toPacket(), allBytes.length);
 

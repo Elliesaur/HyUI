@@ -19,10 +19,10 @@
 package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
+import au.ellie.hyui.elements.UIElements;
 import au.ellie.hyui.events.MouseEventData;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventActions;
-import au.ellie.hyui.elements.UIElements;
 import au.ellie.hyui.theme.Theme;
 import au.ellie.hyui.utils.PropertyBatcher;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
@@ -89,7 +89,7 @@ public class SliderBuilder extends UIElementBuilder<SliderBuilder> {
         this.step = step;
         return this;
     }
-    
+
     public SliderBuilder withValue(int value) {
         this.value = value;
         return this;
@@ -104,30 +104,28 @@ public class SliderBuilder extends UIElementBuilder<SliderBuilder> {
      * Adds an event listener for the MouseButtonReleased event.
      */
     public SliderBuilder onMouseButtonReleased(Consumer<MouseEventData> callback) {
-        return addEventListener(CustomUIEventBindingType.MouseButtonReleased, MouseEventData.class,
-                callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseButtonReleased, callback);
     }
 
     /**
      * Adds an event listener for the MouseButtonReleased event.
      */
     public SliderBuilder onMouseButtonReleased(BiConsumer<MouseEventData, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.MouseButtonReleased, MouseEventData.class,
-                callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseButtonReleased, callback);
     }
 
     /**
      * Adds an event listener for the ValueChanged event.
      */
     public SliderBuilder onValueChanged(Consumer<Integer> callback) {
-        return addEventListener(CustomUIEventBindingType.ValueChanged, Integer.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.ValueChanged, callback);
     }
 
     /**
      * Adds an event listener for the ValueChanged event with context.
      */
     public SliderBuilder onValueChanged(BiConsumer<Integer, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.ValueChanged, Integer.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.ValueChanged, callback);
     }
 
     /**
@@ -140,7 +138,7 @@ public class SliderBuilder extends UIElementBuilder<SliderBuilder> {
      * @return the current instance of {@code SliderBuilder}, enabling method chaining.
      */
     public SliderBuilder addEventListener(CustomUIEventBindingType type, Consumer<Integer> callback) {
-        return addEventListener(type, Integer.class, callback);
+        return addEventListenerWithContext(type, callback);
     }
 
     /**
@@ -151,7 +149,7 @@ public class SliderBuilder extends UIElementBuilder<SliderBuilder> {
      * @return This SliderBuilder instance for method chaining.
      */
     public SliderBuilder addEventListener(CustomUIEventBindingType type, BiConsumer<Integer, UIContext> callback) {
-        return addEventListenerWithContext(type, Integer.class, callback);
+        return addEventListenerWithContext(type, callback);
     }
 
     @Override
@@ -189,12 +187,12 @@ public class SliderBuilder extends UIElementBuilder<SliderBuilder> {
                 )
         );
     }
-    
+
     @Override
     protected boolean usesRefValue() {
         return true;
     }
-    
+
     @Override
     protected Object parseValue(String rawValue) {
         try {
@@ -203,7 +201,7 @@ public class SliderBuilder extends UIElementBuilder<SliderBuilder> {
             return null;
         }
     }
-    
+
     @Override
     protected void onBuild(UICommandBuilder commands, UIEventBuilder events) {
         String selector = getSelector();
@@ -226,7 +224,7 @@ public class SliderBuilder extends UIElementBuilder<SliderBuilder> {
             commands.set(selector + ".IsReadOnly", isReadOnly);
         }
 
-        if ( hyUIStyle == null && typedStyle == null && style != null) {
+        if (hyUIStyle == null && typedStyle == null && style != null) {
             HyUIPlugin.getLog().logFinest("Setting Style for Slider " + selector);
             commands.set(selector + ".Style", style);
         } else if (hyUIStyle == null && typedStyle != null) {
@@ -237,7 +235,8 @@ public class SliderBuilder extends UIElementBuilder<SliderBuilder> {
         }
         if (listeners.isEmpty()) {
             // To handle data back to the .getValue, we need to add at least one listener.
-            addEventListener(CustomUIEventBindingType.ValueChanged, (_, _) -> {});
+            addEventListener(CustomUIEventBindingType.ValueChanged, (_, _) -> {
+            });
         }
 
         // Register event listeners
@@ -247,13 +246,13 @@ public class SliderBuilder extends UIElementBuilder<SliderBuilder> {
                 HyUIPlugin.getLog().logFinest("Adding MouseButtonReleased event binding for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.MouseButtonReleased, selector,
                         EventData.of("Action", UIEventActions.MOUSE_BUTTON_RELEASED)
-                            .append("Target", eventId), false);
+                                .append("Target", eventId), false);
             } else if (listener.type() == CustomUIEventBindingType.ValueChanged) {
                 HyUIPlugin.getLog().logFinest("Adding ValueChanged event binding for " + selector + " with eventId: " + eventId);
                 events.addEventBinding(CustomUIEventBindingType.ValueChanged, selector,
                         EventData.of("@ValueInt", selector + ".Value")
-                            .append("Target", eventId)
-                            .append("Action", UIEventActions.VALUE_CHANGED), false);
+                                .append("Target", eventId)
+                                .append("Action", UIEventActions.VALUE_CHANGED), false);
             }
         });
     }

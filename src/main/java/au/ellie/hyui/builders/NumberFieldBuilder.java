@@ -19,14 +19,13 @@
 package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
+import au.ellie.hyui.elements.UIElements;
 import au.ellie.hyui.events.MouseEventData;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventActions;
-import au.ellie.hyui.elements.UIElements;
 import au.ellie.hyui.theme.Theme;
 import au.ellie.hyui.types.InputFieldStyle;
 import au.ellie.hyui.types.NumberFieldFormat;
-import au.ellie.hyui.utils.BsonDocumentHelper;
 import au.ellie.hyui.utils.PropertyBatcher;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.ui.Value;
@@ -39,12 +38,12 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
- * A builder class for constructing a number input field UI element. This class extends 
- * the UIElementBuilder to provide functionality specific to creating and customizing 
+ * A builder class for constructing a number input field UI element. This class extends
+ * the UIElementBuilder to provide functionality specific to creating and customizing
  * number input fields.
- *
- * The NumberFieldBuilder supports setting the initial numeric value, attaching event 
- * listeners, and integrating with specific themes and styles. It facilitates the seamless 
+ * <p>
+ * The NumberFieldBuilder supports setting the initial numeric value, attaching event
+ * listeners, and integrating with specific themes and styles. It facilitates the seamless
  * generation of commands and events during the UI build phase.
  */
 public class NumberFieldBuilder extends UIElementBuilder<NumberFieldBuilder> {
@@ -58,6 +57,7 @@ public class NumberFieldBuilder extends UIElementBuilder<NumberFieldBuilder> {
 
     /**
      * Do not use. Instead, use the static .numberInput().
+     *
      * @param theme
      */
     public NumberFieldBuilder(Theme theme) {
@@ -164,15 +164,15 @@ public class NumberFieldBuilder extends UIElementBuilder<NumberFieldBuilder> {
     /**
      * Adds an event listener to the number field builder. The only type it accepts will be ValueChanged.
      *
-     * @param type     the type of the event to listen for, represented by {@code CustomUIEventBindingType}. 
+     * @param type     the type of the event to listen for, represented by {@code CustomUIEventBindingType}.
      *                 This defines the specific event binding, such as {@code ValueChanged}.
-     * @param callback the function to execute when the specified event occurs. The callback receives 
-     *                 a {@code Double} value, which typically represents the current numeric value 
+     * @param callback the function to execute when the specified event occurs. The callback receives
+     *                 a {@code Double} value, which typically represents the current numeric value
      *                 associated with the event.
      * @return the current instance of {@code NumberFieldBuilder}, enabling method chaining.
      */
     public NumberFieldBuilder addEventListener(CustomUIEventBindingType type, Consumer<Double> callback) {
-        return addEventListener(type, Double.class, callback);
+        return addEventListenerWithContext(type, callback);
     }
 
     /**
@@ -183,28 +183,28 @@ public class NumberFieldBuilder extends UIElementBuilder<NumberFieldBuilder> {
      * @return This NumberFieldBuilder instance for method chaining.
      */
     public NumberFieldBuilder addEventListener(CustomUIEventBindingType type, BiConsumer<Double, UIContext> callback) {
-        return addEventListenerWithContext(type, Double.class, callback);
+        return addEventListenerWithContext(type, callback);
     }
 
     /**
      * Adds an event listener for the RightClicking event.
      */
     public NumberFieldBuilder onRightClicking(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.RightClicking, callback);
     }
 
     /**
      * Adds an event listener for the RightClicking event.
      */
     public NumberFieldBuilder onRightClicking(Consumer<MouseEventData> callback) {
-        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, callback);
     }
 
     /**
      * Adds an event listener for the RightClicking event with context.
      */
     public NumberFieldBuilder onRightClicking(BiConsumer<MouseEventData, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, callback);
     }
 
     @Override
@@ -303,20 +303,20 @@ public class NumberFieldBuilder extends UIElementBuilder<NumberFieldBuilder> {
             HyUIPlugin.getLog().logFinest("Setting Format: " + format + " for " + selector);
             commands.set(selector + ".Format", format);
         }
-        
-        if ( hyUIStyle == null && typedStyle == null  && style != null) {
+
+        if (hyUIStyle == null && typedStyle == null && style != null) {
             HyUIPlugin.getLog().logFinest("Setting Style: " + style + " for " + selector);
             commands.set(selector + ".Style", style);
         } else if (hyUIStyle == null && typedStyle != null) {
             PropertyBatcher.endSet(selector + ".Style", filterStyleDocument(typedStyle.toBsonDocument()), commands);
-        } else if ( hyUIStyle == null && typedStyle == null ) {
+        } else if (hyUIStyle == null && typedStyle == null) {
             commands.set(selector + ".Style", Value.ref("Common.ui", "DefaultInputFieldStyle"));
         }
 
         if (!secondaryStyles.containsKey("PlaceholderStyle")) {
             commands.set(selector + ".PlaceholderStyle", Value.ref("Common.ui", "DefaultInputFieldPlaceholderStyle"));
         }
-        
+
         commands.set(selector + ".Background", Value.ref("Common.ui", "InputBoxBackground"));
 
         if (anchor == null || anchor.getHeight() == null || anchor.getHeight() < 38) {
@@ -340,17 +340,17 @@ public class NumberFieldBuilder extends UIElementBuilder<NumberFieldBuilder> {
             if (listener.type() == CustomUIEventBindingType.ValueChanged) {
                 String eventId = getEffectiveId();
                 HyUIPlugin.getLog().logFinest("Adding ValueChanged event binding for " + selector + " with eventId: " + eventId);
-                events.addEventBinding(CustomUIEventBindingType.ValueChanged, selector, 
+                events.addEventBinding(CustomUIEventBindingType.ValueChanged, selector,
                         EventData.of("@ValueDouble", selector + ".Value")
-                            .append("Target", eventId)
-                            .append("Action", UIEventActions.VALUE_CHANGED), 
+                                .append("Target", eventId)
+                                .append("Action", UIEventActions.VALUE_CHANGED),
                         false);
             } else if (listener.type() == CustomUIEventBindingType.RightClicking) {
                 String eventId = getEffectiveId();
                 HyUIPlugin.getLog().logFinest("Adding RightClicking event binding for " + selector);
                 events.addEventBinding(CustomUIEventBindingType.RightClicking, selector,
                         EventData.of("Action", UIEventActions.RIGHT_CLICKING)
-                            .append("Target", eventId),
+                                .append("Target", eventId),
                         false);
             }
         });

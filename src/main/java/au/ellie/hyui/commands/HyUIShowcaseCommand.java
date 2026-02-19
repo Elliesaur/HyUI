@@ -18,21 +18,17 @@
 
 package au.ellie.hyui.commands;
 
-import au.ellie.hyui.HyUIPluginLogger;
 import au.ellie.hyui.builders.DynamicImageBuilder;
 import au.ellie.hyui.builders.PageBuilder;
 import au.ellie.hyui.html.TemplateProcessor;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.protocol.GameMode;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
-import com.hypixel.hytale.server.core.command.system.basecommands.AbstractAsyncCommand;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
-import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 
@@ -42,71 +38,55 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class HyUIShowcaseCommand extends AbstractAsyncCommand {
+public class HyUIShowcaseCommand extends AbstractDevCommand {
 
     public HyUIShowcaseCommand() {
         super("showcase", "Opens the HyUI 0.5.0 feature showcase");
-        if (!HyUIPluginLogger.IS_DEV) {
-            return;
-        }
-        this.setPermissionGroup(GameMode.Adventure);
     }
 
     @NonNullDecl
     @Override
-    protected CompletableFuture<Void> executeAsync(CommandContext commandContext) {
-        if (!HyUIPluginLogger.IS_DEV) {
-            return CompletableFuture.completedFuture(null);
-        }
-        var sender = commandContext.sender();
-        if (sender instanceof Player player) {
-            Ref<EntityStore> ref = player.getReference();
-            if (ref != null && ref.isValid()) {
-                Store<EntityStore> store = ref.getStore();
-                World world = store.getExternalData().getWorld();
-                return CompletableFuture.runAsync(() -> {
-                    PlayerRef playerRef = store.getComponent(ref, PlayerRef.getComponentType());
-                    if (playerRef != null) {
-                        openShowcase(player, playerRef, store);
-                    }
-                }, world);
-            }
-        }
-        return CompletableFuture.completedFuture(null);
+    protected CompletableFuture<Void> executeDev(Player player, Ref<EntityStore> ref, CommandContext commandContext) {
+        var store = ref.getStore();
+        var world = store.getExternalData().getWorld();
+
+        return CompletableFuture.runAsync(() -> {
+            var playerRef = store.getComponent(ref, PlayerRef.getComponentType());
+
+            if (playerRef != null)
+                openShowcase(playerRef, store);
+        }, world);
     }
 
-    private void openShowcase(Player player, PlayerRef playerRef, Store<EntityStore> store) {
-        if (!HyUIPluginLogger.IS_DEV) {
-            return;
-        }
-
+    private void openShowcase(PlayerRef playerRef, Store<EntityStore> store) {
         // Track click count for demo button
-        AtomicInteger clickCount = new AtomicInteger(0);
+        var clickCount = new AtomicInteger(0);
 
         // Create the template processor with variables and components
-        TemplateProcessor template = createTemplateProcessor(playerRef);
+        var template = createTemplateProcessor(playerRef);
+        var html = createShowcaseHtml();
 
-        String html = createShowcaseHtml();
-
-        PageBuilder builder = PageBuilder.pageForPlayer(playerRef)
+        var builder = PageBuilder.pageForPlayer(playerRef)
                 .fromTemplate(html, template)
                 .enableAsyncImageLoading(true)
                 .withLifetime(CustomPageLifetime.CanDismiss);
 
         // Interactive demo button
-        builder.addEventListener("demo-button", CustomUIEventBindingType.Activating, (data, uiCtx) -> {
-            int count = clickCount.incrementAndGet();
+        builder.registerEventListener("demo-button", (_, uiCtx) -> {
+            var count = clickCount.incrementAndGet();
             playerRef.sendMessage(Message.raw("[Showcase] Button clicked " + count + " times!"));
+
             uiCtx.updatePage(true);
         });
+
         builder.addEventListener("head-url-button", CustomUIEventBindingType.Activating, (data, ctx) -> {
             ctx.getValue("head-url-input", String.class).ifPresent(url -> {
-                if (url.isBlank()) {
+                if (url.isBlank())
                     return;
-                }
+
                 ctx.getById("player-head-image", DynamicImageBuilder.class)
                         .ifPresent(image -> image.withImageUrl(url));
-                ctx.getPage().ifPresent(page -> page.reloadImage("player-head-image", true) );
+                ctx.getPage().ifPresent(page -> page.reloadImage("player-head-image", true));
                 ctx.updatePage(true);
             });
         });
@@ -115,10 +95,7 @@ public class HyUIShowcaseCommand extends AbstractAsyncCommand {
     }
 
     private TemplateProcessor createTemplateProcessor(PlayerRef playerRef) {
-        if (!HyUIPluginLogger.IS_DEV) {
-            return null;
-        }
-        List<ShowcaseItem> items = List.of(
+        var items = List.of(
                 new ShowcaseItem("Crude Pickaxe", 6, "Common", new ShowcaseMeta("Starter", "Crafted")),
                 new ShowcaseItem("Stone Hammer", 12, "Rare", new ShowcaseMeta("Journeyman", "Loot")),
                 new ShowcaseItem("Voidblade", 22, "Epic", new ShowcaseMeta("Legend", "Boss Drop"))
@@ -151,37 +128,29 @@ public class HyUIShowcaseCommand extends AbstractAsyncCommand {
 
                 // Register reusable components
                 .registerComponent("statCard", """
-                <div style="background-color: #2a2a3e; padding: 10; anchor-width: 120; anchor-height: 60; layout-mode: top;">
-                    <p style="color: #888888; font-size: 19;">{{$label}}</p>
-                    <p style="color: #ffffff; font-size: 26; font-weight: bold;">{{$value}}</p>
-                </div>
-                """)
+                        <div style="background-color: #2a2a3e; padding: 10; anchor-width: 120; anchor-height: 60; layout-mode: top;">
+                            <p style="color: #888888; font-size: 19;">{{$label}}</p>
+                            <p style="color: #ffffff; font-size: 26; font-weight: bold;">{{$value}}</p>
+                        </div>
+                        """)
 
                 .registerComponent("featureItem", """
-                <div style="flex-direction: row; padding: 5; anchor-height: 30;">
-                    <p style="color: #4CAF50; anchor-width: 20;">*</p>
-                    <p style="color: #cccccc; flex-weight: 1;">{{$text}}</p>
-                </div>
-                """)
+                        <div style="flex-direction: row; padding: 5; anchor-height: 30;">
+                            <p style="color: #4CAF50; anchor-width: 20;">*</p>
+                            <p style="color: #cccccc; flex-weight: 1;">{{$text}}</p>
+                        </div>
+                        """)
                 .registerComponent("showcaseItem", """
-                <div style="background-color: #2a2a3e; padding: 8; anchor-height: 40; flex-direction: row;">
-                    <p style="color: #ffffff; flex-weight: 2;">{{$name}} (Tier: {{$meta.tier}})</p>
-                    {{#if power >= minPower && rarity != Common}}
-                    <p style="color: #4CAF50; flex-weight: 1;">Power {{$power}}</p>
-                    {{else}}
-                    <p style="color: #888888; flex-weight: 1;">Power {{$power}}</p>
-                    {{/if}}
-                    {{#if meta.source contains "Craft" || rarity == Epic}}
-                    <p style="color: #FFD54F; flex-weight: 1;">Highlight</p>
-                    {{/if}}
-                </div>
-                """);
+                        <div style="background-color: #2a2a3e; padding: 8; anchor-height: 40; flex-direction: row;">
+                            <p style="color: #ffffff; flex-weight: 2;">{{$name}} (Tier: {{$meta.tier}})</p>
+                            <p if="$power >= $minPower && $rarity != Common" style="color: #4CAF50; flex-weight: 1;">Power {{$power}}</p>
+                            <p else style="color: #888888; flex-weight: 1;">Power {{$power}}</p>
+                            <p if="'Craft' in $meta.source || $rarity == Epic" style="color: #FFD54F; flex-weight: 1;">Highlight</p>
+                        </div>
+                        """);
     }
 
     private String createShowcaseHtml() {
-        if (!HyUIPluginLogger.IS_DEV) {
-            return "";
-        }
         return """
                 <div style="background-color: #1a1a2e(0.95); anchor: 0; padding: 20; flex-direction: column;">
                     <!-- Header -->
@@ -189,7 +158,7 @@ public class HyUIShowcaseCommand extends AbstractAsyncCommand {
                         <img class="dynamic-image" src="https://media.forgecdn.net/avatars/thumbnails/1616/805/64/64/639041389520913670.png" style="anchor-width: 48; anchor-height: 48;" />
                         <div style="flex-direction: column;">
                             <p style="color: #4CAF50; font-size: 32; font-weight: bold;">HyUI 0.5.0 Feature Showcase</p>
-                            <p style="color: #888888; font-size: 22;">Welcome, {{$playerName|Guest}}!</p>
+                            <p style="color: #888888; font-size: 22;">Welcome, {{$playerName??Guest}}!</p>
                         </div>
                     </div>
                 
@@ -218,7 +187,7 @@ public class HyUIShowcaseCommand extends AbstractAsyncCommand {
                                 <div style="background-color: #2a2a3e; padding: 10; flex-weight: 1; flex-direction: column;">
                                     <p style="color: #ffffff; font-size: 20;">Upper: {{$playerName|upper}}</p>
                                     <p style="color: #ffffff; font-size: 20;">Lower: {{$playerName|lower}}</p>
-                                    <p style="color: #ffffff; font-size: 20;">Default: {{$missing|Not Set}}</p>
+                                    <p style="color: #ffffff; font-size: 20;">Default: {{$missing??"Not Set"}}</p>
                                 </div>
                             </div>
                             <div style="flex-direction: row; anchor-height: 40; gap: 10; padding-top: 5;">
@@ -229,18 +198,11 @@ public class HyUIShowcaseCommand extends AbstractAsyncCommand {
                             <!-- Section 2: Loops + Conditionals -->
                             <p style="color: #4CAF50; font-size: 24; font-weight: bold; anchor-height: 30;">2. Loops + Conditionals</p>
                             <div style="flex-direction: column; anchor-height: 200;">
-                                {{#each items}}
-                                {{@showcaseItem:name={{$name}},meta.tier={{$meta.tier}},power={{$power}},rarity={{$rarity}},meta.source={{$meta.source}}}}
-                                {{/each}}
+                                <showcaseItem for="$items" name={{$name}} meta={{$meta}} power={{$power}} rarity={{$rarity}} />
                                 <div style="background-color: #2a2a3e; padding: 8; anchor-height: 40; flex-direction: row;">
-                                    {{#if !isAdmin}}
-                                    <p style="color: #888888; flex-weight: 1;">Admin mode disabled</p>
-                                    {{else}}
-                                    <p style="color: #4CAF50; flex-weight: 1;">Admin mode enabled</p>
-                                    {{/if}}
-                                    {{#if showcaseTags contains "Legend"}}
-                                    <p style="color: #FFD54F; flex-weight: 1;">Legend tag active</p>
-                                    {{/if}}
+                                    <p if="!$isAdmin" style="color: #888888; flex-weight: 1;">Admin mode disabled</p>
+                                    <p else style="color: #4CAF50; flex-weight: 1;">Admin mode enabled</p>
+                                    <p if="'Legend' in showcaseTags" style="color: #FFD54F; flex-weight: 1;">Legend tag active</p>
                                 </div>
                             </div>
                         </div>
@@ -272,19 +234,19 @@ public class HyUIShowcaseCommand extends AbstractAsyncCommand {
                             <!-- Section 3: Components -->
                             <p style="color: #4CAF50; font-size: 24; font-weight: bold; anchor-height: 30;">3. Reusable Components</p>
                             <div style="flex-direction: row; anchor-height: 70;">
-                                {{@statCard:label=Blocks Placed,value=12.847}}
-                                {{@statCard:label=Creatures Found,value=23}}
-                                {{@statCard:label=Recipes Learned,value=156}}
-                                {{@statCard:label=Zones Explored,value=4/6}}
+                                <statCard label="Blocks Placed" value=12.847 />
+                                <statCard label="Creatures Found" value=23 />
+                                <statCard label="Recipes Learned" value=156 />
+                                <statCard label="Zones Explored" value="4/6" />
                             </div>
                 
                             <!-- Section 4: Features -->
                             <p style="color: #4CAF50; font-size: 24; font-weight: bold; anchor-height: 30;">4. New in HyUI 0.5.0</p>
                             <div style="flex-direction: column; anchor-height: 130;">
-                                {{@featureItem:text=TemplateProcessor for variable interpolation}}
-                                {{@featureItem:text=Built-in filters (upper/lower/number/percent)}}
-                                {{@featureItem:text=Reusable components with parameters}}
-                                {{@featureItem:text=TimerLabelBuilder with multiple formats}}
+                                <featureItem text="TemplateProcessor for variable interpolation" />
+                                <featureItem text="Built-in filters (upper/lower/number/percent)" />
+                                <featureItem text="Reusable components with parameters" />
+                                <featureItem text="TimerLabelBuilder with multiple formats" />
                             </div>
                 
                             <!-- Section 5: Input Elements -->
@@ -306,7 +268,7 @@ public class HyUIShowcaseCommand extends AbstractAsyncCommand {
                 
                             <!-- Interactive Demo -->
                             <div style="flex-direction: row; anchor-height: 60;">
-                                <button id="demo-button" style="flex-weight: 1;">Click Me!</button>
+                                <button @activate="demo-button" style="flex-weight: 1;">Click Me!</button>
                                 <p style="color: #888888; flex-weight: 2; padding: 15;">Click to test event handling</p>
                             </div>
                         </div>
@@ -430,69 +392,9 @@ public class HyUIShowcaseCommand extends AbstractAsyncCommand {
                 """;
     }
 
-    private static final class ShowcaseItem {
-        private final String name;
-        private final int power;
-        private final String rarity;
-        private final ShowcaseMeta meta;
-
-        private ShowcaseItem(String name, int power, String rarity, ShowcaseMeta meta) {
-            this.name = name;
-            this.power = power;
-            this.rarity = rarity;
-            this.meta = meta;
-        }
-
-        public String getName() {
-            if (!HyUIPluginLogger.IS_DEV) {
-                return null;
-            }
-            return name;
-        }
-
-        public int getPower() {
-            if (!HyUIPluginLogger.IS_DEV) {
-                return 0;
-            }
-            return power;
-        }
-
-        public String getRarity() {
-            if (!HyUIPluginLogger.IS_DEV) {
-                return null;
-            }
-            return rarity;
-        }
-
-        public ShowcaseMeta getMeta() {
-            if (!HyUIPluginLogger.IS_DEV) {
-                return null;
-            }
-            return meta;
-        }
+    private record ShowcaseItem(String name, int power, String rarity, ShowcaseMeta meta) {
     }
 
-    private static final class ShowcaseMeta {
-        private final String tier;
-        private final String source;
-
-        private ShowcaseMeta(String tier, String source) {
-            this.tier = tier;
-            this.source = source;
-        }
-
-        public String getTier() {
-            if (!HyUIPluginLogger.IS_DEV) {
-                return null;
-            }
-            return tier;
-        }
-
-        public String getSource() {
-            if (!HyUIPluginLogger.IS_DEV) {
-                return null;
-            }
-            return source;
-        }
+    private record ShowcaseMeta(String tier, String source) {
     }
 }

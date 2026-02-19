@@ -113,6 +113,7 @@ tasks.test {
     jvmArgs "-Djava.util.logging.manager=com.hypixel.hytale.logger.backend.HytaleLogManager"
 
     testLogging {
+        showStandardStreams = true
         events "passed", "failed", "skipped"
     }
 }

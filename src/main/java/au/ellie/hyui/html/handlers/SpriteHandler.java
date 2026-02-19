@@ -53,7 +53,7 @@ public class SpriteHandler implements TagHandler {
                     .ifPresent(builder::withFramesPerSecond);
         }
 
-        applyCommonAttributes(builder, element);
+        applyCommonAttributes(builder, element, parser);
         return builder;
     }
 }

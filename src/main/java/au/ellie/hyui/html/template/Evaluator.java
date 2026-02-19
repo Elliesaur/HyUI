@@ -1,0 +1,534 @@
+/*
+ *     Copyright (C) 2026 EllieAU
+ *
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU Lesser General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ *
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU Lesser General Public License for more details.
+ *
+ *     You should have received a copy of the GNU Lesser General Public License
+ *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
+package au.ellie.hyui.html.template;
+
+import au.ellie.hyui.HyUIPlugin;
+import au.ellie.hyui.html.TemplateProcessor.CachedComponent;
+import au.ellie.hyui.html.template.context.FilterRegistry;
+import au.ellie.hyui.html.template.context.SlotSupplier;
+import au.ellie.hyui.html.template.context.VariableStack;
+import au.ellie.hyui.html.template.context.VariableStack.VariableScope;
+import au.ellie.hyui.html.template.exception.EvaluationException;
+import au.ellie.hyui.html.template.item.Node;
+import au.ellie.hyui.html.template.item.Node.AttributeValueNode;
+import au.ellie.hyui.html.template.item.Node.AttributeValueNode.DynamicAttributeNode;
+import au.ellie.hyui.html.template.item.Node.AttributeValueNode.ExpressionAttributeNode;
+import au.ellie.hyui.html.template.item.Node.AttributeValueNode.FlagAttributeNode;
+import au.ellie.hyui.html.template.item.Node.AttributeValueNode.MixedAttributeNode;
+import au.ellie.hyui.html.template.item.Node.BlockNode.ComponentBlockNode;
+import au.ellie.hyui.html.template.item.Node.BlockNode.ConditionalBlockNode;
+import au.ellie.hyui.html.template.item.Node.BlockNode.ForBlockNode;
+import au.ellie.hyui.html.template.item.Node.BlockNode.SlotBlockNode;
+import au.ellie.hyui.html.template.item.Node.ExpressionNode;
+import au.ellie.hyui.html.template.item.Node.ExpressionNode.*;
+import au.ellie.hyui.html.template.item.Node.MarkerNode;
+import au.ellie.hyui.html.template.item.Symbols;
+import au.ellie.hyui.utils.NumericUtils;
+import au.ellie.hyui.utils.ReflectionUtils;
+
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.function.Supplier;
+
+import static au.ellie.hyui.html.template.item.Attribute.inlineAttributes;
+import static au.ellie.hyui.html.template.item.Symbols.*;
+import static au.ellie.hyui.utils.ObjectUtils.*;
+
+public class Evaluator {
+    private final static Stack<String> STACK = new Stack<>();
+
+    private final FilterRegistry filterRegistry;
+    private final VariableStack contextStack;
+    private final Map<String, CachedComponent> components;
+
+    public Evaluator(VariableStack context, FilterRegistry filterRegistry, Map<String, CachedComponent> components) {
+        this.components = components;
+        this.contextStack = context;
+        this.filterRegistry = filterRegistry;
+    }
+
+    /**
+     * Evaluate a list of AST nodes and return the resulting string.
+     *
+     * @param nodes The list of AST nodes to evaluate.
+     * @return The resulting string after evaluation.
+     */
+    public String evaluate(List<Node> nodes) {
+        var result = new StringBuilder();
+
+        for (Node node : nodes)
+            result.append(evaluateNode(node));
+
+        return result.toString().replaceAll("\\n+$", "");
+    }
+
+    /**
+     * Evaluate a single AST node and return the resulting string.
+     *
+     * @param node The AST node to evaluate.
+     * @return The resulting string after evaluation.
+     */
+    private String evaluateNode(Node node) {
+        return switch (node) {
+            case CommentNode _ -> "";
+            case MarkerNode marker -> {
+                if (marker.inside() != null)
+                    yield evaluateNode(marker.inside());
+                yield "";
+            }
+            case TextNode text -> text.content();
+            case ExpressionNode expr -> {
+                var value = evaluateExpression(expr);
+                yield value == null ? "" : value.toString();
+            }
+            case ConditionalBlockNode ifBlock -> evaluateIfBlock(ifBlock);
+            case ForBlockNode eachBlock -> evaluateEachBlock(eachBlock);
+            case SlotBlockNode slotBlockNode -> evaluateSlotBlock(slotBlockNode);
+            case ComponentBlockNode component -> evaluateComponent(component);
+            case AttributeValueNode attributeValueNode -> evaluateAttributeString(attributeValueNode);
+
+            default -> throw new EvaluationException("Unexpected value", node);
+        };
+    }
+
+    /**
+     * Evaluate an expression node and return the resulting value.
+     *
+     * @param node The expression node to evaluate.
+     * @return The resulting value after evaluation.
+     */
+    private Object evaluateExpression(ExpressionNode node) {
+        return switch (node) {
+            case CommentNode _ -> "";
+            case TextNode literal -> literal.content();
+            case LiteralNode literal -> literal.value();
+            case PropertyAccessNode prop -> evaluatePropertyAccess(prop);
+            case BinaryOpNode binary -> evaluateBinaryOp(binary);
+            case PipeNode pipe -> evaluatePipe(pipe);
+            case DefaultNode def -> evaluateDefault(def);
+            case VariableNode var -> evaluateVariable(var);
+        };
+    }
+
+    /**
+     * Evaluate a variable reference and return its value from the context stack.
+     *
+     * @param var The variable node to evaluate.
+     * @return The value of the variable, or null if not found.
+     */
+    private Object evaluateVariable(VariableNode var) {
+        var result = contextStack.getVariable(var.name(), () -> {
+            for (String key : contextStack.getScopeKeys()) {
+                // Prevent accessing variables from scopes
+                if (key.startsWith(Symbols.HTML_SLOT_KEY))
+                    continue;
+
+                try {
+                    return ReflectionUtils.getObjectProperty(contextStack.getVariable(key), var.name());
+                } catch (Exception _) {
+                    // Ignore and return null
+                }
+            }
+
+            return null;
+        });
+
+        // Convert negated to boolean and negate
+        if (var.negated())
+            result = !toBoolean(result);
+
+        return result;
+    }
+
+    /**
+     * Evaluate a property access on an object.
+     *
+     * @param node The property access node.
+     * @return The value of the accessed property, or null if not found.
+     */
+    private Object evaluatePropertyAccess(PropertyAccessNode node) {
+        var obj = evaluateExpression(node.object());
+        if (obj == null) return null;
+
+        var property = node.property();
+
+        try {
+            return ReflectionUtils.getObjectProperty(obj, property);
+        } catch (Exception _) {
+            HyUIPlugin.getLog().logWarn("Error accessing property " + property + " on " + obj.getClass());
+        }
+
+        return null;
+    }
+
+    /**
+     * Evaluate a `binary` operation between two expressions.
+     *
+     * @param node The binary operation node.
+     * @return The result of the binary operation.
+     */
+    private Object evaluateBinaryOp(BinaryOpNode node) {
+        Supplier<Object> right = () -> evaluateExpression(node.right());
+        var left = evaluateExpression(node.left());
+
+        return switch (node.operator()) {
+            case Symbols.EQUALS -> evaluateEquals(left, right.get());
+            case Symbols.NOT_EQUALS -> !evaluateEquals(left, right.get());
+            case Symbols.LESS_THAN -> evaluateComparison(node, left, right.get()) < 0;
+            case Symbols.GREATER_THAN -> evaluateComparison(node, left, right.get()) > 0;
+            case Symbols.LESS_THAN_EQUALS -> evaluateComparison(node, left, right.get()) <= 0;
+            case Symbols.GREATER_THAN_EQUALS -> evaluateComparison(node, left, right.get()) >= 0;
+            case Symbols.AND -> toBoolean(left) && toBoolean(right.get());
+            case Symbols.OR -> toBoolean(left) || toBoolean(right.get());
+            case Symbols.KEYWORD_IN -> containedIn(left, right.get());
+            case Symbols.KEYWORD_NOT_IN -> !containedIn(left, right.get());
+            default -> throw new EvaluationException("Unknown operator " + node.operator(), node);
+        };
+    }
+
+    /**
+     * Evaluate `equality` between two values.
+     *
+     * @param left  Left value of equation
+     * @param right Right value of equation
+     * @return True if equal, false otherwise
+     */
+    private boolean evaluateEquals(Object left, Object right) {
+        if (left == null && right == null) return true;
+        if (left == null || right == null) return false;
+
+        var leftNum = NumericUtils.toNumber(left);
+        var rightNum = NumericUtils.toNumber(right);
+
+        if (leftNum != null && rightNum != null)
+            return NumericUtils.equals(leftNum, rightNum);
+
+        return Objects.equals(left, right);
+    }
+
+    /**
+     * Evaluate comparison between two values.
+     *
+     * @param left  Left value of comparison
+     * @param right Right value of comparison
+     * @return Negative if left < right, 0 if left == right, positive if left > right
+     */
+    @SuppressWarnings("unchecked")
+    private int evaluateComparison(Node node, Object left, Object right) {
+        if (left == null && right == null) return 0;
+        if (left == null) return -1;
+        if (right == null) return 1;
+
+        var leftNum = NumericUtils.toNumber(left);
+        var rightNum = NumericUtils.toNumber(right);
+
+        if (leftNum != null && rightNum != null)
+            return NumericUtils.compare(leftNum, rightNum);
+
+        if (left instanceof Comparable && left.getClass().isInstance(right)) {
+            var leftComp = (Comparable<Object>) left;
+            return leftComp.compareTo(right);
+        }
+
+        throw new EvaluationException("Cannot compare " + left.getClass().getSimpleName() +
+                " and " + right.getClass().getSimpleName(), node);
+    }
+
+    /**
+     * Evaluate a `pipe` expression (filter application).
+     *
+     * @param node The pipe node
+     * @return The result of the filter application
+     */
+    private Object evaluatePipe(PipeNode node) {
+        var value = evaluateExpression(node.expression());
+        var filter = filterRegistry.get(node.filterName());
+
+        return filter.apply(value);
+    }
+
+    /**
+     * Evaluate a `default` expression and return the first non-null, non-empty alternative.
+     *
+     * @param node The default node to evaluate.
+     * @return The first non-null, non-empty alternative value, or null if none found.
+     */
+    private Object evaluateDefault(DefaultNode node) {
+        for (ExpressionNode alternative : node.alternatives()) {
+            var value = evaluateExpression(alternative);
+            if (value != null && !value.toString().isEmpty())
+                return value;
+        }
+
+        return null;
+    }
+
+    /**
+     * Evaluate an `if` / `else` block node and return the resulting string.
+     *
+     * @param node The `if` block node to evaluate.
+     * @return The resulting string after evaluation.
+     */
+    private String evaluateIfBlock(ConditionalBlockNode node) {
+        var rendered = new HashMap<String, Integer>();
+        var result = new StringBuilder();
+
+        for (var branch : node.branches()) {
+            var conditionValue = evaluateExpression(branch.condition());
+
+            if (toBoolean(conditionValue)) {
+                for (Node child : branch.body()) {
+                    result.append(evaluateNode(child));
+
+                    switch (child) {
+                        case ComponentBlockNode c -> rendered.put(c.tag(), rendered.getOrDefault(c.tag(), 0) + 1);
+                        case SlotBlockNode s -> rendered.put(s.name(), rendered.getOrDefault(s.name(), 0) + 1);
+                        default -> {
+                            // Ignore other nodes
+                        }
+                    }
+                }
+
+                break;
+            }
+        }
+
+        // Dirty fix for conditionally rendering components and slots that are used in other branches but not rendered in the taken branch
+        for (var entry : node.getTags().entrySet()) {
+            var count = entry.getValue() - rendered.getOrDefault(entry.getKey(), 0);
+            while (count > 0) {
+                result.append("<").append(entry.getKey()).append(" style=\"display:none\"></").append(entry.getKey()).append(">");
+                count--;
+            }
+        }
+
+        return result.toString();
+    }
+
+    /**
+     * Evaluate an `each` block node and return the resulting string.
+     *
+     * @param node The `each` block node to evaluate.
+     * @return The resulting string after evaluation.
+     */
+    private String evaluateEachBlock(ForBlockNode node) {
+        var collectionValue = evaluateExpression(node.collection());
+
+        if (collectionValue == null)
+            return "";
+
+        var index = 0;
+        var items = toIterable(collectionValue);
+        var result = new StringBuilder();
+
+        for (Object item : items) {
+            var scope = new VariableScope(SCOPE_FOR_NAME);
+            Object itemIndex = index;
+
+            // If iterating over a Map, extract key and value
+            if (item instanceof Map.Entry<?, ?>) {
+                itemIndex = ((Entry<?, ?>) item).getKey();
+                item = ((Entry<?, ?>) item).getValue();
+            }
+
+            // Add item and optionally index to scope
+            scope.putKeyed(node.itemName(), item);
+            if (node.indexName() != null)
+                scope.putKeyed(node.indexName(), itemIndex);
+
+            contextStack.pushScope(scope);
+            try {
+                for (Node child : node.body())
+                    result.append(evaluateNode(child));
+            } finally {
+                contextStack.popScope();
+            }
+
+            index++;
+        }
+
+        return result.toString();
+    }
+
+    /**
+     * Evaluate a `component` element node and return the resulting string.
+     *
+     * @param component The `component` element node to evaluate.
+     * @return The resulting string after evaluation.
+     */
+    private String evaluateComponent(ComponentBlockNode component) {
+        var tagName = component.tag();
+
+        // Handle template tag as renderless wrapper
+        if (tagName.equals(Symbols.HTML_TAG_TEMPLATE)) {
+            var result = new StringBuilder();
+            for (Node child : component.children())
+                result.append(evaluateNode(child));
+
+            return result.toString();
+        }
+
+        // Tag is not a registered component, or is already being evaluated (prevent infinite recursion)
+        // and should be rendered as normal HTML element instead
+        if (!components.containsKey(tagName) || STACK.contains(tagName))
+            return evaluateComponentString(component);
+
+        // Attributes
+        var context = new HashMap<String, Object>();
+        for (var attribute : component.attributes()) {
+            switch (attribute) {
+                case DynamicAttributeNode dynamicAttributeNode ->
+                        context.put(attribute.getName(), evaluateExpression(dynamicAttributeNode.expression()));
+                case MixedAttributeNode mixedAttr -> {
+                    var builder = new StringBuilder();
+                    for (var part : mixedAttr.parts()) {
+                        if (part instanceof String text)
+                            builder.append(text);
+                        else if (part instanceof Node node) {
+                            var value = evaluateNode(node);
+                            if (value != null && !value.isEmpty())
+                                builder.append(value);
+                        }
+                    }
+
+                    context.put(mixedAttr.name(), builder.toString());
+                }
+                case ExpressionAttributeNode expressionAttributeNode -> {
+                    var evaluatedValue = evaluateNode(expressionAttributeNode.expressions());
+                    if (!evaluatedValue.isEmpty())
+                        inlineAttributes(evaluatedValue, context);
+                }
+                case FlagAttributeNode _ -> context.put(attribute.getName(), true);
+            }
+        }
+
+        // Children
+        var scope = new VariableScope(SCOPE_COMPONENT_PREFIX + tagName, context);
+        for (var child : component.children()) {
+            var slotName = Symbols.HTML_SLOT_DEFAULT;
+            if (child instanceof SlotBlockNode slot)
+                slotName = slot.name();
+
+            // Saved as "slot.{slotName}" in component scope
+            scope.computeIfAbsent(Symbols.HTML_SLOT_KEY + slotName, key -> {
+                scope.getKeys().add(key);
+                return new SlotSupplier(this::evaluateNode);
+            }).add(child);
+        }
+
+        STACK.push(tagName);
+        contextStack.pushScope(scope);
+        try {
+            var cachedComponent = components.get(tagName);
+            return evaluate(cachedComponent.getAst());
+        } finally {
+            STACK.pop();
+            contextStack.popScope();
+        }
+    }
+
+    /**
+     * Evaluate a `slot` block node and return the resulting string.
+     *
+     * @param slotBlockNode The `slot` block node to evaluate.
+     */
+    private String evaluateSlotBlock(SlotBlockNode slotBlockNode) {
+        var slotName = slotBlockNode.name();
+
+        if (slotBlockNode.output()) {
+            var content = contextStack.getVariable(Symbols.HTML_SLOT_KEY + slotName, () -> null);
+            if (content != null)
+                return content.toString();
+        }
+
+        return evaluate(slotBlockNode.children());
+    }
+
+    /**
+     * Evaluate a component as a string without processing it as a component.
+     *
+     * @param component The component element node to evaluate as a string.
+     * @return The resulting string representation of the component.
+     */
+    private String evaluateComponentString(ComponentBlockNode component) {
+        var isVoid = VOID_ELEMENTS.contains(component.tag().toLowerCase());
+        var isEmpty = component.children().isEmpty() && component.attributes().isEmpty();
+
+        // Skip rendering completely empty non-void elements with no attributes
+        // These cause flexbox layout issues and are typically unintentional
+        if (!isVoid && isEmpty)
+            return "";
+
+        var sb = new StringBuilder();
+        sb.append("<").append(component.tag());
+
+        for (var attribute : component.attributes()) {
+            var attrStr = evaluateAttributeString(attribute).trim();
+            if (!attrStr.isEmpty())
+                sb.append(" ").append(attrStr);
+        }
+
+        if (isVoid) {
+            sb.append("/>");
+            return sb.toString();
+        }
+
+        sb.append(">");
+
+        for (Node child : component.children())
+            sb.append(evaluateNode(child));
+
+        sb.append("</").append(component.tag()).append(">");
+
+        return sb.toString();
+    }
+
+    /**
+     * Evaluate an attribute value node and return the resulting string.
+     *
+     * @param attributeValueNode The attribute value node to evaluate.
+     * @return The resulting string after evaluation.
+     */
+    private String evaluateAttributeString(AttributeValueNode attributeValueNode) {
+        var sb = new StringBuilder();
+
+        switch (attributeValueNode) {
+            case DynamicAttributeNode dynamic ->
+                    sb.append(dynamic.getName()).append("=\"").append(evaluateNode(dynamic.expression())).append("\"");
+            case MixedAttributeNode mixedAttr -> {
+                var builder = new StringBuilder();
+                for (var part : mixedAttr.parts()) {
+                    if (part instanceof String text)
+                        builder.append(text);
+                    else if (part instanceof Node node) {
+                        var value = evaluateNode(node);
+                        if (value != null && !value.isEmpty())
+                            builder.append(value);
+                    }
+                }
+
+                sb.append(mixedAttr.getName()).append("=\"").append(builder).append("\"");
+            }
+            case FlagAttributeNode flag -> sb.append(flag.getName());
+            case ExpressionAttributeNode expression -> sb.append(evaluateNode(expression.expressions()));
+        }
+
+        return sb.toString();
+    }
+}

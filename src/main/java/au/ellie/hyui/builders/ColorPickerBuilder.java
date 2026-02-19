@@ -19,10 +19,10 @@
 package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
-import au.ellie.hyui.types.ColorFormat;
+import au.ellie.hyui.elements.UIElements;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventActions;
-import au.ellie.hyui.elements.UIElements;
+import au.ellie.hyui.types.ColorFormat;
 import au.ellie.hyui.utils.PropertyBatcher;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
@@ -45,7 +45,7 @@ public class ColorPickerBuilder extends UIElementBuilder<ColorPickerBuilder> {
     /**
      * Constructs a new instance of {@code ColorPickerBuilder}, initializing it with
      * default configuration for creating a ColorPicker UI element.
-     *
+     * <p>
      * The builder is pre-configured with:
      * - The element type defined by {@code UIElements.COLOR_PICKER}.
      * - A wrapping group setting enabled.
@@ -64,7 +64,7 @@ public class ColorPickerBuilder extends UIElementBuilder<ColorPickerBuilder> {
      *                 For example, "#FFFFFF" for white or "#000000" for black. You
      *                 may add the alpha channel to the end like "#FFFFFF(0.5)".
      * @return the {@code ColorPickerBuilder} instance with the updated value,
-     *         allowing for method chaining.
+     * allowing for method chaining.
      */
     public ColorPickerBuilder withValue(String hexColor) {
         this.value = hexColor;
@@ -109,15 +109,15 @@ public class ColorPickerBuilder extends UIElementBuilder<ColorPickerBuilder> {
      * Adds an event listener to the ColorPicker UI element for handling specific types of events.
      * The specified callback will be invoked when the event of the provided type occurs.
      *
-     * @param type the type of event to listen for, represented by {@code CustomUIEventBindingType}.
-     *             This determines which event the callback will respond to.
+     * @param type     the type of event to listen for, represented by {@code CustomUIEventBindingType}.
+     *                 This determines which event the callback will respond to.
      * @param callback a {@code Consumer<String>} function to handle the event.
      *                 It will be triggered with the event data when the event occurs.
      * @return the {@code ColorPickerBuilder} instance with the event listener added,
-     *         allowing for method chaining.
+     * allowing for method chaining.
      */
     public ColorPickerBuilder addEventListener(CustomUIEventBindingType type, Consumer<String> callback) {
-        return addEventListener(type, String.class, callback);
+        return addEventListenerWithContext(type, callback);
     }
 
     /**
@@ -128,7 +128,7 @@ public class ColorPickerBuilder extends UIElementBuilder<ColorPickerBuilder> {
      * @return This ColorPickerBuilder instance for method chaining.
      */
     public ColorPickerBuilder addEventListener(CustomUIEventBindingType type, BiConsumer<String, UIContext> callback) {
-        return addEventListenerWithContext(type, String.class, callback);
+        return addEventListenerWithContext(type, callback);
     }
 
     @Override
@@ -196,7 +196,7 @@ public class ColorPickerBuilder extends UIElementBuilder<ColorPickerBuilder> {
             commands.set(selector + ".ResetTransparencyWhenChangingColor", resetTransparencyWhenChangingColor);
         }
 
-        if ( hyUIStyle == null && typedStyle == null  && style != null) {
+        if (hyUIStyle == null && typedStyle == null && style != null) {
             HyUIPlugin.getLog().logFinest("Setting Style: " + style + " for " + selector);
             commands.set(selector + ".Style", style);
         } else if (hyUIStyle == null && typedStyle != null) {
@@ -204,16 +204,17 @@ public class ColorPickerBuilder extends UIElementBuilder<ColorPickerBuilder> {
         }
         if (listeners.isEmpty()) {
             // To handle data back to the .getValue, we need to add at least one listener.
-            addEventListener(CustomUIEventBindingType.ValueChanged, (_, _) -> {});
+            addEventListener(CustomUIEventBindingType.ValueChanged, (_, _) -> {
+            });
         }
         listeners.forEach(listener -> {
             if (listener.type() == CustomUIEventBindingType.ValueChanged) {
                 String eventId = getEffectiveId();
                 HyUIPlugin.getLog().logFinest("Adding ValueChanged event binding for " + selector + " with eventId: " + eventId);
-                events.addEventBinding(CustomUIEventBindingType.ValueChanged, selector, 
+                events.addEventBinding(CustomUIEventBindingType.ValueChanged, selector,
                         EventData.of("@Value", selector + ".Value")
-                            .append("Target", eventId)
-                            .append("Action", UIEventActions.VALUE_CHANGED), 
+                                .append("Target", eventId)
+                                .append("Action", UIEventActions.VALUE_CHANGED),
                         false);
             }
         });

@@ -34,7 +34,7 @@ public class LabeledCheckBoxHandler implements TagHandler {
     @Override
     public UIElementBuilder<?> handle(Element element, HtmlParser parser) {
         LabeledCheckBoxBuilder builder = LabeledCheckBoxBuilder.labeledCheckBox();
-        applyCommonAttributes(builder, element);
+        applyCommonAttributes(builder, element, parser);
         return builder;
     }
 }

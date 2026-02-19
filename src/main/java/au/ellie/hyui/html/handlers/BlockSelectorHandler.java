@@ -50,7 +50,7 @@ public class BlockSelectorHandler implements TagHandler {
             builder.withValue(element.attr("value"));
         }
 
-        applyCommonAttributes(builder, element);
+        applyCommonAttributes(builder, element, parser);
         return builder;
     }
 }

@@ -64,7 +64,7 @@ public class LabelHandler implements TagHandler {
                 builder.withText(element.text());
             }
 
-            applyCommonAttributes(builder, element);
+            applyCommonAttributes(builder, element, parser);
             return builder;
         }
 
@@ -76,7 +76,7 @@ public class LabelHandler implements TagHandler {
         } else {
             builder.withText(readDirectText(element));
         }
-        applyCommonAttributes(builder, element);
+        applyCommonAttributes(builder, element, parser);
         return builder;
     }
 

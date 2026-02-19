@@ -42,7 +42,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
- * A HUD for Hytale. 
+ * A HUD for Hytale.
  * It is important to store references to your existing HUDs to assist with updating elements.
  */
 public class HyUIHud extends CustomUIHud implements UIContext {
@@ -55,8 +55,8 @@ public class HyUIHud extends CustomUIHud implements UIContext {
 
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private ScheduledFuture<?> refreshTask;
-    
-    public HyUIHud(String name, PlayerRef playerRef, 
+
+    public HyUIHud(String name, PlayerRef playerRef,
                    String uiFile,
                    List<UIElementBuilder<?>> elements,
                    List<BiConsumer<UICommandBuilder, UIEventBuilder>> editCallbacks,
@@ -66,29 +66,30 @@ public class HyUIHud extends CustomUIHud implements UIContext {
                    InterfaceBuilder<?> rootElementBuilder) {
         super(playerRef);
         this.name = name;
-        this.delegate = new HyUInterface(uiFile, elements, editCallbacks, templateHtml, templateProcessor, runtimeTemplateUpdatesEnabled, rootElementBuilder) {};
+        this.delegate = new HyUInterface(uiFile, elements, editCallbacks, templateHtml, templateProcessor, runtimeTemplateUpdatesEnabled, rootElementBuilder, null) {
+        };
     }
 
     private void startRefreshTask() {
         if (refreshTask == null || refreshTask.isCancelled()) {
             refreshTask = scheduler.scheduleAtFixedRate(
-                    this::checkRefreshes, 
-                    100, 
-                    100, 
+                    this::checkRefreshes,
+                    100,
+                    100,
                     TimeUnit.MILLISECONDS);
         }
     }
-    
+
     private void checkRefreshes() {
         if (isHidden) {
             HyUIPlugin.getLog().logFinest("Hidden HUD. Not refreshing.");
             return;
         }
-        
+
         PlayerRef playerRef = getPlayerRef();
         if (!playerRef.isValid()) {
             HyUIPlugin.getLog().logFinest("Player is invalid, cancelling refresh task for HUD.");
-            
+
             // Player is no longer valid, cancel task and cleanup.
             if (refreshTask != null) {
                 HyUIPlugin.getLog().logFinest("Player is invalid, cancelling refresh task for HUD.");
@@ -104,21 +105,16 @@ public class HyUIHud extends CustomUIHud implements UIContext {
         long now = System.currentTimeMillis();
         long rate = getRefreshRateMs();
 
-        if (rate > 0) {
-            if (now - lastRefreshTime >= rate) {
-                if (refreshTask.isCancelled()) {
-                    return;
-                }
-                triggerRefresh();
-                refreshOrRerender(true, false);
-                lastRefreshTime = now;
-                if (refreshTask.isCancelled()) {
-                    return;
-                }
-            }
+        if (rate > 0 && now - lastRefreshTime >= rate) {
+            if (refreshTask.isCancelled())
+                return;
+
+            triggerRefresh();
+            refreshOrRerender(true, false);
+            lastRefreshTime = now;
         }
     }
-    
+
     @Override
     public void build(UICommandBuilder uiCommandBuilder) {
         // We cannot use the UIEventBuilder from the super since this is a HUD.
@@ -155,19 +151,19 @@ public class HyUIHud extends CustomUIHud implements UIContext {
     /**
      * Updates the HUD with the provided builder.
      * The builder can be a completely new configuration.
-     * 
+     *
      * @param updatedHudBuilder The builder containing updated HUD configuration.
      */
     public void update(HudBuilder updatedHudBuilder) {
-        this.configureFrom(updatedHudBuilder);
+        configureFrom(updatedHudBuilder);
         refreshOrRerender(true, false);
     }
 
     /**
-     * Remove the HUD from its parent multi-HUD. 
+     * Remove the HUD from its parent multi-HUD.
      * This will remove it from the screen for the player.
      * and stop refreshing it.
-     * 
+     * <p>
      * You can later associate it with another, or the same multi-HUD and show it.
      */
     public void remove() {
@@ -188,7 +184,7 @@ public class HyUIHud extends CustomUIHud implements UIContext {
      * Remove the HUD from its parent multi-HUD. This does NOT check thread access.
      * This will remove it from the screen for the player.
      * and stop refreshing it.
-     *
+     * <p>
      * You can later associate it with another, or the same multi-HUD and show it.
      */
     public void removeUnsafe() {
@@ -203,7 +199,7 @@ public class HyUIHud extends CustomUIHud implements UIContext {
     /**
      * Adds the HUD to its parent multi-HUD.
      * Begins refresh task.
-     * 
+     *
      */
     public void add() {
         this.safeAdd();
@@ -213,7 +209,7 @@ public class HyUIHud extends CustomUIHud implements UIContext {
         HyUIPlugin.getLog().logFinest("HUD added: " + this.name);
         startRefreshTask();
     }
-    
+
     /**
      * Adds the HUD to its parent multi-HUD. This does NOT check thread access.
      * Begins refresh task.
@@ -244,7 +240,7 @@ public class HyUIHud extends CustomUIHud implements UIContext {
     public void hideUnsafe() {
         setVisibilityOnFirstElement(false, true);
     }
-    
+
     /**
      * Shows the UI to the player if it has previously been hidden.
      */
@@ -299,7 +295,7 @@ public class HyUIHud extends CustomUIHud implements UIContext {
 
         }
     }
-    
+
     @Override
     public List<String> getCommandLog() {
         return delegate.getCommandLog();
@@ -317,17 +313,23 @@ public class HyUIHud extends CustomUIHud implements UIContext {
 
     /**
      * Not implemented.
+     *
      * @param shouldClear Not implemented.
      */
     @Override
-    public void updatePage(boolean shouldClear) {}
-    
+    public void updatePage(boolean shouldClear) {
+    }
+
+    @Override
+    public void updatePageThreadsafe(Player playerComponent, boolean shouldClear) {
+    }
+
     private void setVisibilityOnFirstElement(boolean value, boolean unsafe) {
         for (UIElementBuilder<?> element : delegate.getElements()) {
             element.withVisible(value);
             break;
         }
-       
+
         HyUIPlugin.getLog().logFinest("REDRAW: HUD SET VISIBILITY from single hud");
         this.refreshOrRerender(false, unsafe);
         // this.update(false, builder);
@@ -384,7 +386,7 @@ public class HyUIHud extends CustomUIHud implements UIContext {
     }
 
     /**
-     * Reloads a dynamic image by its element ID. This will forcibly invalidate the image 
+     * Reloads a dynamic image by its element ID. This will forcibly invalidate the image
      * and re-download (cache still applies to all downloads for 15 seconds!).
      *
      * @param dynamicImageElementId The ID of the dynamic image element.
@@ -405,25 +407,25 @@ public class HyUIHud extends CustomUIHud implements UIContext {
     public void reopenFromAsset(Player player, PlayerRef playerRef, Store<EntityStore> store, Asset asset) {
         if (delegate.willReopenFromAsset(player, playerRef, store, asset)) {
             // Remove ours.
-            if (refreshTask != null && !refreshTask.isCancelled()) {
+            if (refreshTask != null && !refreshTask.isCancelled())
                 refreshTask.cancel(false);
-            }
+
             delegate.releaseDynamicImages(playerRef.getUuid());
             var newHudBuilder = (HudBuilder) delegate.reopenFromAsset(player, playerRef, store, asset);
             this.configureFrom(newHudBuilder);
             // Get dynamic images working...
             newHudBuilder.sendDynamicImageIfNeeded(playerRef);
-            
+
             // Forcibly rebuild from scratch.
-            UICommandBuilder uiCommandBuilder = new UICommandBuilder();
+            var uiCommandBuilder = new UICommandBuilder();
             delegate.buildFromCommandBuilder(uiCommandBuilder, false, new UIEventBuilder());
             this.update(false, uiCommandBuilder);
-            
+
             // What the fuck Hytale
             if (refreshRateMs <= 0)
                 // Why do you make Ellie do this?
                 refreshOrRerender(true, true);
-            
+
             // Finally, start refresh task again.
             // Dry your tears Ellie, it will all be over soon...
             startRefreshTask();

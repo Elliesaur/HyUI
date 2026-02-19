@@ -18,28 +18,16 @@
 
 package au.ellie.hyui.builders;
 
-import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.events.PageRefreshResult;
-import au.ellie.hyui.events.UIContext;
-import au.ellie.hyui.html.HtmlParser;
-import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
-import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
-import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
-import com.hypixel.hytale.server.core.universe.PlayerRef;
-import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.entity.entities.player.pages.PageManager;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -63,7 +51,7 @@ public class PageBuilder extends InterfaceBuilder<PageBuilder> {
         // No matter what happens, we need at least an empty UI file to begin with.
         fromFile("Pages/EllieAU_HyUI_Placeholder.ui");
     }
-    
+
     /**
      * Constructs a new instance of the PageBuilder class without dependency on player.
      */
@@ -131,7 +119,7 @@ public class PageBuilder extends InterfaceBuilder<PageBuilder> {
      * Registers a callback to be triggered when the page is dismissed.
      * The second boolean argument of the listener indicates if it was closed
      * by the player, or code that called close.
-     * 
+     * <p>
      * True = closed by code, false = closed by player.
      *
      * @param listener The listener callback.
@@ -141,7 +129,7 @@ public class PageBuilder extends InterfaceBuilder<PageBuilder> {
         this.onDismissListener = listener;
         return this;
     }
-    
+
     /**
      * Opens a custom UI page for the associated player using the provided store.
      * This method retrieves the player's page manager and creates a new instance
@@ -163,34 +151,56 @@ public class PageBuilder extends InterfaceBuilder<PageBuilder> {
      * class, then instructs the page manager to open the page.
      *
      * @param playerRefParam The player reference for whom the page is being opened.
-     * @param store The store containing the entity data required to configure and display the page.
+     * @param store          The store containing the entity data required to configure and display the page.
      * @return The created HyUIPage instance.
      */
     public HyUIPage open(@Nonnull PlayerRef playerRefParam, Store<EntityStore> store) {
         Player playerComponent = store.getComponent(playerRefParam.getReference(), Player.getComponentType());
-        PageManager pageManager = playerComponent.getPageManager();
+        return openThreadsafe(playerRefParam, playerComponent);
+    }
+
+    /**
+     * Opens a custom UI page for the specified player reference and player component.
+     * This method is thread-safe and can be called from any thread. It creates a new instance
+     * of the HyUIPage based on the specified parameters and fields defined in the
+     * class, then instructs the player's page manager to open the page.
+     *
+     * @param playerRefParam  The player reference for whom the page is being opened.
+     * @param playerComponent The player component associated with the player reference.
+     * @return The created HyUIPage instance.
+     */
+    public HyUIPage openThreadsafe(@Nonnull PlayerRef playerRefParam, Player playerComponent) {
         this.lastPage = new HyUIPage(
-                playerRefParam, 
-                lifetime, 
-                uiFile, 
-                getTopLevelElements(), 
-                editCallbacks, 
-                templateHtml, 
-                templateProcessor, 
+                playerRefParam,
+                lifetime,
+                uiFile,
+                getTopLevelElements(),
+                editCallbacks,
+                templateHtml,
+                templateProcessor,
                 runtimeTemplateUpdatesEnabled,
                 onDismissListener,
-                this);
+                this,
+                eventListeners
+        );
         this.lastPage.setRefreshRateMs(refreshRateMs);
         this.lastPage.setRefreshListener(refreshListener);
+
+        var ref = playerRefParam.getReference();
+        var store = ref.getStore();
+
+        var pageManager = playerComponent.getPageManager();
+        pageManager.openCustomPage(ref, store, this.lastPage);
+
         if (asyncImageLoadingEnabled) {
-            
             HyUIPage openedPage = this.lastPage;
+
             var world = store.getExternalData().getWorld();
             sendDynamicImageIfNeededAsync(playerRefParam, dynamicImage -> {
                 String id = dynamicImage.getId();
-                if (id == null || id.isBlank() || openedPage == null) {
+                if (id == null || id.isBlank() || openedPage == null)
                     return;
-                }
+
                 world.execute(() -> openedPage.reloadImage(id, false, false));
             });
             pageManager.openCustomPage(playerRefParam.getReference(), store, this.lastPage);
@@ -201,8 +211,10 @@ public class PageBuilder extends InterfaceBuilder<PageBuilder> {
         return this.lastPage;
     }
 
+
     /**
      * Retrieves the list of logged UI commands from the last opened page.
+     *
      * @return A list of strings representing the logged commands, or an empty list if no page has been opened.
      */
     public List<String> getCommandLog() {
@@ -215,7 +227,7 @@ public class PageBuilder extends InterfaceBuilder<PageBuilder> {
     /**
      * Reloads a dynamic image by its element ID on the last opened page.
      *
-     * @param id The ID of the dynamic image element.
+     * @param id              The ID of the dynamic image element.
      * @param shouldClearPage Whether to clear the page after reloading the image.
      */
     public void reloadImage(String id, boolean shouldClearPage) {

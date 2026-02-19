@@ -18,6 +18,7 @@
 
 package au.ellie.hyui.builders;
 
+import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.HyUIPluginLogger;
 import au.ellie.hyui.elements.UIType;
 import au.ellie.hyui.events.*;
@@ -25,6 +26,7 @@ import au.ellie.hyui.html.HtmlParser;
 import au.ellie.hyui.html.TemplateProcessor;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.function.consumer.TriConsumer;
 import com.hypixel.hytale.protocol.Asset;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -32,20 +34,14 @@ import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import au.ellie.hyui.HyUIPlugin;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.UUID;
 
 public abstract class HyUInterface implements UIContext {
+    private final Map<String, TriConsumer<Object, UIContext, CustomUIEventBindingType>> eventListener;
+    protected final Set<String> dirtyValueIds = new HashSet<>();
 
     protected String uiFile;
     protected List<UIElementBuilder<?>> elements;
@@ -54,10 +50,9 @@ public abstract class HyUInterface implements UIContext {
     protected List<String> commandLog = new ArrayList<>();
     protected String templateHtml;
     protected TemplateProcessor templateProcessor;
+    protected final InterfaceBuilder<?> rootElementBuilder;
     protected boolean hasBuilt;
     protected boolean runtimeTemplateUpdatesEnabled;
-    protected final InterfaceBuilder<?> rootElementBuilder;
-    protected final Set<String> dirtyValueIds = new HashSet<>();
 
     public HyUInterface(String uiFile,
                         List<UIElementBuilder<?>> elements,
@@ -65,10 +60,13 @@ public abstract class HyUInterface implements UIContext {
                         String templateHtml,
                         TemplateProcessor templateProcessor,
                         boolean runtimeTemplateUpdatesEnabled,
-                        InterfaceBuilder<?> rootElementBuilder) {
+                        InterfaceBuilder<?> rootElementBuilder,
+                        Map<String, TriConsumer<Object, UIContext, CustomUIEventBindingType>> eventListeners
+    ) {
         this.uiFile = uiFile;
         this.elements = elements;
         this.editCallbacks = editCallbacks;
+        this.eventListener = eventListeners;
         this.templateHtml = templateHtml;
         this.templateProcessor = templateProcessor;
         this.runtimeTemplateUpdatesEnabled = runtimeTemplateUpdatesEnabled;
@@ -97,8 +95,13 @@ public abstract class HyUInterface implements UIContext {
     }
 
     @Override
-    public void updatePage(boolean shouldClose) {}
-    
+    public void updatePage(boolean shouldClose) {
+    }
+
+    @Override
+    public void updatePageThreadsafe(Player playerComponent, boolean shouldClear) {
+    }
+
     public void build(@Nonnull Ref<EntityStore> ref,
                       @Nonnull UICommandBuilder uiCommandBuilder,
                       @Nonnull UIEventBuilder uiEventBuilder,
@@ -111,7 +114,7 @@ public abstract class HyUInterface implements UIContext {
                       @Nonnull UIEventBuilder uiEventBuilder,
                       @Nonnull Store<EntityStore> store,
                       boolean updateOnly) {
-        
+
         HyUIPlugin.getLog().logFinest("REBUILD: HyUInterface build updateOnly=" + updateOnly);
         HyUIPlugin.getLog().logFinest("Building HyUInterface" + (uiFile != null ? " from file: " + uiFile : ""));
 
@@ -276,13 +279,13 @@ public abstract class HyUInterface implements UIContext {
                     continue;
                 }
 
-                if (listener.type() == CustomUIEventBindingType.Activating || 
-                        listener.type() == CustomUIEventBindingType.Dismissing || 
+                if (listener.type() == CustomUIEventBindingType.Activating ||
+                        listener.type() == CustomUIEventBindingType.Dismissing ||
                         listener.type() == CustomUIEventBindingType.Validating) {
-                    ((UIEventListener<Void>) listener).callback().accept(null, context);
+                    ((UIEventListener<Void>) listener).callback().accept(null, context, listener.type());
                     continue;
                 }
-                if (isSlotEventRelated(listener.type()) || 
+                if (isSlotEventRelated(listener.type()) ||
                         listener.type() == CustomUIEventBindingType.SelectedTabChanged ||
                         listener.type() == CustomUIEventBindingType.MouseButtonReleased ||
                         listener.type() == CustomUIEventBindingType.MouseEntered ||
@@ -291,7 +294,7 @@ public abstract class HyUInterface implements UIContext {
                         listener.type() == CustomUIEventBindingType.RightClicking
                 ) {
                     Object payload = buildEventPayload(listener.type(), data);
-                    ((UIEventListener<Object>) listener).callback().accept(payload, context);
+                    ((UIEventListener<Object>) listener).callback().accept(payload, context, listener.type());
                     continue;
                 }
                 String rawValue = element.usesRefValue() ? data.getValue("RefValue") : data.getValue("Value");
@@ -301,21 +304,19 @@ public abstract class HyUInterface implements UIContext {
                 if (finalValue != null && userId != null && listener.type() != CustomUIEventBindingType.FocusGained) {
                     //Object previous = elementValues.get(userId);
                     //if (!Objects.equals(previous, finalValue)) {
-                        elementValues.put(userId, finalValue);
-                        dirtyValueIds.add(userId);
+                    elementValues.put(userId, finalValue);
+                    dirtyValueIds.add(userId);
                     //}
                 }
 
-                if (finalValue != null) {
-                    ((UIEventListener<Object>) listener).callback().accept(finalValue, context);
-                }
+                if (finalValue != null)
+                    ((UIEventListener<Object>) listener).callback().accept(finalValue, context, listener.type());
             }
         }
 
-        List<UIElementBuilder<?>> children = new ArrayList<>(element.children);
-        for (UIElementBuilder<?> child : children) {
+        var children = new ArrayList<>(element.children);
+        for (var child : children)
             handleElementEvents(child, data, context);
-        }
     }
 
     private boolean isSlotEventRelated(CustomUIEventBindingType type) {
@@ -345,7 +346,8 @@ public abstract class HyUInterface implements UIContext {
             case SlotClickPressWhileDragging -> SlotClickPressWhileDraggingEventData.from(data);
             case SelectedTabChanged -> SelectedTabChangedEventData.from(data);
             // Only RightClicking and DoubleClicking has event data, but we wrap it in the same event data.
-            case MouseButtonReleased, MouseEntered, MouseExited, DoubleClicking, RightClicking -> MouseEventData.from(data);
+            case MouseButtonReleased, MouseEntered, MouseExited, DoubleClicking, RightClicking ->
+                    MouseEventData.from(data);
             default -> null;
         };
     }
@@ -450,10 +452,10 @@ public abstract class HyUInterface implements UIContext {
             //return;
         }
         HyUIPlugin.getLog().logFinest("REBUILD: Template refresh");
-        HtmlParser parser = new HtmlParser();
-        String processedHtml = templateProcessor.process(templateHtml, context);
+        HtmlParser parser = new HtmlParser(eventListener);
+        String processedHtml = templateProcessor.setTemplate(templateHtml).process(context);
         List<UIElementBuilder<?>> updatedElements = parser.parse(processedHtml);
-        
+
         this.elements = mergeElementLists(this.elements, updatedElements);
         applyRuntimeValues(this.elements, context);
         reapplyTabSelections(this.elements, context);
@@ -463,7 +465,7 @@ public abstract class HyUInterface implements UIContext {
     }
 
     private List<UIElementBuilder<?>> mergeElementLists(List<UIElementBuilder<?>> currentElements,
-                                                       List<UIElementBuilder<?>> updatedElements) {
+                                                        List<UIElementBuilder<?>> updatedElements) {
 /*
         for (var e : updatedElements) {
             HyUIPlugin.getLog().logInfo("UPDATED ELEMENT: \n\n" + e);
@@ -593,10 +595,10 @@ public abstract class HyUInterface implements UIContext {
             // Generally the resource html path is more specific than the asset name.
             if (pageBuilder.htmlFilePath.contains(asset.name)) {
                 var normalizedHtmlPath = pageBuilder.htmlFilePath.replace("/Common/UI/Custom/", "");
-                var style = pageBuilder.uiStyleFilePath != null ? 
+                var style = pageBuilder.uiStyleFilePath != null ?
                         pageBuilder.uiStyleFilePath.contains("hywind") ? UIType.HYWIND : UIType.NONE
                         : UIType.NONE;
-                
+
                 // We need to "reload" the changed asset.
                 // Other information such as events is still captured on the page builder.
                 pageBuilder.elementRegistry.clear();
@@ -604,10 +606,10 @@ public abstract class HyUInterface implements UIContext {
                     pageBuilder.loadHtml(
                             normalizedHtmlPath,
                             pageBuilder.templateProcessor, style
-                            
+
                     );
                 } else {
-                    pageBuilder.loadHtml(normalizedHtmlPath, 
+                    pageBuilder.loadHtml(normalizedHtmlPath,
                             style);
                 }
                 // We CANNOT "reload" html from inline stuff, so we are stuck here with just opening the page.
@@ -652,22 +654,19 @@ public abstract class HyUInterface implements UIContext {
     public boolean willReopenFromAsset(Player player, PlayerRef playerRef, Store<EntityStore> store, Asset asset) {
         if (rootElementBuilder instanceof PageBuilder pageBuilder) {
             // TODO: EndsWith or some parsing?
-            if (uiFile != null && asset.name.contains(uiFile)) {
+            if (uiFile != null && asset.name.contains(uiFile))
                 return true;
-            }
+
             // Generally the resource html path is more specific than the asset name.
-            if (pageBuilder.htmlFilePath.contains(asset.name)) {
-                return true;
-            }
+            return pageBuilder.htmlFilePath != null && pageBuilder.htmlFilePath.contains(asset.name);
         } else if (rootElementBuilder instanceof HudBuilder hudBuilder) {
-            if (uiFile != null && asset.name.contains(uiFile)) {
+            if (uiFile != null && asset.name.contains(uiFile))
                 return true;
-            }
+
             // Generally the resource html path is more specific than the asset name.
-            if (hudBuilder.htmlFilePath.contains(asset.name)) {
-                return true;
-            }
+            return hudBuilder.htmlFilePath != null && hudBuilder.htmlFilePath.contains(asset.name);
         }
+
         return false;
     }
 }

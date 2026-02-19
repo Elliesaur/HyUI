@@ -37,7 +37,7 @@ public class TabContentHandler implements TagHandler {
     public UIElementBuilder<?> handle(Element element, HtmlParser parser) {
         TabContentBuilder builder = TabContentBuilder.tabContent();
 
-        applyCommonAttributes(builder, element);
+        applyCommonAttributes(builder, element, parser);
 
         if (element.hasAttr("data-hyui-tab-id")) {
             builder.withTabId(element.attr("data-hyui-tab-id"));

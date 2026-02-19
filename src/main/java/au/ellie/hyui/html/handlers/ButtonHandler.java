@@ -139,7 +139,7 @@ public class ButtonHandler implements TagHandler {
             applyItemSlotButtonAttributes(itemSlotButtonBuilder, element);
         }
         applyButtonStateAttributes(builder, element);
-        applyCommonAttributes(builder, element);
+        applyCommonAttributes(builder, element, parser);
         applyNativeTabButtonAttributes(builder, element);
 
         return builder;
@@ -334,7 +334,7 @@ public class ButtonHandler implements TagHandler {
                             }
                             hasStyle = true;
                         }
-                        
+
                     }
                     break;
                 case "font-style":

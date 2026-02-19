@@ -19,39 +19,35 @@
 package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
-import au.ellie.hyui.theme.Theme;
+import au.ellie.hyui.elements.BackgroundSupported;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventListener;
-import au.ellie.hyui.elements.BackgroundSupported;
+import au.ellie.hyui.theme.Theme;
 import au.ellie.hyui.types.HyUIBsonSerializable;
-import au.ellie.hyui.types.LabelSpan;
 import au.ellie.hyui.types.MouseWheelScrollBehaviourType;
 import au.ellie.hyui.types.TextTooltipStyle;
 import au.ellie.hyui.utils.BsonDocumentHelper;
 import au.ellie.hyui.utils.PropertyBatcher;
-import com.hypixel.hytale.codec.EmptyExtraInfo;
+import com.hypixel.hytale.function.consumer.TriConsumer;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.ui.Value;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+
 /**
- * A builder class for constructing UI elements with a hierarchical structure and configurable 
- * properties. The {@code UIElementBuilder} class provides an API for specifying attributes such 
- * as styles, visibility, children, tooltips, custom callbacks, and more. This class is intended 
+ * A builder class for constructing UI elements with a hierarchical structure and configurable
+ * properties. The {@code UIElementBuilder} class provides an API for specifying attributes such
+ * as styles, visibility, children, tooltips, custom callbacks, and more. This class is intended
  * to be extended and further customized.
  */
 public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements BackgroundSupported<T> {
@@ -110,7 +106,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
     );
 
     private static int idCounter = 0;
-    
+
     protected boolean isUpdateOnly = false;
 
     public UIElementBuilder(String elementPath, String typeSelector) {
@@ -134,7 +130,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
     protected boolean preserveChildrenOnTemplateMerge() {
         return false;
     }
-    
+
     public T withUiFile(String uiFilePath) {
         this.uiFilePath = uiFilePath;
         return (T) this;
@@ -144,7 +140,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
         this.children.add(child);
         return (T) this;
     }
-    
+
     public String getEffectiveId() {
         return id;
     }
@@ -212,7 +208,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
     /**
      * Parses the raw value received from a UI event into the appropriate type for this element.
      * Defaults to returning the raw value as a string.
-     * 
+     *
      * @param rawValue The raw string value from the UI event.
      * @return The parsed value object, or null if parsing fails or is not supported.
      */
@@ -269,6 +265,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
 
     /**
      * Deprecated. For removal.
+     *
      * @param style the style to apply to the element
      * @return the builder instance for method chaining
      */
@@ -281,7 +278,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
 
     /**
      * Applies the specified style to the current UI element if styling is supported.
-     * 
+     *
      * @param style the {@code HyUIStyle} instance to be applied to the UI element
      * @return the builder instance of type {@code T} for method chaining
      */
@@ -309,7 +306,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
 
     /**
      * Sets the parent selector for the UI element being built.
-     * The parent selector specifies the selector of the parent element 
+     * The parent selector specifies the selector of the parent element
      * in which this element will be nested.
      *
      * @param parentSelector the selector of the parent element
@@ -624,7 +621,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
      *
      * @param callback a {@code BiConsumer} that accepts a {@code UICommandBuilder} instance
      *                 and a {@code String} as parameters. The {@code UICommandBuilder}
-     *                 is used to modify the UI commands, and the {@code String} represents 
+     *                 is used to modify the UI commands, and the {@code String} represents
      *                 the element's path or identifier.
      * @return the current builder instance of type {@code T} for method chaining
      */
@@ -664,18 +661,18 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
                     StringBuilder paddingMarkup = new StringBuilder();
                     if (padding.getLeft() != null) paddingMarkup.append("Left: ").append(padding.getLeft());
                     if (padding.getTop() != null) {
-                        if (paddingMarkup.length() > 0) paddingMarkup.append(", ");
+                        if (!paddingMarkup.isEmpty()) paddingMarkup.append(", ");
                         paddingMarkup.append("Top: ").append(padding.getTop());
                     }
                     if (padding.getRight() != null) {
-                        if (paddingMarkup.length() > 0) paddingMarkup.append(", ");
+                        if (!paddingMarkup.isEmpty()) paddingMarkup.append(", ");
                         paddingMarkup.append("Right: ").append(padding.getRight());
                     }
                     if (padding.getBottom() != null) {
-                        if (paddingMarkup.length() > 0) paddingMarkup.append(", ");
+                        if (!paddingMarkup.isEmpty()) paddingMarkup.append(", ");
                         paddingMarkup.append("Bottom: ").append(padding.getBottom());
                     }
-                    if (paddingMarkup.length() > 0) {
+                    if (!paddingMarkup.isEmpty()) {
                         inlineMarkup.append("Padding: (").append(paddingMarkup).append("); ");
                     }
                 }
@@ -716,8 +713,8 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
                     // If it's a file but NOT wrapped, we need to set the ID of the root element in that file
                     // if it's not already correct.
                     if (!wrapInGroup && !id.equals(typeSelector != null ? typeSelector.replace("#", "") : "")) {
-                         // We might need to rename the element we just appended.
-                         // Let's assume for now that if it's not wrapped, it's a singleton or handled by user.
+                        // We might need to rename the element we just appended.
+                        // Let's assume for now that if it's not wrapped, it's a singleton or handled by user.
                     }
                 } else if (hasCustomInlineContent()) {
                     String inline = generateCustomInlineContent();
@@ -729,7 +726,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
                     commands.appendInline(parentSelector, inline);
                 }
             }
-            
+
             if (anchor != null) {
                 HyUIPlugin.getLog().logFinest("Setting Anchor for " + selector);
                 commands.setObject(selector + ".Anchor", anchor.toHytaleAnchor());
@@ -748,7 +745,8 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
                     if (padding.getLeft() != null) commands.set(groupSelector + ".Padding.Left", padding.getLeft());
                     if (padding.getTop() != null) commands.set(groupSelector + ".Padding.Top", padding.getTop());
                     if (padding.getRight() != null) commands.set(groupSelector + ".Padding.Right", padding.getRight());
-                    if (padding.getBottom() != null) commands.set(groupSelector + ".Padding.Bottom", padding.getBottom());
+                    if (padding.getBottom() != null)
+                        commands.set(groupSelector + ".Padding.Bottom", padding.getBottom());
                 }
             }
 
@@ -840,7 +838,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
                 HyUIPlugin.getLog().logFinest("Setting Overscroll for " + selector);
                 commands.set(selector + ".Overscroll", overscroll);
             }
-            
+
             // Cannot set for checkbox builder.
             if (typedStyle != null && !(this instanceof CheckBoxBuilder) && !(hyUIStyle != null && hyUIStyle.getStyleReference() != null)) {
                 BsonDocumentHelper doc = PropertyBatcher.beginSet();
@@ -967,23 +965,22 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
     }
 
     @SuppressWarnings("unchecked")
-    public <V> T addEventListener(CustomUIEventBindingType type, Class<V> valueClass, Consumer<V> callback) {
-        return addEventListenerInternal(type, callback);
+    public T addEventListener(CustomUIEventBindingType type, Runnable callback) {
+        return addEventListenerWithContext(type, (val, _, _) -> callback.run());
     }
 
     @SuppressWarnings("unchecked")
-    public <V> T addEventListenerWithContext(CustomUIEventBindingType type, Class<V> valueClass, BiConsumer<V, UIContext> callback) {
-        return addEventListenerInternal(type, callback);
+    public <V> T addEventListenerWithContext(CustomUIEventBindingType type, Consumer<V> callback) {
+        return addEventListenerWithContext(type, (val, _, _) -> ((Consumer<Object>) callback).accept(val));
     }
 
     @SuppressWarnings("unchecked")
-    protected <V> T addEventListenerInternal(CustomUIEventBindingType type, Consumer<V> callback) {
-        this.listeners.add(new UIEventListener<>(type, (val, ctx) -> ((Consumer<Object>) callback).accept(val)));
-        return (T) this;
+    public <V> T addEventListenerWithContext(CustomUIEventBindingType type, BiConsumer<V, UIContext> callback) {
+        return addEventListenerWithContext(type, (val, context, _) -> ((BiConsumer<Object, UIContext>) callback).accept(val, context));
     }
 
     @SuppressWarnings("unchecked")
-    protected <V> T addEventListenerInternal(CustomUIEventBindingType type, BiConsumer<V, UIContext> callback) {
+    public <V> T addEventListenerWithContext(CustomUIEventBindingType type, TriConsumer<V, UIContext, CustomUIEventBindingType> callback) {
         this.listeners.add(new UIEventListener<>(type, callback));
         return (T) this;
     }
@@ -1001,10 +998,10 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
         if (id != null && !wrapInGroup) {
             sb.append(" #").append(id);
         }
-        
+
         sb.append(" {");
         sb.append("}");
-        
+
         return sb.toString();
     }
 
@@ -1019,8 +1016,8 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
      * Applies the provided style settings to the given command builder while handling unsupported properties.
      *
      * @param commands The UICommandBuilder used to set style properties.
-     * @param prefix A string used as a prefix for property keys when applying the styles.
-     * @param style An instance of HyUIStyle containing the properties to be applied to the command builder.
+     * @param prefix   A string used as a prefix for property keys when applying the styles.
+     * @param style    An instance of HyUIStyle containing the properties to be applied to the command builder.
      */
     protected void applyStyle(UICommandBuilder commands, String prefix, HyUIStyle style, BsonDocumentHelper doc) {
         if (style.getStyleReference() != null) {
@@ -1032,7 +1029,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
         boolean whitelist = isStyleWhitelist();
         Set<String> supported = whitelist ? getSupportedStyleProperties() : Set.of();
         java.util.function.Predicate<String> isAllowed = property -> !whitelist || supported.contains(property);
-        
+
         if (style.getFontSize() != null && isAllowed.test("FontSize")) {
             HyUIPlugin.getLog().logFinest("Setting Style FontSize: " + style.getFontSize() + " for " + prefix);
             doc.set("FontSize", style.getFontSize().doubleValue());
@@ -1082,7 +1079,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
             doc.set("Alignment", style.getAlignment().name());
         }
     }
-    
+
     protected void applyRawStyleProperties(UICommandBuilder commands, String prefix, HyUIStyle style) {
         boolean whitelist = isStyleWhitelist();
         Set<String> supported = whitelist ? getSupportedStyleProperties() : Set.of();
@@ -1103,18 +1100,30 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
             }
         });
     }
+
     protected String getWrappingGroupId() {
         return id;
     }
 
     /**
+     * Maps the provided event binding type to a potentially different type. This method can be overridden
+     * by subclasses to provide custom mapping logic for event types. By default, it returns the input type unchanged.
+     *
+     * @param type the original event binding type
+     * @return the mapped event binding type
+     */
+    protected CustomUIEventBindingType getEventTypeMapped(CustomUIEventBindingType type) {
+        return type;
+    }
+
+    /**
      * Builds the child elements of the current UI element and registers their commands
-     * and events within the provided builders. If the current element has a selector, 
+     * and events within the provided builders. If the current element has a selector,
      * each child is nested inside that selector during the build process.
      *
-     * @param commands an instance of {@code UICommandBuilder} used for constructing 
+     * @param commands an instance of {@code UICommandBuilder} used for constructing
      *                 UI commands associated with the child elements
-     * @param events   an instance of {@code UIEventBuilder} used for setting up event 
+     * @param events   an instance of {@code UIEventBuilder} used for setting up event
      *                 handling for the child elements
      */
     protected void buildChildren(UICommandBuilder commands, UIEventBuilder events, boolean updateOnly) {
@@ -1137,7 +1146,7 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
         for (BiConsumer<UICommandBuilder, String> callback : editBeforeCallbacks) {
             callback.accept(commands, selector);
         }
-        
+
         onBuild(commands, events);
         buildChildren(commands, events, updateOnly);
 

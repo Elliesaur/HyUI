@@ -59,7 +59,7 @@ public class HyvatarHandler implements TagHandler {
             builder.withCape(element.attr("cape"));
         }
 
-        applyCommonAttributes(builder, element);
+        applyCommonAttributes(builder, element, parser);
         return builder;
     }
 }

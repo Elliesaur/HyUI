@@ -49,7 +49,7 @@ public class ItemSlotHandler implements TagHandler {
                     element.attr("data-hyui-show-quantity")));
         }
 
-        applyCommonAttributes(builder, element);
+        applyCommonAttributes(builder, element, parser);
         return builder;
     }
 }

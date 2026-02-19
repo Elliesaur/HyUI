@@ -19,10 +19,13 @@
 package au.ellie.hyui.html;
 
 import au.ellie.hyui.HyUIPlugin;
-import au.ellie.hyui.builders.LabelBuilder;
 import au.ellie.hyui.builders.InterfaceBuilder;
+import au.ellie.hyui.builders.LabelBuilder;
 import au.ellie.hyui.builders.UIElementBuilder;
+import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.html.handlers.*;
+import com.hypixel.hytale.function.consumer.TriConsumer;
+import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -31,15 +34,19 @@ import org.jsoup.nodes.TextNode;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A modular parser that converts HTML/XML-like language to HyUI builders.
  */
 public class HtmlParser {
+    private final Map<String, TriConsumer<Object, UIContext, CustomUIEventBindingType>> eventListener;
     private final List<TagHandler> handlers = new ArrayList<>();
     private TemplateProcessor templateProcessor;
-    
-    public HtmlParser() {
+
+    public HtmlParser(Map<String, TriConsumer<Object, UIContext, CustomUIEventBindingType>> eventListener) {
+        this.eventListener = eventListener;
+
         // Register default handlers
         registerHandler(new ItemGridHandler());
         registerHandler(new TabContentHandler());
@@ -93,7 +100,7 @@ public class HtmlParser {
     public TemplateProcessor getTemplateProcessor() {
         return templateProcessor;
     }
-    
+
     /**
      * Parses the HTML string and adds elements to the InterfaceBuilder.
      *
@@ -117,7 +124,7 @@ public class HtmlParser {
         // Apply template processing if a processor is set
         String processedHtml = html;
         if (templateProcessor != null) {
-            processedHtml = templateProcessor.process(html);
+            processedHtml = templateProcessor.setTemplate(html).process();
             HyUIPlugin.getLog().logFinest("Processed template: " + processedHtml);
         }
         Document doc = Jsoup.parseBodyFragment(processedHtml);
@@ -136,10 +143,10 @@ public class HtmlParser {
         List<UIElementBuilder<?>> builders = new ArrayList<>();
         for (Node child : parent.childNodes()) {
             HyUIPlugin.getLog().logFinest("Parsing child node: " + child.nodeName());
-            
+
             if (child instanceof Element) {
                 HyUIPlugin.getLog().logFinest("Parsing ELEMENT node: " + child.nodeName());
-                
+
                 UIElementBuilder<?> builder = handleElement((Element) child);
                 if (builder != null) {
                     HyUIPlugin.getLog().logFinest("Parsed element: " + builder.getClass().getSimpleName());
@@ -162,5 +169,9 @@ public class HtmlParser {
             }
         }
         return null;
+    }
+
+    public TriConsumer<Object, UIContext, CustomUIEventBindingType> getEventByName(String value) {
+        return eventListener != null ? eventListener.get(value) : null;
     }
 }

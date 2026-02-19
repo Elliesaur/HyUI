@@ -89,7 +89,7 @@ public class SelectHandler implements TagHandler {
             }
         }
 
-        applyCommonAttributes(builder, element);
+        applyCommonAttributes(builder, element, parser);
         return builder;
     }
 }

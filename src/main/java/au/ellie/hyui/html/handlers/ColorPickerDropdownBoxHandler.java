@@ -18,11 +18,11 @@
 
 package au.ellie.hyui.html.handlers;
 
-import au.ellie.hyui.types.ColorFormat;
 import au.ellie.hyui.builders.ColorPickerDropdownBoxBuilder;
 import au.ellie.hyui.builders.UIElementBuilder;
 import au.ellie.hyui.html.HtmlParser;
 import au.ellie.hyui.html.TagHandler;
+import au.ellie.hyui.types.ColorFormat;
 import org.jsoup.nodes.Element;
 
 public class ColorPickerDropdownBoxHandler implements TagHandler {
@@ -60,17 +60,17 @@ public class ColorPickerDropdownBoxHandler implements TagHandler {
 
         if (element.hasAttr("data-hyui-reset-transparency-when-changing-color")) {
             builder.withResetTransparencyWhenChangingColor(
-                Boolean.parseBoolean(element.attr("data-hyui-reset-transparency-when-changing-color")));
+                    Boolean.parseBoolean(element.attr("data-hyui-reset-transparency-when-changing-color")));
         } else if (element.hasAttr("reset-transparency-when-changing-color")) {
             builder.withResetTransparencyWhenChangingColor(
-                Boolean.parseBoolean(element.attr("reset-transparency-when-changing-color")));
+                    Boolean.parseBoolean(element.attr("reset-transparency-when-changing-color")));
         }
 
         if (!element.hasClass("default-style")) {
             // Force default style and override after.
             element.addClass("default-style");
         }
-        applyCommonAttributes(builder, element);
+        applyCommonAttributes(builder, element, parser);
         return builder;
     }
 }

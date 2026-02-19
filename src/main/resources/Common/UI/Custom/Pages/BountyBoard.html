@@ -22,9 +22,7 @@
             <p id="summary" style="padding: 4;">{{$summary}}</p>
 
             <div id="list" style="layout-mode: Top; padding: 6;">
-                {{#each bounties}}
-                {{@bountyCard:title={{$title}},level={{$level}},rarity={{$rarity}}}}
-                {{/each}}
+                <bountyCard for="$bounties" title={{$title}} level={{$level}} rarity={{$rarity}}/>
             </div>
         </div>
     </div>

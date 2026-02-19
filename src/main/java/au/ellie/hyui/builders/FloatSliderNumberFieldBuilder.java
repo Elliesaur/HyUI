@@ -19,9 +19,9 @@
 package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
+import au.ellie.hyui.elements.UIElements;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventActions;
-import au.ellie.hyui.elements.UIElements;
 import au.ellie.hyui.types.InputFieldStyle;
 import au.ellie.hyui.types.SliderStyle;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
@@ -94,11 +94,11 @@ public class FloatSliderNumberFieldBuilder extends UIElementBuilder<FloatSliderN
     }
 
     public FloatSliderNumberFieldBuilder addEventListener(CustomUIEventBindingType type, Consumer<Float> callback) {
-        return addEventListener(type, Float.class, callback);
+        return addEventListenerWithContext(type, callback);
     }
 
     public FloatSliderNumberFieldBuilder addEventListener(CustomUIEventBindingType type, BiConsumer<Float, UIContext> callback) {
-        return addEventListenerWithContext(type, Float.class, callback);
+        return addEventListenerWithContext(type, callback);
     }
 
     @Override
@@ -177,7 +177,8 @@ public class FloatSliderNumberFieldBuilder extends UIElementBuilder<FloatSliderN
         }
 
         if (listeners.isEmpty()) {
-            addEventListener(CustomUIEventBindingType.ValueChanged, (_, _) -> {});
+            addEventListener(CustomUIEventBindingType.ValueChanged, (_, _) -> {
+            });
         }
         listeners.forEach(listener -> {
             if (listener.type() == CustomUIEventBindingType.ValueChanged) {

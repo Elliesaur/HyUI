@@ -39,7 +39,7 @@ public class TextAreaHandler implements TagHandler {
     public UIElementBuilder<?> handle(Element element, HtmlParser parser) {
         TextFieldBuilder builder = TextFieldBuilder.multilineTextField();
         applyTextAreaAttributes(builder, element);
-        applyCommonAttributes(builder, element);
+        applyCommonAttributes(builder, element, parser);
         return builder;
     }
 

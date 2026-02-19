@@ -39,9 +39,9 @@ public class ItemIconHandler implements TagHandler {
         } else if (element.hasAttr("src")) {
             builder.withItemId(element.attr("src"));
         }
-        
-        applyCommonAttributes(builder, element);
-        
+
+        applyCommonAttributes(builder, element, parser);
+
         return builder;
     }
 }

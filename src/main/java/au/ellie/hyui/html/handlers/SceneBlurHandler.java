@@ -34,7 +34,7 @@ public class SceneBlurHandler implements TagHandler {
     @Override
     public UIElementBuilder<?> handle(Element element, HtmlParser parser) {
         SceneBlurBuilder builder = SceneBlurBuilder.sceneBlur();
-        applyCommonAttributes(builder, element);
+        applyCommonAttributes(builder, element, parser);
         return builder;
     }
 }

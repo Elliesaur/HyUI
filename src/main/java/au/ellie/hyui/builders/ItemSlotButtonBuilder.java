@@ -20,14 +20,15 @@ package au.ellie.hyui.builders;
 
 import au.ellie.hyui.HyUIPlugin;
 import au.ellie.hyui.elements.LayoutModeSupported;
+import au.ellie.hyui.elements.UIElements;
 import au.ellie.hyui.events.MouseEventData;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.events.UIEventActions;
-import au.ellie.hyui.elements.UIElements;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
+
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -35,7 +36,7 @@ import java.util.function.Consumer;
 /**
  * Builder for ItemSlotButton UI elements.
  */
-public class ItemSlotButtonBuilder extends UIElementBuilder<ItemSlotButtonBuilder> 
+public class ItemSlotButtonBuilder extends UIElementBuilder<ItemSlotButtonBuilder>
         implements LayoutModeSupported<ItemSlotButtonBuilder> {
     private String itemId;
     private String layoutMode;
@@ -61,95 +62,95 @@ public class ItemSlotButtonBuilder extends UIElementBuilder<ItemSlotButtonBuilde
     }
 
     public ItemSlotButtonBuilder addEventListener(CustomUIEventBindingType type, Consumer<Void> callback) {
-        return addEventListener(type, Void.class, callback);
+        return addEventListenerWithContext(type, callback);
     }
 
     public ItemSlotButtonBuilder addEventListener(CustomUIEventBindingType type, BiConsumer<Void, UIContext> callback) {
-        return addEventListenerWithContext(type, Void.class, callback);
+        return addEventListenerWithContext(type, callback);
     }
 
     /**
      * Adds an event listener for the DoubleClicking event.
      */
     public ItemSlotButtonBuilder onDoubleClicking(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.DoubleClicking, callback);
     }
 
     /**
      * Adds an event listener for the DoubleClicking event.
      */
     public ItemSlotButtonBuilder onDoubleClicking(Consumer<MouseEventData> callback) {
-        return addEventListener(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.DoubleClicking, callback);
     }
 
     /**
      * Adds an event listener for the DoubleClicking event with context.
      */
     public ItemSlotButtonBuilder onDoubleClicking(BiConsumer<MouseEventData, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.DoubleClicking, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.DoubleClicking, callback);
     }
 
     /**
      * Adds an event listener for the RightClicking event.
      */
     public ItemSlotButtonBuilder onRightClicking(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.RightClicking, callback);
     }
 
     /**
      * Adds an event listener for the RightClicking event.
      */
     public ItemSlotButtonBuilder onRightClicking(Consumer<MouseEventData> callback) {
-        return addEventListener(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, callback);
     }
 
     /**
      * Adds an event listener for the RightClicking event with context.
      */
     public ItemSlotButtonBuilder onRightClicking(BiConsumer<MouseEventData, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.RightClicking, callback);
     }
 
     /**
      * Adds an event listener for the MouseEntered event.
      */
     public ItemSlotButtonBuilder onMouseEntered(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.MouseEntered, MouseEventData.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.MouseEntered, callback);
     }
 
     /**
      * Adds an event listener for the MouseEntered event.
      */
     public ItemSlotButtonBuilder onMouseEntered(Consumer<MouseEventData> callback) {
-        return addEventListener(CustomUIEventBindingType.MouseEntered, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseEntered, callback);
     }
 
     /**
      * Adds an event listener for the MouseEntered event with context.
      */
     public ItemSlotButtonBuilder onMouseEntered(BiConsumer<MouseEventData, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.MouseEntered, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseEntered, callback);
     }
 
     /**
      * Adds an event listener for the MouseExited event.
      */
     public ItemSlotButtonBuilder onMouseExited(Runnable callback) {
-        return addEventListener(CustomUIEventBindingType.MouseExited, MouseEventData.class, v -> callback.run());
+        return addEventListener(CustomUIEventBindingType.MouseExited, callback);
     }
 
     /**
      * Adds an event listener for the MouseExited event.
      */
     public ItemSlotButtonBuilder onMouseExited(Consumer<MouseEventData> callback) {
-        return addEventListener(CustomUIEventBindingType.MouseExited, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseExited, callback);
     }
 
     /**
      * Adds an event listener for the MouseExited event with context.
      */
     public ItemSlotButtonBuilder onMouseExited(BiConsumer<MouseEventData, UIContext> callback) {
-        return addEventListenerWithContext(CustomUIEventBindingType.MouseExited, MouseEventData.class, callback);
+        return addEventListenerWithContext(CustomUIEventBindingType.MouseExited, callback);
     }
 
     @Override
@@ -180,7 +181,7 @@ public class ItemSlotButtonBuilder extends UIElementBuilder<ItemSlotButtonBuilde
         if (selector == null) return;
 
         applyLayoutMode(commands, selector);
-        
+
         if (layoutMode != null) {
             HyUIPlugin.getLog().logFinest("Setting LayoutMode: " + layoutMode + " for " + selector);
             commands.set(selector + ".LayoutMode", layoutMode);

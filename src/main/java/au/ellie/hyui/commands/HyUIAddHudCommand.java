@@ -21,15 +21,11 @@ package au.ellie.hyui.commands;
 import au.ellie.hyui.builders.HudBuilder;
 import au.ellie.hyui.builders.HyUIHud;
 import au.ellie.hyui.builders.LabelBuilder;
-import au.ellie.hyui.HyUIPluginLogger;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.protocol.GameMode;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
-import com.hypixel.hytale.server.core.command.system.basecommands.AbstractAsyncCommand;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
-import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 
@@ -37,9 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import static com.hypixel.hytale.server.core.command.commands.player.inventory.InventorySeeCommand.MESSAGE_COMMANDS_ERRORS_PLAYER_NOT_IN_WORLD;
-
-public class HyUIAddHudCommand extends AbstractAsyncCommand {
+public class HyUIAddHudCommand extends AbstractDevCommand {
 
     public static final List<HyUIHud> HUD_INSTANCES = new ArrayList<>();
 
@@ -47,56 +41,33 @@ public class HyUIAddHudCommand extends AbstractAsyncCommand {
 
     public HyUIAddHudCommand() {
         super("add", "Adds a new HTML HUD");
-        if (!HyUIPluginLogger.IS_DEV) {
-            return;
-        }
-        this.setPermissionGroup(GameMode.Adventure);
     }
 
     @NonNullDecl
-    @Override
-    protected CompletableFuture<Void> executeAsync(CommandContext commandContext) {
-        if (!HyUIPluginLogger.IS_DEV) {
-            return CompletableFuture.completedFuture(null);
-        }
-        var sender = commandContext.sender();
-        if (sender instanceof Player player) {
-            Ref<EntityStore> ref = player.getReference();
-            if (ref != null && ref.isValid()) {
-                Store<EntityStore> store = ref.getStore();
-                World world = store.getExternalData().getWorld();
-                return CompletableFuture.runAsync(() -> {
-                    PlayerRef playerRef = store.getComponent(ref, PlayerRef.getComponentType());
-                    if (playerRef != null) {
-                        addHud(playerRef, store);
-                    }
-                }, world);
-            } else {
-                commandContext.sendMessage(MESSAGE_COMMANDS_ERRORS_PLAYER_NOT_IN_WORLD);
-                return CompletableFuture.completedFuture(null);
-            }
-        } else {
-            return CompletableFuture.completedFuture(null);
-        }
+    protected CompletableFuture<Void> executeDev(Player player, Ref<EntityStore> ref, CommandContext commandContext) {
+        var store = ref.getStore();
+        var world = store.getExternalData().getWorld();
+
+        return CompletableFuture.runAsync(() -> {
+            var playerRef = store.getComponent(ref, PlayerRef.getComponentType());
+            if (playerRef != null)
+                addHud(playerRef, store);
+        }, world);
     }
 
     private void addHud(PlayerRef playerRef, Store<EntityStore> store) {
-        if (!HyUIPluginLogger.IS_DEV) {
-            return;
-        }
-        String html = """
-            <div id="Test" style=" background-color: #000000; anchor-width: 280; anchor-height: 240; anchor-right: 1; anchor-top: 150">
-                <div style="layout-mode: top">
-                    <label>
-                        HUD Instance #""" + (HUD_INSTANCES.size() + 1) + """
-                    </label>
-                    <label id="Hello">Initial Text</label>
+        var html = """
+                <div id="Test" style=" background-color: #000000; anchor-width: 280; anchor-height: 240; anchor-right: 1; anchor-top: 150">
+                    <div style="layout-mode: top">
+                        <label>
+                            HUD Instance #""" + (HUD_INSTANCES.size() + 1) + """
+                        </label>
+                        <label id="Hello">Initial Text</label>
+                    </div>
                 </div>
-            </div>
-            """;
+                """;
 
         if (TEST == null) {
-
             /*HyUIHud hud = HudBuilder.detachedHud()
                     .fromFile("Pages/replicate.ui")
                     .editElement(uiCommandBuilder -> {
@@ -110,6 +81,7 @@ public class HyUIAddHudCommand extends AbstractAsyncCommand {
 
             TEST = hud;*/
         }
+
         var hud2 = HudBuilder.detachedHud()
                 .fromHtml(html)
                 .withRefreshRate(5000)
@@ -118,10 +90,12 @@ public class HyUIAddHudCommand extends AbstractAsyncCommand {
                         builder.withText("Hello, World! " + System.currentTimeMillis());
                     });
                     //playerRef.sendMessage(Message.raw("HUD Refreshed!"));
-                })
-                .show(playerRef, store);
-        hud2.getById("Hello", LabelBuilder.class).ifPresent((builder) -> {
-            builder.withText("Hello, BAD! " + System.currentTimeMillis());
-        });
+                }).show(playerRef);
+
+        hud2.getById("Hello", LabelBuilder.class).ifPresent((builder) ->
+                builder.withText("Hello, BAD! " + System.currentTimeMillis())
+        );
+
+        HUD_INSTANCES.add(hud2);
     }
 }
