@@ -121,7 +121,10 @@ public interface Node {
                 var local = new HashMap<String, Integer>();
                 for (var node : branch.body) {
                     switch (node) {
-                        case ComponentBlockNode c -> local.put(c.tag, local.getOrDefault(c.tag, 0) + 1);
+                        case ComponentBlockNode c -> {
+                            if (!c.tag.equals(Symbols.HTML_TAG_TEMPLATE))
+                                local.put(c.tag, local.getOrDefault(c.tag, 0) + 1);
+                        }
                         case SlotBlockNode s -> local.put(s.name, local.getOrDefault(s.name, 0) + 1);
                         default -> {
                             // Ignore other nodes

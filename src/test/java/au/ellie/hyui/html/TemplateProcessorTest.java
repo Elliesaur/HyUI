@@ -761,7 +761,7 @@ class TemplateProcessorTest {
         @ParameterizedTest
         @CsvSource({
                 "true, <div>Visible</div>",
-                "false, "
+                "false, <div style=\"display:none\"></div>"
         })
         @DisplayName("Should evaluate content based on condition")
         void renderWhenTrue(boolean show, String excected) {
@@ -1437,7 +1437,7 @@ class TemplateProcessorTest {
 
             assertEquals(normalize("""
                     <div>First</div>
-                    <div>Third</div>
+                    <div style="display:none"></div><div>Third</div>
                     """), processor.process());
         }
 
@@ -1738,7 +1738,7 @@ class TemplateProcessorTest {
                     """);
             assertEquals(normalize("""
                     <div style="background: red">
-                        <h1>Button A</h1><h1>Button B <hidden>secret</hidden></h1><h1>Button C</h1>
+                        <h1>Button A <hidden style="display:none"></hidden></h1><h1>Button B <hidden>secret</hidden></h1><h1>Button C <hidden style="display:none"></hidden></h1>
                     </div>
                     """), processor.process());
         }
