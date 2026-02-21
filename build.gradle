@@ -48,7 +48,7 @@ hytale {
         // Pre-release 2026.02.11-891910c77
         // Release 2026.02.17-255364b8e, 2026.02.18-f3b8fff95
         //serverVersion = "2026.02.18-f3b8fff95"
-        serverVersion = "*"
+        serverVersion = "2026.02.19-ad6f58ec8"
         author(author_name, "ellie@ellie.au", "https://ellie.au")
         optionalDependencies.put("Buuz135:MultipleHUD", "*");
     }
@@ -92,6 +92,8 @@ tasks.register('releaseJar', Jar) {
     from(zipTree(shadowJarTask.archiveFile)) {
         exclude(
                 'Common/UI/Custom/Pages/*.html',
+                'Common/UI/Custom/Pages/ComplexTest.ui',
+                'Common/UI/Custom/Pages/SimpleTest.ui',
                 'Common/UI/Custom/*.png',
                 'au/ellie/hyui/commands/**',
         )

@@ -153,10 +153,11 @@ public class HyUIStyle {
     }
 
     public HyUIStyle setFontName(String fontName) {
-        String normalized = normalizeFontName(fontName);
+        // Literally do nothing. TODO: Figure out font crashes.
+        /*String normalized = normalizeFontName(fontName);
         if (normalized != null) {
             this.fontName = normalized;
-        }
+        }*/
         return this;
     }
 
