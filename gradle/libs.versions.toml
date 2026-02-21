@@ -7,3 +7,4 @@ shadow = { id = "com.gradleup.shadow", version = "9.3.1" }
 jsoup = { group = "org.jsoup", name = "jsoup", version = "1.22.1" }
 junit = { group = "org.junit.jupiter", name = "junit-jupiter", version = "6.0.2" }
 junit-launcher = { group = "org.junit.platform", name = "junit-platform-launcher" }
+hytaleuiparser = { group = "app.ultradev.hytaleui", name = "all", version = "3.0.0" }
