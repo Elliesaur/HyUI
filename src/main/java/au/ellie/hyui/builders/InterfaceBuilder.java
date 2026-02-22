@@ -59,7 +59,8 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
     protected String htmlFilePath;
     protected String uiStyleFilePath;
     protected UIParseResult lastParseResult;
-
+    protected boolean parsedUIFile;
+    
     @SuppressWarnings("unchecked")
     protected T self() {
         return (T) this;
@@ -99,8 +100,9 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
                 rootGroup.addChild(element);
             }
             registerElement(rootGroup);
-            this.uiFile = null;
-            this.htmlFilePath = "";
+            this.uiFile = uiFile;
+            this.parsedUIFile = true;
+            //this.htmlFilePath = "";
         }
         return self();
     }

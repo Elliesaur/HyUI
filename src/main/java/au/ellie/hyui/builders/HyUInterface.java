@@ -586,7 +586,10 @@ public abstract class HyUInterface implements UIContext {
             // TODO: EndsWith or some parsing?
             if (uiFile != null && asset.name.contains(uiFile)) {
                 pageBuilder.elementRegistry.clear();
-                pageBuilder.fromFile(uiFile);
+                if (pageBuilder.parsedUIFile)
+                    pageBuilder.fromUIFile(uiFile);
+                else
+                    pageBuilder.fromFile(uiFile);
                 pageBuilder.open(ref, store);
                 return pageBuilder;
             }
@@ -618,7 +621,10 @@ public abstract class HyUInterface implements UIContext {
         } else if (rootElementBuilder instanceof HudBuilder hudBuilder) {
             if (uiFile != null && asset.name.contains(uiFile)) {
                 hudBuilder.elementRegistry.clear();
-                hudBuilder.fromFile(uiFile);
+                if (hudBuilder.parsedUIFile)
+                    hudBuilder.fromUIFile(uiFile);
+                else
+                    hudBuilder.fromFile(uiFile);
                 // DO NOT ever show.
                 return hudBuilder;
             }
