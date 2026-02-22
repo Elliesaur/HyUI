@@ -56,8 +56,24 @@ public class DynamicImageAsset extends CommonAsset {
             "00456c6c696541555f4879554907000000000000000000000000000000000000",
             "00456c6c696541555f4879554908000000000000000000000000000000000000",
             "00456c6c696541555f4879554909000000000000000000000000000000000000",
-            "00456c6c696541555f487955490A000000000000000000000000000000000000"
+            "00456c6c696541555f487955490A000000000000000000000000000000000000",
+            "00456c6c696541555f487955490B000000000000000000000000000000000000",
+            "00456c6c696541555f487955490C000000000000000000000000000000000000",
+            "00456c6c696541555f487955490D000000000000000000000000000000000000",
+            "00456c6c696541555f487955490E000000000000000000000000000000000000",
+            "00456c6c696541555f487955490F000000000000000000000000000000000000",
+            "00456c6c696541555f4879554910000000000000000000000000000000000000",
+            "00456c6c696541555f4879554911000000000000000000000000000000000000",
+            "00456c6c696541555f4879554912000000000000000000000000000000000000",
+            "00456c6c696541555f4879554913000000000000000000000000000000000000",
+            "00456c6c696541555f4879554914000000000000000000000000000000000000",
+            "00456c6c696541555f4879554915000000000000000000000000000000000000",
+            "00456c6c696541555f4879554916000000000000000000000000000000000000",
+            "00456c6c696541555f4879554917000000000000000000000000000000000000",
+            "00456c6c696541555f4879554918000000000000000000000000000000000000",
+            "00456c6c696541555f4879554919000000000000000000000000000000000000"
     };
+
     private static final String[] PATHS = {
             "UI/Custom/Pages/Elements/DynamicImage1.png",
             "UI/Custom/Pages/Elements/DynamicImage2.png",
@@ -68,8 +84,24 @@ public class DynamicImageAsset extends CommonAsset {
             "UI/Custom/Pages/Elements/DynamicImage7.png",
             "UI/Custom/Pages/Elements/DynamicImage8.png",
             "UI/Custom/Pages/Elements/DynamicImage9.png",
-            "UI/Custom/Pages/Elements/DynamicImage10.png"
+            "UI/Custom/Pages/Elements/DynamicImage10.png",
+            "UI/Custom/Pages/Elements/DynamicImage11.png",
+            "UI/Custom/Pages/Elements/DynamicImage12.png",
+            "UI/Custom/Pages/Elements/DynamicImage13.png",
+            "UI/Custom/Pages/Elements/DynamicImage14.png",
+            "UI/Custom/Pages/Elements/DynamicImage15.png",
+            "UI/Custom/Pages/Elements/DynamicImage16.png",
+            "UI/Custom/Pages/Elements/DynamicImage17.png",
+            "UI/Custom/Pages/Elements/DynamicImage18.png",
+            "UI/Custom/Pages/Elements/DynamicImage19.png",
+            "UI/Custom/Pages/Elements/DynamicImage20.png",
+            "UI/Custom/Pages/Elements/DynamicImage21.png",
+            "UI/Custom/Pages/Elements/DynamicImage22.png",
+            "UI/Custom/Pages/Elements/DynamicImage23.png",
+            "UI/Custom/Pages/Elements/DynamicImage24.png",
+            "UI/Custom/Pages/Elements/DynamicImage25.png"
     };
+
     private static final UUID DEFAULT_PLAYER_UUID = new UUID(0L, 0L);
     private static final Map<UUID, boolean[]> USED_SLOTS = new HashMap<>();
     
@@ -147,7 +179,7 @@ public class DynamicImageAsset extends CommonAsset {
                 }
             }
         }
-        throw new IllegalStateException("No dynamic image slots available (max 10).");
+        throw new IllegalStateException("No dynamic image slots available (max " + PATHS.length + ").");
     }
 
     private static void releaseSlot(UUID playerUuid, int slotIndex) {
