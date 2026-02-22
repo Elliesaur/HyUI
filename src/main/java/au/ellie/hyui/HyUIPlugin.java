@@ -18,10 +18,7 @@
 
 package au.ellie.hyui;
 
-import au.ellie.hyui.builders.HudBuilder;
-import au.ellie.hyui.builders.HyUIPage;
-import au.ellie.hyui.builders.LabelBuilder;
-import au.ellie.hyui.builders.PageBuilder;
+import au.ellie.hyui.builders.*;
 import au.ellie.hyui.commands.*;
 import au.ellie.hyui.html.TemplateProcessor;
 import au.ellie.hyui.uiparser.UIParseOptions;
@@ -137,7 +134,11 @@ public class HyUIPlugin extends JavaPlugin {
             this.getCommandRegistry().registerCommand(new HyUIBountyCommand());
             this.getCommandRegistry().registerCommand(new HyUITabsCommand());
             
-            var pb = PageBuilder.detachedPage().fromUIFile("Pages/ComplexTest.ui");
+            var pb = PageBuilder.detachedPage()
+                    .fromUIFile("Pages/ComplexTest.ui");
+            pb.getById("my-ui-element", ButtonBuilder.class).ifPresent((b) -> {
+                // Do something with your ui file element here...
+            });
             
             this.getEventRegistry().registerGlobal(PlayerReadyEvent.class, event -> {
                 instance.logFinest("Player ready event triggered for " + event.getPlayer().getDisplayName());

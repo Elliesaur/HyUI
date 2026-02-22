@@ -9,10 +9,6 @@ import app.ultradev.hytaleuiparser.ast.NodeVariable;
 import app.ultradev.hytaleuiparser.ast.VariableReference;
 import app.ultradev.hytaleuiparser.ast.VariableValue;
 import app.ultradev.hytaleuiparser.asttools.VariableKt;
-import app.ultradev.hytaleuiparser.generated.types.Anchor;
-import app.ultradev.hytaleuiparser.generated.types.LabelStyle;
-import app.ultradev.hytaleuiparser.generated.types.Padding;
-import app.ultradev.hytaleuiparser.generated.types.PatchStyle;
 import app.ultradev.hytaleuiparser.validation.types.TypeType;
 import au.ellie.hyui.builders.HyUIAnchor;
 import au.ellie.hyui.builders.HyUIPadding;
@@ -192,21 +188,20 @@ final class UIValueConverter {
         if (targetType.isEnum()) {
             return parseEnumValue(value, targetType);
         }
-        if (targetType == HyUIAnchor.class && value instanceof Anchor anchor) {
-            return toAnchor(anchor);
+        if (targetType == HyUIAnchor.class && isAnchorLike(value)) {
+            return toAnchor(value);
         }
-        if (targetType == HyUIPadding.class && value instanceof Padding padding) {
-            return toPadding(padding);
+        if (targetType == HyUIPadding.class && isPaddingLike(value)) {
+            return toPadding(value);
         }
-        if (targetType == HyUIPatchStyle.class && value instanceof PatchStyle patchStyle) {
-            return toPatchStyle(patchStyle);
+        if (targetType == HyUIPatchStyle.class && isPatchStyleLike(value)) {
+            return toPatchStyle(value);
         }
-        if (targetType == HyUIStyle.class && value instanceof LabelStyle labelStyle) {
-            return toLabelStyle(labelStyle);
+        if (targetType == HyUIStyle.class && isLabelStyleLike(value)) {
+            return toLabelStyle(value);
         }
-        if (targetType == au.ellie.hyui.types.TextTooltipStyle.class
-                && value instanceof app.ultradev.hytaleuiparser.generated.types.TextTooltipStyle tooltipStyle) {
-            return toTextTooltipStyle(tooltipStyle);
+        if (targetType == au.ellie.hyui.types.TextTooltipStyle.class && isTextTooltipStyleLike(value)) {
+            return toTextTooltipStyle(value);
         }
         if (HyUIBsonSerializable.class.isAssignableFrom(targetType)) {
             return toHyuiTypedValue(value, targetType);
@@ -566,142 +561,301 @@ final class UIValueConverter {
         return style;
     }
 
-    private HyUIAnchor toAnchor(Anchor anchor) {
+    private HyUIAnchor toAnchor(Object anchor) {
         if (anchor == null) {
             return null;
         }
         HyUIAnchor converted = new HyUIAnchor();
-        if (anchor.getLeft() != null) converted.setLeft(anchor.getLeft());
-        if (anchor.getRight() != null) converted.setRight(anchor.getRight());
-        if (anchor.getTop() != null) converted.setTop(anchor.getTop());
-        if (anchor.getBottom() != null) converted.setBottom(anchor.getBottom());
-        if (anchor.getWidth() != null) converted.setWidth(anchor.getWidth());
-        if (anchor.getHeight() != null) converted.setHeight(anchor.getHeight());
-        if (anchor.getMinWidth() != null) converted.setMinWidth(anchor.getMinWidth());
-        if (anchor.getMaxWidth() != null) converted.setMaxWidth(anchor.getMaxWidth());
-        if (anchor.getFull() != null) converted.setFull(anchor.getFull());
-        if (anchor.getHorizontal() != null) converted.setHorizontal(anchor.getHorizontal());
-        if (anchor.getVertical() != null) converted.setVertical(anchor.getVertical());
+        Integer left = readInt(anchor, "getLeft");
+        Integer right = readInt(anchor, "getRight");
+        Integer top = readInt(anchor, "getTop");
+        Integer bottom = readInt(anchor, "getBottom");
+        Integer width = readInt(anchor, "getWidth");
+        Integer height = readInt(anchor, "getHeight");
+        Integer minWidth = readInt(anchor, "getMinWidth");
+        Integer maxWidth = readInt(anchor, "getMaxWidth");
+        Integer full = readInt(anchor, "getFull");
+        Integer horizontal = readInt(anchor, "getHorizontal");
+        Integer vertical = readInt(anchor, "getVertical");
+        if (left != null) converted.setLeft(left);
+        if (right != null) converted.setRight(right);
+        if (top != null) converted.setTop(top);
+        if (bottom != null) converted.setBottom(bottom);
+        if (width != null) converted.setWidth(width);
+        if (height != null) converted.setHeight(height);
+        if (minWidth != null) converted.setMinWidth(minWidth);
+        if (maxWidth != null) converted.setMaxWidth(maxWidth);
+        if (full != null) converted.setFull(full);
+        if (horizontal != null) converted.setHorizontal(horizontal);
+        if (vertical != null) converted.setVertical(vertical);
         return converted;
     }
 
-    private HyUIPadding toPadding(Padding padding) {
+    private HyUIPadding toPadding(Object padding) {
         if (padding == null) {
             return null;
         }
         HyUIPadding converted = new HyUIPadding();
-        if (padding.getFull() != null) {
-            converted.setFull(padding.getFull());
+        Integer full = readInt(padding, "getFull");
+        Integer horizontal = readInt(padding, "getHorizontal");
+        Integer vertical = readInt(padding, "getVertical");
+        Integer left = readInt(padding, "getLeft");
+        Integer right = readInt(padding, "getRight");
+        Integer top = readInt(padding, "getTop");
+        Integer bottom = readInt(padding, "getBottom");
+        if (full != null) {
+            converted.setFull(full);
             return converted;
         }
-        if (padding.getHorizontal() != null || padding.getVertical() != null) {
-            int vertical = padding.getVertical() != null ? padding.getVertical() : 0;
-            int horizontal = padding.getHorizontal() != null ? padding.getHorizontal() : 0;
-            converted.setSymmetric(vertical, horizontal);
+        if (horizontal != null || vertical != null) {
+            int verticalValue = vertical != null ? vertical : 0;
+            int horizontalValue = horizontal != null ? horizontal : 0;
+            converted.setSymmetric(verticalValue, horizontalValue);
         }
-        if (padding.getLeft() != null) converted.setLeft(padding.getLeft());
-        if (padding.getRight() != null) converted.setRight(padding.getRight());
-        if (padding.getTop() != null) converted.setTop(padding.getTop());
-        if (padding.getBottom() != null) converted.setBottom(padding.getBottom());
+        if (left != null) converted.setLeft(left);
+        if (right != null) converted.setRight(right);
+        if (top != null) converted.setTop(top);
+        if (bottom != null) converted.setBottom(bottom);
         return converted;
     }
 
-    private HyUIPatchStyle toPatchStyle(PatchStyle patchStyle) {
+    private HyUIPatchStyle toPatchStyle(Object patchStyle) {
         if (patchStyle == null) {
             return null;
         }
         HyUIPatchStyle style = new HyUIPatchStyle();
-        if (patchStyle.getTexturePath() != null) {
-            style.setTexturePath(stripCustomUiPrefix(patchStyle.getTexturePath()));
+        String texturePath = readString(patchStyle, "getTexturePath");
+        Integer border = readInt(patchStyle, "getBorder");
+        Integer horizontalBorder = readInt(patchStyle, "getHorizontalBorder");
+        Integer verticalBorder = readInt(patchStyle, "getVerticalBorder");
+        Color color = readColor(patchStyle, "getColor");
+        if (texturePath != null) {
+            style.setTexturePath(stripCustomUiPrefix(texturePath));
         }
-        if (patchStyle.getBorder() != null) {
-            style.setBorder(patchStyle.getBorder());
+        if (border != null) {
+            style.setBorder(border);
         }
-        if (patchStyle.getHorizontalBorder() != null) {
-            style.setHorizontalBorder(patchStyle.getHorizontalBorder());
+        if (horizontalBorder != null) {
+            style.setHorizontalBorder(horizontalBorder);
         }
-        if (patchStyle.getVerticalBorder() != null) {
-            style.setVerticalBorder(patchStyle.getVerticalBorder());
+        if (verticalBorder != null) {
+            style.setVerticalBorder(verticalBorder);
         }
-        if (patchStyle.getColor() != null) {
-            style.setColor(colorToHex(patchStyle.getColor()));
+        if (color != null) {
+            style.setColor(colorToHex(color));
         }
-        if (patchStyle.getArea() != null) {
-            Padding area = patchStyle.getArea();
-            if (area.getLeft() != null) style.setAreaX(area.getLeft());
-            if (area.getTop() != null) style.setAreaY(area.getTop());
-            if (area.getRight() != null) style.setAreaWidth(area.getRight());
-            if (area.getBottom() != null) style.setAreaHeight(area.getBottom());
-        }
+        applyAreaFromObject(style, invokeGetter(patchStyle, "getArea"));
         return style;
     }
 
-    private HyUIStyle toLabelStyle(LabelStyle labelStyle) {
+    private HyUIStyle toLabelStyle(Object labelStyle) {
         if (labelStyle == null) {
             return null;
         }
         HyUIStyle style = new HyUIStyle();
-        if (labelStyle.getFontSize() != null) {
-            style.setFontSize(labelStyle.getFontSize());
+        Float fontSize = readFloat(labelStyle, "getFontSize");
+        String fontName = readString(labelStyle, "getFontName");
+        Float letterSpacing = readFloat(labelStyle, "getLetterSpacing");
+        Color textColor = readColor(labelStyle, "getTextColor");
+        Boolean renderBold = readBoolean(labelStyle, "getRenderBold");
+        Boolean renderUppercase = readBoolean(labelStyle, "getRenderUppercase");
+        Boolean renderItalics = readBoolean(labelStyle, "getRenderItalics");
+        Object alignment = invokeGetter(labelStyle, "getAlignment");
+        Object horizontalAlignment = invokeGetter(labelStyle, "getHorizontalAlignment");
+        Object verticalAlignment = invokeGetter(labelStyle, "getVerticalAlignment");
+        Color outlineColor = readColor(labelStyle, "getOutlineColor");
+        Boolean wrap = readBoolean(labelStyle, "getWrap");
+        if (fontSize != null) {
+            style.setFontSize(fontSize);
         }
-        if (labelStyle.getFontName() != null) {
+        if (fontName != null) {
             // TODO: Investigate why fontname isn't happy with being bson for ellie :(
-            //style.setFontName(labelStyle.getFontName());
+            //style.setFontName(fontName);
         }
-        if (labelStyle.getLetterSpacing() != null) {
-            style.setLetterSpacing(labelStyle.getLetterSpacing().intValue());
+        if (letterSpacing != null) {
+            style.setLetterSpacing(letterSpacing.intValue());
         }
-        if (labelStyle.getTextColor() != null) {
-            style.setTextColor(colorToHex(labelStyle.getTextColor()));
+        if (textColor != null) {
+            style.setTextColor(colorToHex(textColor));
         }
-        if (labelStyle.getRenderBold() != null) {
-            style.setRenderBold(labelStyle.getRenderBold());
+        if (renderBold != null) {
+            style.setRenderBold(renderBold);
         }
-        if (labelStyle.getRenderUppercase() != null) {
-            style.setRenderUppercase(labelStyle.getRenderUppercase());
+        if (renderUppercase != null) {
+            style.setRenderUppercase(renderUppercase);
         }
-        if (labelStyle.getRenderItalics() != null) {
-            style.setRenderItalics(labelStyle.getRenderItalics());
+        if (renderItalics != null) {
+            style.setRenderItalics(renderItalics);
         }
-        if (labelStyle.getAlignment() != null) {
-            style.setAlignment((Alignment) parseEnumValue(labelStyle.getAlignment(), Alignment.class));
+        if (alignment != null) {
+            style.setAlignment((Alignment) parseEnumValue(alignment, Alignment.class));
         }
-        if (labelStyle.getHorizontalAlignment() != null) {
-            style.setHorizontalAlignment((Alignment) parseEnumValue(labelStyle.getHorizontalAlignment(), Alignment.class));
+        if (horizontalAlignment != null) {
+            style.setHorizontalAlignment((Alignment) parseEnumValue(horizontalAlignment, Alignment.class));
         }
-        if (labelStyle.getVerticalAlignment() != null) {
-            style.setVerticalAlignment((Alignment) parseEnumValue(labelStyle.getVerticalAlignment(), Alignment.class));
+        if (verticalAlignment != null) {
+            style.setVerticalAlignment((Alignment) parseEnumValue(verticalAlignment, Alignment.class));
         }
-        if (labelStyle.getOutlineColor() != null) {
-            style.setOutlineColor(colorToHex(labelStyle.getOutlineColor()));
+        if (outlineColor != null) {
+            style.setOutlineColor(colorToHex(outlineColor));
         }
-        if (labelStyle.getWrap() != null) {
-            style.setWrap(labelStyle.getWrap());
+        if (wrap != null) {
+            style.setWrap(wrap);
         }
         return style;
     }
 
-    private au.ellie.hyui.types.TextTooltipStyle toTextTooltipStyle(app.ultradev.hytaleuiparser.generated.types.TextTooltipStyle tooltipStyle) {
+    private au.ellie.hyui.types.TextTooltipStyle toTextTooltipStyle(Object tooltipStyle) {
         if (tooltipStyle == null) {
             return null;
         }
         au.ellie.hyui.types.TextTooltipStyle style = new au.ellie.hyui.types.TextTooltipStyle();
-        if (tooltipStyle.getBackground() != null) {
-            style.withBackground(toPatchStyle(tooltipStyle.getBackground()));
+        Object background = invokeGetter(tooltipStyle, "getBackground");
+        Integer maxWidth = readInt(tooltipStyle, "getMaxWidth");
+        Object labelStyle = invokeGetter(tooltipStyle, "getLabelStyle");
+        Integer padding = readInt(tooltipStyle, "getPadding");
+        Object alignment = invokeGetter(tooltipStyle, "getAlignment");
+        if (background != null) {
+            style.withBackground(toPatchStyle(background));
         }
-        if (tooltipStyle.getMaxWidth() != null) {
-            style.withMaxWidth(tooltipStyle.getMaxWidth());
+        if (maxWidth != null) {
+            style.withMaxWidth(maxWidth);
         }
-        if (tooltipStyle.getLabelStyle() != null) {
-            style.withLabelStyle(toLabelStyle(tooltipStyle.getLabelStyle()));
+        if (labelStyle != null) {
+            style.withLabelStyle(toLabelStyle(labelStyle));
         }
-        if (tooltipStyle.getPadding() != null) {
-            style.withPadding(tooltipStyle.getPadding());
+        if (padding != null) {
+            style.withPadding(padding);
         }
-        if (tooltipStyle.getAlignment() != null) {
-            style.withAlignment(tooltipStyle.getAlignment().toString());
+        if (alignment != null) {
+            style.withAlignment(alignment.toString());
         }
         return style;
+    }
+
+    private boolean isAnchorLike(Object value) {
+        return hasGetter(value, "getLeft")
+                || hasGetter(value, "getRight")
+                || hasGetter(value, "getTop")
+                || hasGetter(value, "getBottom");
+    }
+
+    private boolean isPaddingLike(Object value) {
+        return hasGetter(value, "getFull")
+                || hasGetter(value, "getHorizontal")
+                || hasGetter(value, "getVertical");
+    }
+
+    private boolean isPatchStyleLike(Object value) {
+        return hasGetter(value, "getTexturePath")
+                || hasGetter(value, "getColor")
+                || hasGetter(value, "getBorder");
+    }
+
+    private boolean isLabelStyleLike(Object value) {
+        return hasGetter(value, "getFontSize")
+                || hasGetter(value, "getTextColor")
+                || hasGetter(value, "getAlignment");
+    }
+
+    private boolean isTextTooltipStyleLike(Object value) {
+        return hasGetter(value, "getBackground")
+                || hasGetter(value, "getLabelStyle")
+                || hasGetter(value, "getMaxWidth");
+    }
+
+    private boolean hasGetter(Object value, String methodName) {
+        if (value == null) {
+            return false;
+        }
+        try {
+            value.getClass().getMethod(methodName);
+            return true;
+        } catch (NoSuchMethodException ignored) {
+            return false;
+        }
+    }
+
+    private Object invokeGetter(Object value, String methodName) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return value.getClass().getMethod(methodName).invoke(value);
+        } catch (ReflectiveOperationException ignored) {
+            return null;
+        }
+    }
+
+    private String readString(Object value, String methodName) {
+        Object result = invokeGetter(value, methodName);
+        if (result == null) {
+            return null;
+        }
+        return result.toString();
+    }
+
+    private Integer readInt(Object value, String methodName) {
+        Object result = invokeGetter(value, methodName);
+        if (result instanceof Number number) {
+            return number.intValue();
+        }
+        if (result instanceof String text) {
+            try {
+                return Integer.parseInt(text);
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private Float readFloat(Object value, String methodName) {
+        Object result = invokeGetter(value, methodName);
+        if (result instanceof Number number) {
+            return number.floatValue();
+        }
+        if (result instanceof String text) {
+            try {
+                return Float.parseFloat(text);
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private Boolean readBoolean(Object value, String methodName) {
+        Object result = invokeGetter(value, methodName);
+        if (result instanceof Boolean bool) {
+            return bool;
+        }
+        if (result instanceof String text) {
+            return Boolean.parseBoolean(text);
+        }
+        return null;
+    }
+
+    private Color readColor(Object value, String methodName) {
+        Object result = invokeGetter(value, methodName);
+        if (result instanceof Color color) {
+            return color;
+        }
+        return null;
+    }
+
+    private void applyAreaFromObject(HyUIPatchStyle style, Object areaValue) {
+        if (areaValue == null) {
+            return;
+        }
+        Integer left = readInt(areaValue, "getLeft");
+        Integer top = readInt(areaValue, "getTop");
+        Integer right = readInt(areaValue, "getRight");
+        Integer bottom = readInt(areaValue, "getBottom");
+        if (left != null) style.setAreaX(left);
+        if (top != null) style.setAreaY(top);
+        if (right != null) style.setAreaWidth(right);
+        if (bottom != null) style.setAreaHeight(bottom);
     }
 
     private Object toHyuiTypedValue(Object value, Class<?> targetType) {

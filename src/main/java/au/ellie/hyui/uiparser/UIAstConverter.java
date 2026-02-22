@@ -1,9 +1,7 @@
 package au.ellie.hyui.uiparser;
 
 import app.ultradev.hytaleuiparser.ast.*;
-import app.ultradev.hytaleuiparser.generated.elements.DropdownEntryProperties;
-import app.ultradev.hytaleuiparser.generated.elements.ElementProperties;
-import app.ultradev.hytaleuiparser.generated.elements.TabButtonProperties;
+import app.ultradev.hytaleuiparser.asttools.VariableKt;
 import app.ultradev.hytaleuiparser.validation.ElementType;
 import app.ultradev.hytaleuiparser.validation.types.TypeType;
 import au.ellie.hyui.builders.*;
@@ -107,26 +105,26 @@ final class UIAstConverter {
                     }
                     continue;
                 }
-                TabButtonProperties tabProperties = TabButtonProperties.Companion.fromProperties(properties);
-                String tabId = tabProperties.getId();
+                String tabId = VariableKt.valueAsString(properties.get("Id"));
                 if ((tabId == null || tabId.isBlank()) && child instanceof NodeElementWithSelector withSelector) {
                     tabId = cleanSelector(withSelector.getSelector() != null ? withSelector.getSelector().getIdentifier() : null);
                 }
                 if (tabId != null) {
                     tab.withId(tabId);
                 }
-                if (tabProperties.getText() != null) {
-                    tab.withText(tabProperties.getText());
+                String tabText = VariableKt.valueAsString(properties.get("Text"));
+                if (tabText != null) {
+                    tab.withText(tabText);
                 }
-                HyUIPatchStyle icon = (HyUIPatchStyle) valueConverter.convert(tabProperties.getIcon(), HyUIPatchStyle.class);
+                HyUIPatchStyle icon = (HyUIPatchStyle) valueConverter.convert(properties.get("Icon"), HyUIPatchStyle.class);
                 if (icon != null) {
                     tab.withIcon(icon);
                 }
-                HyUIPatchStyle iconSelected = (HyUIPatchStyle) valueConverter.convert(tabProperties.getIconSelected(), HyUIPatchStyle.class);
+                HyUIPatchStyle iconSelected = (HyUIPatchStyle) valueConverter.convert(properties.get("IconSelected"), HyUIPatchStyle.class);
                 if (iconSelected != null) {
                     tab.withIconSelected(iconSelected);
                 }
-                HyUIAnchor anchor = (HyUIAnchor) valueConverter.convert(tabProperties.getIconAnchor(), HyUIAnchor.class);
+                HyUIAnchor anchor = (HyUIAnchor) valueConverter.convert(properties.get("IconAnchor"), HyUIAnchor.class);
                 if (anchor != null) {
                     tab.withIconAnchor(anchor);
                 }
@@ -160,9 +158,8 @@ final class UIAstConverter {
                 }
                 continue;
             }
-            DropdownEntryProperties entryProperties = DropdownEntryProperties.Companion.fromProperties(properties);
-            String text = entryProperties.getText();
-            String value = entryProperties.getValue();
+            String text = VariableKt.valueAsString(properties.get("Text"));
+            String value = VariableKt.valueAsString(properties.get("Value"));
             if (value == null || value.isBlank()) {
                 if (child instanceof NodeElementWithSelector withSelector) {
                     value = cleanSelector(withSelector.getSelector() != null ? withSelector.getSelector().getIdentifier() : null);
@@ -237,89 +234,37 @@ final class UIAstConverter {
             return;
         }
 
-        ElementProperties properties = ElementProperties.Companion.fromProperties(resolvedType, resolved);
-        Set<String> applied = applyPropertiesObject(builder, properties, rawFields, resolvedType);
+        Set<String> applied = applyResolvedProperties(builder, resolved, rawFields, resolvedType);
         applyRawFields(builder, rawFields, applied);
         applyVariableAssignments(builder, element.getLocalVariables(), applied);
     }
 
-    private Set<String> applyPropertiesObject(UIElementBuilder<?> builder,
-                                              ElementProperties properties,
-                                              Map<String, NodeField> rawFields,
-                                              ElementType resolvedType) {
+    private Set<String> applyResolvedProperties(UIElementBuilder<?> builder,
+                                                Map<String, VariableValue> resolved,
+                                                Map<String, NodeField> rawFields,
+                                                ElementType resolvedType) {
         Set<String> applied = new HashSet<>();
-        if (properties == null) {
+        if (resolved == null || resolved.isEmpty()) {
             return applied;
         }
-        for (Method method : properties.getClass().getMethods()) {
-            if (!isPropertyGetter(method)) {
+        for (Map.Entry<String, VariableValue> entry : resolved.entrySet()) {
+            String propertyKey = entry.getKey();
+            VariableValue resolvedValue = entry.getValue();
+            if (propertyKey == null || resolvedValue == null) {
                 continue;
             }
-            String propertyName = propertyNameFromGetter(method.getName());
-            if (propertyName == null) {
-                continue;
-            }
-            Object value;
-            try {
-                value = method.invoke(properties);
-            } catch (ReflectiveOperationException ignored) {
-                continue;
-            }
-            if (value == null) {
-                continue;
-            }
-            String propertyKey = toPropertyKey(propertyName);
             VariableValue rawValue = null;
             NodeField rawField = rawFields.get(propertyKey);
             if (rawField != null) {
                 rawValue = rawField.getValueAsVariableValue();
             }
-
+            VariableValue adapterValue = rawValue != null ? rawValue : resolvedValue;
             TypeType propertyType = resolvedType != null ? resolvedType.getProperties().get(propertyKey) : null;
-            ValueAdapter adapter = rawValue != null
-                    ? new RawValueAdapter(rawValue)
-                    : new ObjectValueAdapter(value);
-            if (applyPropertyChain(builder, propertyKey, adapter, rawValue, propertyType)) {
+            if (applyPropertyChain(builder, propertyKey, new RawValueAdapter(adapterValue), rawValue != null ? rawValue : resolvedValue, propertyType)) {
                 applied.add(propertyKey);
             }
         }
         return applied;
-    }
-
-    private boolean isPropertyGetter(Method method) {
-        if (method.getParameterCount() != 0) {
-            return false;
-        }
-        String name = method.getName();
-        if ("getClass".equals(name)) {
-            return false;
-        }
-        return name.startsWith("get") || name.startsWith("is");
-    }
-
-    private String propertyNameFromGetter(String methodName) {
-        if (methodName == null) {
-            return null;
-        }
-        String base;
-        if (methodName.startsWith("get")) {
-            base = methodName.substring(3);
-        } else if (methodName.startsWith("is")) {
-            base = methodName.substring(2);
-        } else {
-            return null;
-        }
-        if (base.isEmpty()) {
-            return null;
-        }
-        return Character.toLowerCase(base.charAt(0)) + base.substring(1);
-    }
-
-    private String toPropertyKey(String propertyName) {
-        if (propertyName == null || propertyName.isBlank()) {
-            return propertyName;
-        }
-        return Character.toUpperCase(propertyName.charAt(0)) + propertyName.substring(1);
     }
 
     private ElementType inferElementType(String rawTypeName) {
@@ -578,19 +523,6 @@ final class UIAstConverter {
         }
     }
 
-    private final class ObjectValueAdapter implements ValueAdapter {
-        private final Object value;
-
-        private ObjectValueAdapter(Object value) {
-            this.value = value;
-        }
-
-        @Override
-        public Object convertTo(Class<?> targetType) {
-            return valueConverter.convert(value, targetType);
-        }
-    }
-
     private Method findMethod(Class<?> type, String name, Class<?>... params) {
         for (Method method : type.getMethods()) {
             if (!method.getName().equals(name)) {
@@ -786,6 +718,13 @@ final class UIAstConverter {
             return identifier.substring(1);
         }
         return identifier;
+    }
+
+    private String toPropertyKey(String propertyName) {
+        if (propertyName == null || propertyName.isBlank()) {
+            return propertyName;
+        }
+        return Character.toUpperCase(propertyName.charAt(0)) + propertyName.substring(1);
     }
 
 }
