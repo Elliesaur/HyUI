@@ -33,6 +33,7 @@ import com.hypixel.hytale.protocol.Asset;
 import com.hypixel.hytale.protocol.Packet;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPage;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUICommand;
+import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.protocol.packets.setup.AssetInitialize;
 import com.hypixel.hytale.server.core.Options;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -136,8 +137,8 @@ public class HyUIPlugin extends JavaPlugin {
             
             var pb = PageBuilder.detachedPage()
                     .fromUIFile("Pages/ComplexTest.ui");
-            pb.getById("my-ui-element", ButtonBuilder.class).ifPresent((b) -> {
-                // Do something with your ui file element here...
+            pb.getById("SaveButton", ButtonBuilder.class).ifPresent((b) -> {
+                b.addEventListener(CustomUIEventBindingType.Activating, (e) -> HytaleLogger.forEnclosingClass().atInfo().log(b.toString()));
             });
             
             this.getEventRegistry().registerGlobal(PlayerReadyEvent.class, event -> {

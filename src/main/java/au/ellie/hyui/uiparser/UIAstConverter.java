@@ -13,13 +13,19 @@ import com.hypixel.hytale.server.core.ui.LocalizableString;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 final class UIAstConverter {
+    private static final Map<MethodKey, Method> METHOD_CACHE = new ConcurrentHashMap<>();
+    private static final Map<MethodKey, Boolean> METHOD_MISS_CACHE = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, Map<String, List<Method>>> ONE_ARG_METHODS_CACHE = new ConcurrentHashMap<>();
     private final UIParseResult result;
     private final String documentPath;
     private final UIValueConverter valueConverter;
@@ -419,25 +425,33 @@ final class UIAstConverter {
     }
 
     private boolean applyPropertyViaMethod(UIElementBuilder<?> builder, String property, ValueAdapter value) {
-        for (String name : candidateMethodNames(property)) {
-            for (Method method : builder.getClass().getMethods()) {
-                if (!method.getName().equals(name)) {
-                    continue;
-                }
-                if (method.getParameterCount() != 1) {
-                    continue;
-                }
-                Class<?> paramType = method.getParameterTypes()[0];
-                Object converted = value.convertTo(paramType);
-                if (converted == null) {
-                    continue;
-                }
-                try {
-                    method.invoke(builder, converted);
-                    return true;
-                } catch (ReflectiveOperationException ignored) {
-                    // Continue
-                }
+        String methodName = "with" + property;
+        if (applyPropertyViaNamedMethod(builder, methodName, value)) {
+            return true;
+        }
+        if (property.startsWith("Is") && property.length() > 2) {
+            if (applyPropertyViaNamedMethod(builder, "with" + property.substring(2), value)) {
+                return true;
+            }
+        }
+        if ("MouseWheelScrollBehavior".equals(property)) {
+            return applyPropertyViaNamedMethod(builder, "withMouseWheelScrollBehaviour", value);
+        }
+        return false;
+    }
+
+    private boolean applyPropertyViaNamedMethod(UIElementBuilder<?> builder, String methodName, ValueAdapter value) {
+        for (Method method : getOneArgMethods(builder.getClass(), methodName)) {
+            Class<?> paramType = method.getParameterTypes()[0];
+            Object converted = value.convertTo(paramType);
+            if (converted == null) {
+                continue;
+            }
+            try {
+                method.invoke(builder, converted);
+                return true;
+            } catch (ReflectiveOperationException ignored) {
+                // Continue
             }
         }
         return false;
@@ -524,12 +538,21 @@ final class UIAstConverter {
     }
 
     private Method findMethod(Class<?> type, String name, Class<?>... params) {
+        MethodKey key = new MethodKey(type, name, signatureFor(params));
+        Method cached = METHOD_CACHE.get(key);
+        if (cached != null) {
+            return cached;
+        }
+        if (METHOD_MISS_CACHE.containsKey(key)) {
+            return null;
+        }
         for (Method method : type.getMethods()) {
             if (!method.getName().equals(name)) {
                 continue;
             }
             if (params == null) {
                 if (method.getParameterCount() == 1) {
+                    METHOD_CACHE.put(key, method);
                     return method;
                 }
                 continue;
@@ -545,22 +568,36 @@ final class UIAstConverter {
                 }
             }
             if (matches) {
+                METHOD_CACHE.put(key, method);
                 return method;
             }
         }
+        METHOD_MISS_CACHE.put(key, Boolean.TRUE);
         return null;
     }
 
-    private List<String> candidateMethodNames(String property) {
-        List<String> names = new ArrayList<>();
-        if ("MouseWheelScrollBehavior".equals(property)) {
-            names.add("withMouseWheelScrollBehaviour");
+    private String signatureFor(Class<?>... params) {
+        if (params == null) {
+            return "null";
         }
-        names.add("with" + property);
-        if (property.startsWith("Is") && property.length() > 2) {
-            names.add("with" + property.substring(2));
+        return Arrays.toString(params);
+    }
+
+    private List<Method> getOneArgMethods(Class<?> type, String name) {
+        Map<String, List<Method>> cached = ONE_ARG_METHODS_CACHE.get(type);
+        if (cached == null) {
+            Map<String, List<Method>> built = new HashMap<>();
+            for (Method method : type.getMethods()) {
+                if (method.getParameterCount() != 1) {
+                    continue;
+                }
+                built.computeIfAbsent(method.getName(), key -> new ArrayList<>()).add(method);
+            }
+            ONE_ARG_METHODS_CACHE.put(type, built);
+            cached = built;
         }
-        return names;
+        List<Method> methods = cached.get(name);
+        return methods != null ? methods : List.of();
     }
 
     private Map<String, NodeField> collectRawFields(NodeElement element) {
@@ -726,5 +763,7 @@ final class UIAstConverter {
         }
         return Character.toUpperCase(propertyName.charAt(0)) + propertyName.substring(1);
     }
+
+    private record MethodKey(Class<?> type, String name, String signature) {}
 
 }

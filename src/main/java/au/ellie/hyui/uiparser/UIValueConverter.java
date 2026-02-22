@@ -22,14 +22,23 @@ import java.awt.Color;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 final class UIValueConverter {
     private static final Map<TypeType, Class<?>> TYPE_CLASS_MAP = new EnumMap<>(TypeType.class);
     private static final Map<Class<?>, TypeType> CLASS_TYPE_MAP = new HashMap<>();
+    private static final Map<GetterKey, Method> GETTER_CACHE = new ConcurrentHashMap<>();
+    private static final Map<GetterKey, Boolean> GETTER_MISS_CACHE = new ConcurrentHashMap<>();
+    private static final Map<MethodKey, Method> SETTER_CACHE = new ConcurrentHashMap<>();
+    private static final Map<MethodKey, Boolean> SETTER_MISS_CACHE = new ConcurrentHashMap<>();
+    private static final Map<MethodKey, Method> WITH_METHOD_CACHE = new ConcurrentHashMap<>();
+    private static final Map<MethodKey, Boolean> WITH_METHOD_MISS_CACHE = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, List<Method>> GETTER_LIST_CACHE = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, Map<String, Object>> ENUM_LOOKUP_CACHE = new ConcurrentHashMap<>();
+    private static final char[] HEX_CHARS = "0123456789abcdef".toCharArray();
 
     static {
         TYPE_CLASS_MAP.put(TypeType.SoundStyle, SoundStyle.class);
@@ -351,6 +360,14 @@ final class UIValueConverter {
 
     private Method findWithMethod(Class<?> type, String property) {
         String methodName = "with" + property;
+        MethodKey key = new MethodKey(type, methodName, 1);
+        Method cached = WITH_METHOD_CACHE.get(key);
+        if (cached != null) {
+            return cached;
+        }
+        if (WITH_METHOD_MISS_CACHE.containsKey(key)) {
+            return null;
+        }
         for (Method method : type.getMethods()) {
             if (!method.getName().equals(methodName)) {
                 continue;
@@ -358,8 +375,10 @@ final class UIValueConverter {
             if (method.getParameterCount() != 1) {
                 continue;
             }
+            WITH_METHOD_CACHE.put(key, method);
             return method;
         }
+        WITH_METHOD_MISS_CACHE.put(key, Boolean.TRUE);
         return null;
     }
 
@@ -768,20 +787,19 @@ final class UIValueConverter {
         if (value == null) {
             return false;
         }
-        try {
-            value.getClass().getMethod(methodName);
-            return true;
-        } catch (NoSuchMethodException ignored) {
-            return false;
-        }
+        return getGetter(value.getClass(), methodName) != null;
     }
 
     private Object invokeGetter(Object value, String methodName) {
         if (value == null) {
             return null;
         }
+        Method getter = getGetter(value.getClass(), methodName);
+        if (getter == null) {
+            return null;
+        }
         try {
-            return value.getClass().getMethod(methodName).invoke(value);
+            return getter.invoke(value);
         } catch (ReflectiveOperationException ignored) {
             return null;
         }
@@ -890,14 +908,8 @@ final class UIValueConverter {
     private Object createAndApply(Object source, Class<?> targetType) {
         try {
             Object target = targetType.getDeclaredConstructor().newInstance();
-            for (Method getter : source.getClass().getMethods()) {
-                if (getter.getParameterCount() != 0) {
-                    continue;
-                }
+            for (Method getter : getReadableGetters(source.getClass())) {
                 String getterName = getter.getName();
-                if (getterName.equals("getClass") || (!getterName.startsWith("get") && !getterName.startsWith("is"))) {
-                    continue;
-                }
                 String propertyName = propertyNameFromGetter(getterName);
                 if (propertyName == null) {
                     continue;
@@ -929,15 +941,11 @@ final class UIValueConverter {
     private Method findSetterMethod(Class<?> targetType, String propertyKey) {
         String withName = "with" + propertyKey;
         String setName = "set" + propertyKey;
-        for (Method method : targetType.getMethods()) {
-            if (method.getParameterCount() != 1) {
-                continue;
-            }
-            if (method.getName().equals(withName) || method.getName().equals(setName)) {
-                return method;
-            }
+        Method withMethod = findCachedSetter(targetType, withName);
+        if (withMethod != null) {
+            return withMethod;
         }
-        return null;
+        return findCachedSetter(targetType, setName);
     }
 
     private String propertyNameFromGetter(String getterName) {
@@ -1032,24 +1040,35 @@ final class UIValueConverter {
             return null;
         }
         String normalized = normalizeEnumValue(value);
-        for (Object constant : targetType.getEnumConstants()) {
-            String enumName = normalizeEnumValue(((Enum<?>) constant).name());
-            if (enumName.equals(normalized)) {
-                return constant;
-            }
-        }
-        return null;
+        Map<String, Object> lookup = ENUM_LOOKUP_CACHE.computeIfAbsent(targetType, UIValueConverter::buildEnumLookup);
+        return lookup.get(normalized);
     }
 
-    private String normalizeEnumValue(String value) {
-        return value.replaceAll("[^a-zA-Z0-9]", "").toLowerCase(Locale.ROOT);
+    private static String normalizeEnumValue(String value) {
+        int length = value.length();
+        StringBuilder builder = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            char ch = value.charAt(i);
+            if (ch >= 'A' && ch <= 'Z') {
+                builder.append((char) (ch + 32));
+            } else if ((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9')) {
+                builder.append(ch);
+            }
+        }
+        return builder.toString();
     }
 
     private String colorToHex(Color color) {
         if (color == null) {
             return null;
         }
-        return String.format("#%02x%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue(), color.getAlpha());
+        char[] out = new char[9];
+        out[0] = '#';
+        writeHexByte(out, 1, color.getRed());
+        writeHexByte(out, 3, color.getGreen());
+        writeHexByte(out, 5, color.getBlue());
+        writeHexByte(out, 7, color.getAlpha());
+        return new String(out);
     }
 
     private String stripVariablePrefix(String identifier) {
@@ -1074,5 +1093,89 @@ final class UIValueConverter {
         return path;
     }
 
+    private static Map<String, Object> buildEnumLookup(Class<?> enumType) {
+        Map<String, Object> lookup = new HashMap<>();
+        Object[] constants = enumType.getEnumConstants();
+        if (constants == null) {
+            return lookup;
+        }
+        for (Object constant : constants) {
+            String name = ((Enum<?>) constant).name();
+            lookup.putIfAbsent(normalizeEnumValue(name), constant);
+        }
+        return lookup;
+    }
+
+    private Method getGetter(Class<?> type, String methodName) {
+        GetterKey key = new GetterKey(type, methodName);
+        Method cached = GETTER_CACHE.get(key);
+        if (cached != null) {
+            return cached;
+        }
+        if (GETTER_MISS_CACHE.containsKey(key)) {
+            return null;
+        }
+        try {
+            Method method = type.getMethod(methodName);
+            GETTER_CACHE.put(key, method);
+            return method;
+        } catch (NoSuchMethodException ignored) {
+            GETTER_MISS_CACHE.put(key, Boolean.TRUE);
+            return null;
+        }
+    }
+
+    private Method findCachedSetter(Class<?> targetType, String name) {
+        MethodKey key = new MethodKey(targetType, name, 1);
+        Method cached = SETTER_CACHE.get(key);
+        if (cached != null) {
+            return cached;
+        }
+        if (SETTER_MISS_CACHE.containsKey(key)) {
+            return null;
+        }
+        for (Method method : targetType.getMethods()) {
+            if (!method.getName().equals(name)) {
+                continue;
+            }
+            if (method.getParameterCount() != 1) {
+                continue;
+            }
+            SETTER_CACHE.put(key, method);
+            return method;
+        }
+        SETTER_MISS_CACHE.put(key, Boolean.TRUE);
+        return null;
+    }
+
+    private List<Method> getReadableGetters(Class<?> type) {
+        List<Method> cached = GETTER_LIST_CACHE.get(type);
+        if (cached != null) {
+            return cached;
+        }
+        List<Method> methods = new ArrayList<>();
+        for (Method method : type.getMethods()) {
+            if (method.getParameterCount() != 0) {
+                continue;
+            }
+            String name = method.getName();
+            if ("getClass".equals(name) || (!name.startsWith("get") && !name.startsWith("is"))) {
+                continue;
+            }
+            methods.add(method);
+        }
+        GETTER_LIST_CACHE.put(type, methods);
+        return methods;
+    }
+
+    private void writeHexByte(char[] out, int index, int value) {
+        out[index] = HEX_CHARS[(value >> 4) & 0xF];
+        out[index + 1] = HEX_CHARS[value & 0xF];
+    }
+
     record UiStyleReference(String document, String reference) {}
+
+    private record GetterKey(Class<?> type, String name) {}
+
+    private record MethodKey(Class<?> type, String name, int paramCount) {}
 }
