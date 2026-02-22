@@ -28,6 +28,7 @@ import au.ellie.hyui.types.ScrollbarStyle;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -42,6 +43,7 @@ public class DynamicImageBuilder extends UIElementBuilder<DynamicImageBuilder>
     private String scrollbarStyleDocument;
     private ScrollbarStyle scrollbarStyle;
     private String imageUrl;
+    private String imageFilePath;
     private boolean imagePathAssigned;
     private final Map<UUID, Integer> slotIndexes = new HashMap<>();
     private static final UUID DEFAULT_PLAYER_UUID = new UUID(0L, 0L);
@@ -56,12 +58,38 @@ public class DynamicImageBuilder extends UIElementBuilder<DynamicImageBuilder>
     }
 
     public DynamicImageBuilder withImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
+        return withImageSource(imageUrl);
+    }
+
+    public DynamicImageBuilder withImageSource(String imageSource) {
+        if (imageSource == null || imageSource.isBlank()) {
+            this.imageUrl = imageSource;
+            this.imageFilePath = null;
+            return this;
+        }
+        String trimmed = imageSource.trim();
+        if (isRemoteUrl(trimmed)) {
+            this.imageUrl = trimmed;
+            this.imageFilePath = null;
+        } else {
+            this.imageFilePath = normalizeFilePath(trimmed);
+            this.imageUrl = null;
+        }
         return this;
     }
 
     public String getImageUrl() {
         return imageUrl;
+    }
+
+    public DynamicImageBuilder withImageFilePath(String filePath) {
+        this.imageFilePath = normalizeFilePath(filePath);
+        this.imageUrl = null;
+        return this;
+    }
+
+    public String getImageFilePath() {
+        return imageFilePath;
     }
 
     public DynamicImageBuilder withImagePath(String texturePath) {
@@ -78,7 +106,7 @@ public class DynamicImageBuilder extends UIElementBuilder<DynamicImageBuilder>
         if (!imagePathAssigned) {
             return false;
         }
-        if (imageUrl == null || imageUrl.isBlank()) {
+        if ((imageUrl == null || imageUrl.isBlank()) && (imageFilePath == null || imageFilePath.isBlank())) {
             return true;
         }
         return slotIndexes.containsKey(normalizePlayerUuid(playerUuid));
@@ -172,6 +200,8 @@ public class DynamicImageBuilder extends UIElementBuilder<DynamicImageBuilder>
 
         if (imageUrl != null && !imageUrl.isBlank()) {
             HyUIPlugin.getLog().logFinest("Building dynamic image with URL: " + imageUrl);
+        } else if (imageFilePath != null && !imageFilePath.isBlank()) {
+            HyUIPlugin.getLog().logFinest("Building dynamic image from file: " + imageFilePath);
         } else if (this.background != null) {
             HyUIPlugin.getLog().logFinest("Building dynamic image from path: " + this.background.getTexturePath());
         }
@@ -196,5 +226,27 @@ public class DynamicImageBuilder extends UIElementBuilder<DynamicImageBuilder>
 
     private static UUID normalizePlayerUuid(UUID playerUuid) {
         return playerUuid != null ? playerUuid : DEFAULT_PLAYER_UUID;
+    }
+
+    private static boolean isRemoteUrl(String source) {
+        String lower = source.toLowerCase(Locale.ROOT);
+        return lower.startsWith("http://") || lower.startsWith("https://");
+    }
+
+    private static String normalizeFilePath(String filePath) {
+        if (filePath == null) {
+            return null;
+        }
+        String trimmed = filePath.trim();
+        if (trimmed.isBlank()) {
+            return trimmed;
+        }
+        if (trimmed.startsWith("file:")) {
+            trimmed = trimmed.substring("file:".length());
+            while (trimmed.startsWith("/")) {
+                trimmed = trimmed.substring(1);
+            }
+        }
+        return trimmed;
     }
 }

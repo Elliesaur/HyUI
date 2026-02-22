@@ -30,6 +30,7 @@ import au.ellie.hyui.uiparser.UIParseResult;
 import au.ellie.hyui.utils.HyvatarUtils;
 import au.ellie.hyui.utils.PngDownloadUtils;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
+import com.hypixel.hytale.server.core.plugin.PluginManager;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -538,7 +539,8 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
                     continue;
                 }
                 String url = dImg.getImageUrl();
-                if (url == null || url.isBlank()) {
+                String filePath = dImg.getImageFilePath();
+                if ((url == null || url.isBlank()) && (filePath == null || filePath.isBlank())) {
                     continue;
                 }
                 CompletableFuture.runAsync(() -> sendDynamicImage(pRef, dImg), DYNAMIC_IMAGE_EXECUTOR)
@@ -559,32 +561,46 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
         }
         UUID playerUuid = pRef.getUuid();
         String url = dynamicImage.getImageUrl();
-        if (url == null || url.isBlank()) {
-            HyUIPlugin.getLog().logFinest("URL WAS BLANK OR NULL");
+        String filePath = dynamicImage.getImageFilePath();
+        boolean hasUrl = url != null && !url.isBlank();
+        boolean hasFilePath = filePath != null && !filePath.isBlank();
+        if (!hasUrl && !hasFilePath) {
+            HyUIPlugin.getLog().logFinest("IMAGE SOURCE WAS BLANK OR NULL");
             
             return;
         }
         try {
-            HyUIPlugin.getLog().logFinest("Preparing dynamic image from URL: " + url);
-            PngDownloadUtils.CachedAssetInfo cachedAsset = PngDownloadUtils.getCachedAssetInfo(playerUuid, url);
-            if (cachedAsset != null) {
-                dynamicImage.withImagePath(cachedAsset.path());
-                dynamicImage.setSlotIndex(playerUuid, cachedAsset.slotIndex());
-                HyUIPlugin.getLog().logFinest("Dynamic image used cached asset path: " + cachedAsset.path());
-                return;
-            }
             byte[] imageBytes;
-            if (dynamicImage instanceof HyvatarImageBuilder hyvatar && !hyvatar.hasCustomImageUrl()) {
-                imageBytes = HyvatarUtils.downloadRenderPng(
-                        hyvatar.getUsername(),
-                        hyvatar.getRenderType(),
-                        hyvatar.getSize(),
-                        hyvatar.getRotate(),
-                        hyvatar.getCape(),
-                        playerUuid
-                );
+            if (hasUrl) {
+                HyUIPlugin.getLog().logFinest("Preparing dynamic image from URL: " + url);
+                PngDownloadUtils.CachedAssetInfo cachedAsset = PngDownloadUtils.getCachedAssetInfo(playerUuid, url);
+                if (cachedAsset != null) {
+                    dynamicImage.withImagePath(cachedAsset.path());
+                    dynamicImage.setSlotIndex(playerUuid, cachedAsset.slotIndex());
+                    HyUIPlugin.getLog().logFinest("Dynamic image used cached asset path: " + cachedAsset.path());
+                    return;
+                }
+                if (dynamicImage instanceof HyvatarImageBuilder hyvatar && !hyvatar.hasCustomImageUrl()) {
+                    imageBytes = HyvatarUtils.downloadRenderPng(
+                            hyvatar.getUsername(),
+                            hyvatar.getRenderType(),
+                            hyvatar.getSize(),
+                            hyvatar.getRotate(),
+                            hyvatar.getCape(),
+                            playerUuid
+                    );
+                } else {
+                    imageBytes = PngDownloadUtils.downloadPng(url, playerUuid);
+                }
             } else {
-                imageBytes = PngDownloadUtils.downloadPng(url, playerUuid);
+                Path modsPath = PluginManager.MODS_PATH;
+                Path resolvedPath = resolveModFilePath(modsPath, filePath);
+                if (resolvedPath == null) {
+                    HyUIPlugin.getLog().logFinest("Invalid dynamic image file path: " + filePath);
+                    return;
+                }
+                HyUIPlugin.getLog().logFinest("Preparing dynamic image from file: " + resolvedPath);
+                imageBytes = Files.readAllBytes(resolvedPath);
             }
 
             DynamicImageAsset asset = new DynamicImageAsset(imageBytes, playerUuid);
@@ -597,11 +613,25 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
         } catch (IllegalStateException e) {
             HyUIPlugin.getLog().logFinest("Failed to allocate dynamic image slot: " + e.getMessage());
         } catch (IOException e) {
-            HyUIPlugin.getLog().logFinest("Failed to download dynamic image: " + e.getMessage());
+            HyUIPlugin.getLog().logFinest("Failed to load dynamic image: " + e.getMessage());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             HyUIPlugin.getLog().logFinest("Dynamic image download interrupted: " + e.getMessage());
         }
+    }
+
+    private static Path resolveModFilePath(Path modsPath, String filePath) {
+        if (modsPath == null || filePath == null || filePath.isBlank()) {
+            return null;
+        }
+        Path resolved = modsPath.resolve(filePath).normalize();
+        if (!resolved.startsWith(modsPath)) {
+            return null;
+        }
+        if (!Files.exists(resolved)) {
+            return null;
+        }
+        return resolved;
     }
 
     /**
