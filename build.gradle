@@ -1,8 +1,11 @@
+import kotlin.OptIn
+
 plugins {
     id 'java'
     alias(libs.plugins.shadow)
     alias(libs.plugins.idea.ext)
     alias(libs.plugins.hytalegradle)
+    alias(libs.plugins.dokka)
 }
 
 dependencies {
@@ -17,6 +20,8 @@ dependencies {
     // Unit testing
     testImplementation libs.junit
     testRuntimeOnly libs.junit.launcher
+
+    dokkaPlugin 'org.jetbrains.dokka:gfm-plugin:2.1.0'
 }
 
 repositories {

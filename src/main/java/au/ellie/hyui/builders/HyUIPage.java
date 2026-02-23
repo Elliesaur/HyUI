@@ -40,6 +40,9 @@ import java.util.concurrent.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+/**
+ * Interactive custom page that delegates build and event handling to {@link HyUInterface}.
+ */
 public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implements UIContext {
     private final HyUInterface delegate;
     private long refreshRateMs;
@@ -49,6 +52,9 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
     private ScheduledFuture<?> refreshTask;
     private BiConsumer<HyUIPage, Boolean> onDismissListener;
     
+    /**
+     * Creates a new HyUI page instance.
+     */
     public HyUIPage(PlayerRef playerRef,
                     CustomPageLifetime lifetime,
                     String uiFile,
@@ -64,6 +70,9 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
         this.delegate = new HyUInterface(uiFile, elements, editCallbacks, templateHtml, templateProcessor, runtimeTemplateUpdatesEnabled, rootElementBuilder) {};
     }
 
+    /**
+     * Reopens the page when an underlying asset changes.
+     */
     public void reopenFromAsset(Player player, PlayerRef ref, Store<EntityStore> store, Asset asset) {
         //this.close();
         delegate.reopenFromAsset(player, ref, store, asset);
@@ -114,21 +123,33 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
         }
     }
 
+    /**
+     * @return a copy of the command log from the delegate
+     */
     @Override
     public List<String> getCommandLog() {
         return delegate.getCommandLog();
     }
 
+    /**
+     * @return the cached element value for the given id
+     */
     @Override
     public Optional<Object> getValue(String id) {
         return delegate.getValue(id);
     }
 
+    /**
+     * @return this page wrapped in an Optional
+     */
     @Override
     public Optional<HyUIPage> getPage() {
         return Optional.of(this);
     }
     
+    /**
+     * Closes the page and releases any dynamic image slots.
+     */
     public void close() {
         stopRefreshTask();
         super.close();
@@ -139,6 +160,11 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
         }
     }
     
+    /**
+     * Rebuilds the page and sends an update to the client.
+     *
+     * @param shouldClear whether to clear existing UI state first
+     */
     @Override
     public void updatePage(boolean shouldClear) {
         Ref<EntityStore> ref = this.playerRef.getReference();
@@ -156,10 +182,16 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
         return refreshRateMs;
     }
 
+    /**
+     * Sets the periodic refresh rate in milliseconds.
+     */
     public void setRefreshRateMs(long refreshRateMs) {
         this.refreshRateMs = refreshRateMs;
     }
 
+    /**
+     * Sets a callback to be invoked on refresh.
+     */
     public void setRefreshListener(Function<HyUIPage, PageRefreshResult> refreshListener) {
         this.refreshListener = refreshListener;
     }
@@ -175,11 +207,17 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
         return PageRefreshResult.NONE;
     }
 
+    /**
+     * Looks up and casts an element by id.
+     */
     @Override
     public <E extends UIElementBuilder<E>> Optional<E> getById(String id, Class<E> clazz) {
         return delegate.getById(id, clazz);
     }
 
+    /**
+     * Raw lookup of an element by id.
+     */
     @Override
     public Optional<UIElementBuilder<?>> getByIdRaw(String id) {
         return delegate.getById(id);
@@ -221,6 +259,9 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
         });
     }
 
+    /**
+     * Called when the page is dismissed by the client.
+     */
     @Override
     public void onDismiss(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store) {
         stopRefreshTask();
@@ -231,18 +272,27 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
         }
     }
     
+    /**
+     * Builds the page when requested by the engine.
+     */
     @Override
     public void build(@Nonnull Ref<EntityStore> ref, @Nonnull UICommandBuilder uiCommandBuilder, @Nonnull UIEventBuilder uiEventBuilder, @Nonnull Store<EntityStore> store) {
         startRefreshTask();
         delegate.build(ref, uiCommandBuilder, uiEventBuilder, store);
     }
 
+    /**
+     * Handles incoming data events and routes them to element listeners.
+     */
     @Override
     public void handleDataEvent(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store, @Nonnull DynamicPageData data) {
         super.handleDataEvent(ref, store, data);
         delegate.handleDataEventInternal(data, this);
     }
 
+    /**
+     * @return the template processor used by this page, if any
+     */
     public TemplateProcessor getTemplateProcessor() {
         return delegate.templateProcessor;
     }

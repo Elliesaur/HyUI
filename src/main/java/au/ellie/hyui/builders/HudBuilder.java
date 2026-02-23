@@ -29,6 +29,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 
+/**
+ * Builder for HUDs (Heads-Up Displays) that persist on the player's screen.
+ * Supports periodic refreshes and multi-HUD stacking behavior.
+ */
 public class HudBuilder extends InterfaceBuilder<HudBuilder> {
     private final PlayerRef playerRef;
     private long refreshRateMs = 0;
@@ -36,11 +40,19 @@ public class HudBuilder extends InterfaceBuilder<HudBuilder> {
     private HyUIHud lastHud;
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
+    /**
+     * Creates a HUD builder tied to a specific player.
+     *
+     * @param playerRef player reference
+     */
     public HudBuilder(PlayerRef playerRef) {
         this.playerRef = playerRef;
         fromFile("Pages/EllieAU_HyUI_Placeholder.ui");
     }
 
+    /**
+     * Creates a detached HUD builder without a bound player.
+     */
     public HudBuilder() {
         this.playerRef = null;
         fromFile("Pages/EllieAU_HyUI_Placeholder.ui");
@@ -99,7 +111,7 @@ public class HudBuilder extends InterfaceBuilder<HudBuilder> {
     }
 
     /**
-     * Deprecated in favor of {@link HudBuilder#show()}
+     * Deprecated in favor of {@link HudBuilder#show()}.
      */
     @Deprecated
     public HyUIHud show(Store<EntityStore> store) {
@@ -137,7 +149,7 @@ public class HudBuilder extends InterfaceBuilder<HudBuilder> {
     }
 
     /**
-     * Deprecated in favor of {@link HudBuilder#show(PlayerRef)}
+     * Deprecated in favor of {@link HudBuilder#show(PlayerRef)}.
      */
     @Deprecated
     public HyUIHud show(@Nonnull PlayerRef playerRef, Store<EntityStore> store) {

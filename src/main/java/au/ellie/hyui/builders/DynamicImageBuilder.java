@@ -33,6 +33,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Builder for dynamic images that load a PNG at runtime from a URL or file path.
+ * Supports per-player slot assignment and optional fallback texture paths.
+ */
 public class DynamicImageBuilder extends UIElementBuilder<DynamicImageBuilder> 
         implements ScrollbarStyleSupported<DynamicImageBuilder>, 
         LayoutModeSupported<DynamicImageBuilder> {
@@ -48,19 +52,40 @@ public class DynamicImageBuilder extends UIElementBuilder<DynamicImageBuilder>
     private final Map<UUID, Integer> slotIndexes = new HashMap<>();
     private static final UUID DEFAULT_PLAYER_UUID = new UUID(0L, 0L);
 
+    /**
+     * Creates a new dynamic image builder with a default placeholder texture.
+     */
     public DynamicImageBuilder() {
         super(UIElements.GROUP, "Group");
         this.background = new HyUIPatchStyle().setTexturePath(DEFAULT_TEXTURE_PATH);
     }
 
+    /**
+     * Factory method for a dynamic image builder.
+     *
+     * @return a new {@link DynamicImageBuilder}
+     */
     public static DynamicImageBuilder dynamicImage() {
         return new DynamicImageBuilder();
     }
 
+    /**
+     * Sets a remote URL as the image source.
+     *
+     * @param imageUrl URL to a PNG
+     * @return this builder
+     */
     public DynamicImageBuilder withImageUrl(String imageUrl) {
         return withImageSource(imageUrl);
     }
 
+    /**
+     * Sets an image source that can be either a URL or a local file path.
+     * Non-URL values are treated as file paths relative to the configured asset root.
+     *
+     * @param imageSource URL or file path
+     * @return this builder
+     */
     public DynamicImageBuilder withImageSource(String imageSource) {
         if (imageSource == null || imageSource.isBlank()) {
             this.imageUrl = imageSource;
@@ -78,20 +103,38 @@ public class DynamicImageBuilder extends UIElementBuilder<DynamicImageBuilder>
         return this;
     }
 
+    /**
+     * @return the currently assigned image URL, or null if using a file path
+     */
     public String getImageUrl() {
         return imageUrl;
     }
 
+    /**
+     * Sets a file path as the image source.
+     *
+     * @param filePath relative file path
+     * @return this builder
+     */
     public DynamicImageBuilder withImageFilePath(String filePath) {
         this.imageFilePath = normalizeFilePath(filePath);
         this.imageUrl = null;
         return this;
     }
 
+    /**
+     * @return the currently assigned image file path, or null if using a URL
+     */
     public String getImageFilePath() {
         return imageFilePath;
     }
 
+    /**
+     * Sets a static texture path (non-dynamic) as a fallback background image.
+     *
+     * @param texturePath texture path under UI/Custom
+     * @return this builder
+     */
     public DynamicImageBuilder withImagePath(String texturePath) {
         if (this.background == null) {
             this.background = new HyUIPatchStyle();
@@ -102,6 +145,12 @@ public class DynamicImageBuilder extends UIElementBuilder<DynamicImageBuilder>
         return this;
     }
 
+    /**
+     * Returns true when a texture slot is assigned for the given player.
+     *
+     * @param playerUuid player UUID (null uses the default slot context)
+     * @return true if a slot is assigned
+     */
     public boolean isImagePathAssigned(UUID playerUuid) {
         if (!imagePathAssigned) {
             return false;
@@ -112,10 +161,19 @@ public class DynamicImageBuilder extends UIElementBuilder<DynamicImageBuilder>
         return slotIndexes.containsKey(normalizePlayerUuid(playerUuid));
     }
     
+    /**
+     * Records a dynamic image slot index for a player.
+     *
+     * @param playerUuid player UUID
+     * @param slotIndex dynamic image slot index
+     */
     public void setSlotIndex(UUID playerUuid, int slotIndex) {
         slotIndexes.put(normalizePlayerUuid(playerUuid), slotIndex);
     }
 
+    /**
+     * Releases all assigned slots and clears the assigned image state.
+     */
     public void invalidateImage() {
         for (Map.Entry<UUID, Integer> entry : slotIndexes.entrySet()) {
             DynamicImageAsset.releaseSlotIndex(entry.getKey(), entry.getValue());
@@ -124,10 +182,20 @@ public class DynamicImageBuilder extends UIElementBuilder<DynamicImageBuilder>
         this.imagePathAssigned = false;
     }
 
+    /**
+     * Releases a slot for a specific player if one was assigned.
+     *
+     * @param playerUuid player UUID
+     */
     public void invalidateImage(UUID playerUuid) {
         releaseSlotForPlayer(playerUuid);
     }
 
+    /**
+     * Releases the dynamic image slot for the specified player.
+     *
+     * @param playerUuid player UUID
+     */
     public void releaseSlotForPlayer(UUID playerUuid) {
         Integer slotIndex = slotIndexes.remove(normalizePlayerUuid(playerUuid));
         if (slotIndex != null) {

@@ -22,17 +22,35 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Parses Hytale UI (.ui) files into HyUI element builders.
+ */
 public final class UIFileParser {
     private final UIParseOptions options;
 
+    /**
+     * Creates a parser with default options.
+     */
     public UIFileParser() {
         this(UIParseOptions.builder().build());
     }
 
+    /**
+     * Creates a parser with the provided options.
+     *
+     * @param options parse options (null uses defaults)
+     */
     public UIFileParser(UIParseOptions options) {
         this.options = options == null ? UIParseOptions.builder().build() : options;
     }
 
+    /**
+     * Parses a UI file and adds resulting elements to a builder.
+     *
+     * @param builder target builder (nullable)
+     * @param uiFilePath UI file path
+     * @return parse result with elements and warnings
+     */
     public UIParseResult parseToInterface(InterfaceBuilder<?> builder, String uiFilePath) {
         UIParseResult result = parse(uiFilePath);
         if (builder != null) {
@@ -43,6 +61,12 @@ public final class UIFileParser {
         return result;
     }
 
+    /**
+     * Parses a UI file path into a {@link UIParseResult}.
+     *
+     * @param uiFilePath UI file path (relative or absolute)
+     * @return parse result with elements and warnings
+     */
     public UIParseResult parse(String uiFilePath) {
         UIParseResult result = new UIParseResult();
         if (uiFilePath == null || uiFilePath.isBlank()) {
@@ -103,6 +127,12 @@ public final class UIFileParser {
         return result;
     }
 
+    /**
+     * Parses a UI file from a {@link Path}.
+     *
+     * @param uiFile UI file path
+     * @return parse result with elements and warnings
+     */
     public UIParseResult parse(Path uiFile) {
         UIParseResult result = new UIParseResult();
         if (uiFile == null) {
@@ -116,6 +146,9 @@ public final class UIFileParser {
         return parse(uiFile.toAbsolutePath().toString());
     }
 
+    /**
+     * Parses a UI file root node from the supplied source.
+     */
     private ParsedRoot parseRoot(UiFileSource source, UIParseResult result) {
         try (InputStream input = source.streamSupplier.open()) {
             if (input == null) {
@@ -136,6 +169,9 @@ public final class UIFileParser {
         }
     }
 
+    /**
+     * Resolves a UI file path to an input stream using asset sources and local paths.
+     */
     private UiFileSource resolveSource(String uiFilePath, AssetSource assetSource, String uiRootPath) {
         String normalized = normalizePath(uiFilePath);
         Path rawPath = Paths.get(uiFilePath);
@@ -173,6 +209,9 @@ public final class UIFileParser {
         return null;
     }
 
+    /**
+     * Attempts to resolve a local file from common resource locations.
+     */
     private Path resolveLocalFile(String candidate) {
         List<Path> searchPaths = List.of(
                 Paths.get("src/main/resources").resolve(candidate),
@@ -189,6 +228,9 @@ public final class UIFileParser {
         return null;
     }
 
+    /**
+     * Prepends the configured UI root path when needed.
+     */
     private String prependRoot(String path, String uiRootPath) {
         if (uiRootPath == null || uiRootPath.isBlank()) {
             return path;
@@ -200,6 +242,9 @@ public final class UIFileParser {
         return normalizedRoot + "/" + path;
     }
 
+    /**
+     * Normalizes the root path for comparisons.
+     */
     private String normalizeRoot(String uiRootPath) {
         if (uiRootPath == null) {
             return null;
@@ -220,6 +265,9 @@ public final class UIFileParser {
             this.root = rootPath == null || rootPath.isBlank() ? null : normalizeRootStatic(rootPath);
         }
 
+        /**
+         * Lists UI files scoped under the configured root.
+         */
         @NotNull
         @Override
         public List<Path> listUIFiles() {
@@ -237,6 +285,9 @@ public final class UIFileParser {
             return filtered;
         }
 
+        /**
+         * Retrieves an asset stream, enforcing root filtering if configured.
+         */
         @Override
         public InputStream getAsset(@NotNull Path path) {
             if (root != null && !root.isBlank()) {
@@ -248,6 +299,9 @@ public final class UIFileParser {
             return delegate.getAsset(path);
         }
 
+        /**
+         * Normalizes a root path for filtering.
+         */
         private static String normalizeRootStatic(String uiRootPath) {
             String normalized = normalizePathStatic(uiRootPath);
             if (normalized.endsWith("/")) {
@@ -256,6 +310,9 @@ public final class UIFileParser {
             return normalized;
         }
 
+        /**
+         * Normalizes a path for consistent comparisons.
+         */
         private static String normalizePathStatic(String path) {
             String normalized = path.replace("\\", "/");
             if (normalized.startsWith("/")) {
@@ -265,6 +322,9 @@ public final class UIFileParser {
         }
     }
 
+    /**
+     * Normalizes a path for consistent comparisons.
+     */
     private String normalizePath(String path) {
         String normalized = path.replace("\\", "/");
         if (normalized.startsWith("/")) {
@@ -273,11 +333,20 @@ public final class UIFileParser {
         return normalized;
     }
 
+    /**
+     * Parsed root node wrapper.
+     */
     private record ParsedRoot(RootNode root) {}
 
+    /**
+     * UI file document path and stream supplier.
+     */
     private record UiFileSource(String documentPath, StreamSupplier streamSupplier) {}
 
     @FunctionalInterface
+    /**
+     * Supplies an input stream for a UI file.
+     */
     private interface StreamSupplier {
         InputStream open() throws IOException;
     }

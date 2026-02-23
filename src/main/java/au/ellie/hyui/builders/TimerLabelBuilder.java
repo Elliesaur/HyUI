@@ -167,6 +167,9 @@ public class TimerLabelBuilder extends UIElementBuilder<TimerLabelBuilder> {
         return timeValueMs;
     }
 
+    /**
+     * @return current timer format
+     */
     public TimerFormat getFormat() {
         return format;
     }

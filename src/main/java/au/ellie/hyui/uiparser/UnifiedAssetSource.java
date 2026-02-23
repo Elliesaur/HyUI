@@ -16,10 +16,19 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+/**
+ * Asset source that aggregates multiple directories, archives, and loose UI files.
+ */
 public final class UnifiedAssetSource implements AssetSource {
     private final List<AssetSource> sources = new ArrayList<>();
     private final Map<String, Path> uiFiles = new LinkedHashMap<>();
 
+    /**
+     * Adds a path to the source list. Directories and archives are added as asset sources,
+     * while loose .ui files are tracked directly.
+     *
+     * @param assetPath path to add
+     */
     public void addPath(Path assetPath) {
         if (assetPath == null) {
             return;
@@ -43,6 +52,9 @@ public final class UnifiedAssetSource implements AssetSource {
     }
 
     @Override
+    /**
+     * Lists all UI files from aggregated sources.
+     */
     public List<Path> listUIFiles() {
         LinkedHashSet<Path> out = new LinkedHashSet<>();
         for (String assetKey : uiFiles.keySet()) {
@@ -55,6 +67,9 @@ public final class UnifiedAssetSource implements AssetSource {
     }
 
     @Override
+    /**
+     * Resolves an asset stream from aggregated sources.
+     */
     public InputStream getAsset(Path path) {
         if (path != null) {
             Path file = uiFiles.get(path.toString());
@@ -75,6 +90,9 @@ public final class UnifiedAssetSource implements AssetSource {
         return null;
     }
 
+    /**
+     * Converts a local file path into an asset-relative path.
+     */
     private String toAssetPath(Path filePath) {
         String normalized = filePath.toString().replace("\\", "/");
         int index = normalized.indexOf("Common/UI/Custom/");

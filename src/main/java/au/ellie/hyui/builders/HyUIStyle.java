@@ -25,6 +25,10 @@ import org.bson.BsonDocument;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Fluent label style definition used by HyUI builders.
+ * This maps to Hytale LabelStyle fields and supports state overrides.
+ */
 public class HyUIStyle {
 
     private Float fontSize;
@@ -48,17 +52,25 @@ public class HyUIStyle {
 
     /**
      * Cleans the input string by removing units like rem, em, pt, px, and %.
+     *
      * @param input The input string to clean
      * @return The cleaned string
      */
     public static String cleanUnits(String input) {
         return input.replaceAll("(rem|em|pt|px|%)", "").trim();
     }
+
+    /**
+     * Sets the font size in points.
+     */
     public HyUIStyle setFontSize(float fontSize) {
         this.fontSize = fontSize;
         return this;
     }
 
+    /**
+     * Sets the font size from a string with optional units.
+     */
     public HyUIStyle setFontSize(String fontSize) {
         fontSize = cleanUnits(fontSize);
         ParseUtils.parseFloat(fontSize)
@@ -66,11 +78,17 @@ public class HyUIStyle {
         return this;
     }
 
+    /**
+     * Sets the minimum font size used when shrinking to fit.
+     */
     public HyUIStyle setMinShrinkTextToFitFontSize(float minShrinkTextToFitFontSize) {
         this.minShrinkTextToFitFontSize = minShrinkTextToFitFontSize;
         return this;
     }
 
+    /**
+     * Sets the minimum font size used when shrinking to fit, from a string.
+     */
     public HyUIStyle setMinShrinkTextToFitFontSize(String minShrinkTextToFitFontSize) {
         minShrinkTextToFitFontSize = cleanUnits(minShrinkTextToFitFontSize);
         ParseUtils.parseFloat(minShrinkTextToFitFontSize)
@@ -78,61 +96,94 @@ public class HyUIStyle {
         return this;
     }
 
+    /**
+     * Enables or disables shrink-to-fit.
+     */
     public HyUIStyle setShrinkTextToFit(boolean shrinkTextToFit) {
         this.shrinkTextToFit = shrinkTextToFit;
         return this;
     }
 
+    /**
+     * Enables or disables shrink-to-fit from a string value.
+     */
     public HyUIStyle setShrinkTextToFit(String shrinkTextToFit) {
         shrinkTextToFit = cleanUnits(shrinkTextToFit);
         this.shrinkTextToFit = Boolean.parseBoolean(shrinkTextToFit);
         return this;
     }
 
+    /**
+     * Enables or disables bold rendering.
+     */
     public HyUIStyle setRenderBold(boolean renderBold) {
         this.renderBold = renderBold;
         return this;
     }
 
+    /**
+     * Enables or disables bold rendering from a string value.
+     */
     public HyUIStyle setRenderBold(String renderBold) {
         renderBold = cleanUnits(renderBold);
         this.renderBold = Boolean.parseBoolean(renderBold);
         return this;
     }
 
+    /**
+     * Enables or disables uppercase rendering.
+     */
     public HyUIStyle setRenderUppercase(boolean renderUppercase) {
         this.renderUppercase = renderUppercase;
         return this;
     }
 
+    /**
+     * Enables or disables uppercase rendering from a string value.
+     */
     public HyUIStyle setRenderUppercase(String renderUppercase) {
         renderUppercase = cleanUnits(renderUppercase);
         this.renderUppercase = Boolean.parseBoolean(renderUppercase);
         return this;
     }
 
+    /**
+     * Enables or disables italics rendering.
+     */
     public HyUIStyle setRenderItalics(boolean renderItalics) {
         this.renderItalics = renderItalics;
         return this;
     }
 
+    /**
+     * Enables or disables italics rendering from a string value.
+     */
     public HyUIStyle setRenderItalics(String renderItalics) {
         renderItalics = cleanUnits(renderItalics);
         this.renderItalics = Boolean.parseBoolean(renderItalics);
         return this;
     }
 
+    /**
+     * Sets the text color (hex or named).
+     */
     public HyUIStyle setTextColor(String textColor) {
         textColor = cleanUnits(textColor);
         this.textColor = textColor;
         return this;
     }
 
+    /**
+     * Sets the letter spacing.
+     */
     public HyUIStyle setLetterSpacing(int letterSpacing) {
         this.letterSpacing = letterSpacing;
         return this;
     }
 
+    /**
+     * Sets the letter spacing from a string value.
+     */
     public HyUIStyle setLetterSpacing(String letterSpacing) {
         try {
             letterSpacing = cleanUnits(letterSpacing);
@@ -141,17 +192,26 @@ public class HyUIStyle {
         return this;
     }
 
+    /**
+     * Enables or disables text wrapping.
+     */
     public HyUIStyle setWrap(boolean wrap) {
         this.wrap = wrap;
         return this;
     }
 
+    /**
+     * Enables or disables text wrapping from a string value.
+     */
     public HyUIStyle setWrap(String wrap) {
         wrap = cleanUnits(wrap);
         this.wrap = Boolean.parseBoolean(wrap);
         return this;
     }
 
+    /**
+     * Sets the font name (currently a no-op due to engine limitations).
+     */
     public HyUIStyle setFontName(String fontName) {
         // Literally do nothing. TODO: Figure out font crashes.
         /*String normalized = normalizeFontName(fontName);
@@ -161,39 +221,60 @@ public class HyUIStyle {
         return this;
     }
 
+    /**
+     * Sets the outline color.
+     */
     public HyUIStyle setOutlineColor(String outlineColor) {
         outlineColor = cleanUnits(outlineColor);
         this.outlineColor = outlineColor;
         return this;
     }
 
+    /**
+     * Sets the horizontal alignment.
+     */
     public HyUIStyle setHorizontalAlignment(Alignment horizontalAlignment) {
         this.horizontalAlignment = horizontalAlignment;
         return this;
     }
 
+    /**
+     * Sets the horizontal alignment from a string value.
+     */
     public HyUIStyle setHorizontalAlignment(String horizontalAlignment) {
         ParseUtils.parseEnum(horizontalAlignment, Alignment.class)
                 .ifPresent(v -> this.horizontalAlignment = v);
         return this;
     }
 
+    /**
+     * Sets the vertical alignment.
+     */
     public HyUIStyle setVerticalAlignment(Alignment verticalAlignment) {
         this.verticalAlignment = verticalAlignment;
         return this;
     }
 
+    /**
+     * Sets the vertical alignment from a string value.
+     */
     public HyUIStyle setVerticalAlignment(String verticalAlignment) {
         ParseUtils.parseEnum(verticalAlignment, Alignment.class)
                 .ifPresent(v -> this.verticalAlignment = v);
         return this;
     }
 
+    /**
+     * Sets the overall alignment.
+     */
     public HyUIStyle setAlignment(Alignment alignment) {
         this.alignment = alignment;
         return this;
     }
 
+    /**
+     * Sets the overall alignment from a string value.
+     */
     public HyUIStyle setAlignment(String alignment) {
         alignment = cleanUnits(alignment);
         ParseUtils.parseEnum(alignment, Alignment.class)
@@ -201,97 +282,163 @@ public class HyUIStyle {
         return this;
     }
 
+    /**
+     * Sets a style reference within the default document.
+     */
     public HyUIStyle withStyleReference(String reference) {
         this.styleReference = reference;
         return this;
     }
 
+    /**
+     * Sets a style reference within a specific document.
+     */
     public HyUIStyle withStyleReference(String document, String reference) {
         this.styleDocument = document;
         this.styleReference = reference;
         return this;
     }
 
+    /**
+     * Sets the disabled state style.
+     */
     public HyUIStyle setDisabledStyle(HyUIStyle style) {
         states.put("Disabled", style);
         return this;
     }
 
+    /**
+     * Sets the hovered state style.
+     */
     public HyUIStyle setHoverStyle(HyUIStyle style) {
         states.put("Hovered", style);
         return this;
     }
 
+    /**
+     * Sets a raw property value.
+     */
     public HyUIStyle set(String key, Object value) {
         this.rawProperties.put(key, value);
         return this;
     }
 
+    /**
+     * Sets multiple raw property values.
+     */
     public HyUIStyle set(Map<String, Object> properties) {
         this.rawProperties.putAll(properties);
         return this;
     }
 
+    /**
+     * @return the configured font size
+     */
     public Float getFontSize() {
         return fontSize;
     }
 
+    /**
+     * @return the minimum font size used when shrinking to fit
+     */
     public Float getMinShrinkTextToFitFontSize() {
         return minShrinkTextToFitFontSize;
     }
 
+    /**
+     * @return whether shrink-to-fit is enabled
+     */
     public Boolean getShrinkTextToFit() {
         return shrinkTextToFit;
     }
 
+    /**
+     * @return whether bold rendering is enabled
+     */
     public Boolean getRenderBold() {
         return renderBold;
     }
 
+    /**
+     * @return whether italics rendering is enabled
+     */
     public Boolean getRenderItalics() {
         return renderItalics;
     }
 
+    /**
+     * @return whether uppercase rendering is enabled
+     */
     public Boolean getRenderUppercase() {
         return renderUppercase;
     }
 
+    /**
+     * @return the text color
+     */
     public String getTextColor() {
         return textColor;
     }
 
+    /**
+     * @return the letter spacing
+     */
     public Integer getLetterSpacing() {
         return letterSpacing;
     }
 
+    /**
+     * @return whether wrapping is enabled
+     */
     public Boolean getWrap() {
         return wrap;
     }
 
+    /**
+     * @return the font name (may be null)
+     */
     public String getFontName() {
         return fontName;
     }
 
+    /**
+     * @return the outline color
+     */
     public String getOutlineColor() {
         return outlineColor;
     }
 
+    /**
+     * @return horizontal alignment
+     */
     public Alignment getHorizontalAlignment() {
         return horizontalAlignment;
     }
 
+    /**
+     * @return vertical alignment
+     */
     public Alignment getVerticalAlignment() {
         return verticalAlignment;
     }
 
+    /**
+     * @return overall alignment
+     */
     public Alignment getAlignment() {
         return alignment;
     }
 
+    /**
+     * @return style reference name
+     */
     public String getStyleReference() {
         return styleReference;
     }
 
+    /**
+     * @return style document name
+     */
     public String getStyleDocument() {
         return styleDocument;
     }
@@ -320,6 +467,9 @@ public class HyUIStyle {
                 '}';
     }
     
+    /**
+     * Converts this style to a Hytale LabelStyle string.
+     */
     public String toLabelStyle() {
         StringBuilder sb = new StringBuilder();
         sb.append("(");
@@ -397,14 +547,23 @@ public class HyUIStyle {
         return sb.toString();
     }
 
+    /**
+     * @return per-state overrides (e.g., Disabled, Hovered)
+     */
     public Map<String, HyUIStyle> getStates() {
         return states;
     }
 
+    /**
+     * @return raw style properties applied alongside typed fields
+     */
     public Map<String, Object> getRawProperties() {
         return rawProperties;
     }
 
+    /**
+     * Converts this style into a BSON document for UI commands.
+     */
     public BsonDocument toBsonDocument() {
         BsonDocumentHelper doc = new BsonDocumentHelper();
         if (fontSize != null) doc.set("FontSize", fontSize.doubleValue());

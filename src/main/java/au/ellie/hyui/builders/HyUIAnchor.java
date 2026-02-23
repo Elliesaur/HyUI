@@ -23,6 +23,10 @@ import com.hypixel.hytale.server.core.ui.Value;
 import au.ellie.hyui.utils.BsonDocumentHelper;
 import org.bson.BsonDocument;
 
+/**
+ * Fluent builder for Hytale {@link Anchor} values.
+ * Provides convenience setters and conversions to Hytale/ BSON structures.
+ */
 public class HyUIAnchor {
     private Integer left = null;
     private Integer right = null;
@@ -35,9 +39,14 @@ public class HyUIAnchor {
     private Integer width = null;
     private Integer minWidth = null;
     private Integer maxWidth = null;
-    public HyUIAnchor() {
-    }
+    /**
+     * Creates an empty anchor with no fields set.
+     */
+    public HyUIAnchor() {}
 
+    /**
+     * Creates an anchor with all fields explicitly set.
+     */
     public HyUIAnchor(Integer left, Integer right, Integer top, Integer bottom, Integer height, Integer full, Integer horizontal, Integer vertical, Integer width, Integer minWidth, Integer maxWidth) {
         this.left = left;
         this.right = right;
@@ -52,65 +61,104 @@ public class HyUIAnchor {
         this.maxWidth = maxWidth;
     }
 
+    /**
+     * Sets the left anchor.
+     */
     public HyUIAnchor setLeft(Integer left) {
         this.left = left;
         return this;
     }
 
+    /**
+     * Sets the right anchor.
+     */
     public HyUIAnchor setRight(Integer right) {
         this.right = right;
         return this;
     }
 
+    /**
+     * Sets the top anchor.
+     */
     public HyUIAnchor setTop(Integer top) {
         this.top = top;
         return this;
     }
 
+    /**
+     * Sets the bottom anchor.
+     */
     public HyUIAnchor setBottom(Integer bottom) {
         this.bottom = bottom;
         return this;
     }
 
+    /**
+     * Sets the height anchor.
+     */
     public HyUIAnchor setHeight(Integer height) {
         this.height = height;
         return this;
     }
 
+    /**
+     * @return the configured height, or null if unset
+     */
     public Integer getHeight() {
         return height;
     }
 
+    /**
+     * Sets the full anchor (stretch).
+     */
     public HyUIAnchor setFull(Integer full) {
         this.full = full;
         return this;
     }
 
+    /**
+     * Sets the horizontal anchor.
+     */
     public HyUIAnchor setHorizontal(Integer horizontal) {
         this.horizontal = horizontal;
         return this;
     }
 
+    /**
+     * Sets the vertical anchor.
+     */
     public HyUIAnchor setVertical(Integer vertical) {
         this.vertical = vertical;
         return this;
     }
 
+    /**
+     * Sets the width anchor.
+     */
     public HyUIAnchor setWidth(Integer width) {
         this.width = width;
         return this;
     }
 
+    /**
+     * Sets the minimum width anchor.
+     */
     public HyUIAnchor setMinWidth(Integer minWidth) {
         this.minWidth = minWidth;
         return this;
     }
 
+    /**
+     * Sets the maximum width anchor.
+     */
     public HyUIAnchor setMaxWidth(Integer maxWidth) {
         this.maxWidth = maxWidth;
         return this;
     }
 
+    /**
+     * Converts this builder into a Hytale {@link Anchor}.
+     */
     public Anchor toHytaleAnchor() {
         Anchor anchor = new Anchor();
         if (left != null) anchor.setLeft(Value.of(left));
@@ -127,6 +175,9 @@ public class HyUIAnchor {
         return anchor;
     }
 
+    /**
+     * Converts this builder into a BSON document for UI commands.
+     */
     public BsonDocument toBsonDocument() {
         BsonDocumentHelper doc = new BsonDocumentHelper();
         if (left != null) doc.set("Left", left);
