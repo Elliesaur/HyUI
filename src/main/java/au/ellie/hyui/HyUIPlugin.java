@@ -61,7 +61,7 @@ public class HyUIPlugin extends JavaPlugin {
 
     private static HyUIPluginLogger instance;
     
-    private static final boolean ADD_CMDS = true;
+    private static final boolean ADD_CMDS = false;
     private static final ConcurrentMap<PlayerRef, Deque<Asset>> PENDING_ASSETS =
             new ConcurrentHashMap<>();
     private static final ConcurrentMap<PlayerRef, Boolean> REBUILD_SCHEDULED =
@@ -102,7 +102,7 @@ public class HyUIPlugin extends JavaPlugin {
             }
 
         });
-        PacketAdapters.registerOutbound((PacketHandler handler, Packet packet) -> {
+        /*PacketAdapters.registerOutbound((PacketHandler handler, Packet packet) -> {
             var packetName = packet.getClass().getSimpleName();
             if (packetName.equals("CustomPage")) {
                 var uiCmd = (CustomPage) packet;
@@ -121,7 +121,7 @@ public class HyUIPlugin extends JavaPlugin {
                 HytaleLogger.forEnclosingClass().atInfo().log(sb.toString());
             }
 
-        });
+        });*/
         UIParseOptions.setDefaultAssetSource(buildAssetSource());
 
         if (ADD_CMDS) {

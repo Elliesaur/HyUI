@@ -20,17 +20,19 @@ package au.ellie.hyui;
 
 import com.hypixel.hytale.logger.HytaleLogger;
 
+import java.util.logging.Level;
+
 public class HyUIPluginLogger {
-    
-    private final HytaleLogger internalLogger = HytaleLogger.forEnclosingClass();
-    
+    private static HytaleLogger.Api logger;
     public static final boolean IS_DEV = "true".equals(System.getenv("HYUI_DEV"));
+    public static final String LOGGING_LEVEL = System.getenv("HYUI_LOGGING_LEVEL");
 
     public HyUIPluginLogger() {
-        
+        HytaleLogger internalLogger = HytaleLogger.forEnclosingClass();
+        logger = internalLogger.at(Level.parse(LOGGING_LEVEL == null || LOGGING_LEVEL.isEmpty() ? "FINEST" : LOGGING_LEVEL.toUpperCase()));
     }
     
     public void logFinest(String message) {
-        internalLogger.atFinest().log(message);
+        logger.log(message);
     }
 }

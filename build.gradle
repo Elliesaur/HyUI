@@ -40,7 +40,7 @@ javadoc {
 
 hytale {
     // Versioning
-    patchline = "pre-release"
+    patchline = "release"
 
     // Manifest auto update
     manifest {
@@ -48,7 +48,7 @@ hytale {
         // Pre-release 2026.02.11-891910c77
         // Release 2026.02.17-255364b8e, 2026.02.18-f3b8fff95
         //serverVersion = "2026.02.18-f3b8fff95"
-        serverVersion = "2026.02.19-ad6f58ec8"
+        serverVersion = "2026.02.19-1a311a592"
         author(author_name, "ellie@ellie.au", "https://ellie.au")
         optionalDependencies.put("Buuz135:MultipleHUD", "*");
     }

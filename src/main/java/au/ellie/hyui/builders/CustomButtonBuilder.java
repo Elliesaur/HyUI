@@ -162,6 +162,27 @@ public class CustomButtonBuilder extends UIElementBuilder<CustomButtonBuilder>
     }
 
     /**
+     * Adds an event listener for the Activating event.
+     */
+    public CustomButtonBuilder onClick(Runnable callback) {
+        return addEventListener(CustomUIEventBindingType.Activating, v -> callback.run());
+    }
+
+    /**
+     * Adds an event listener for the Activating event.
+     */
+    public CustomButtonBuilder onClick(Consumer<Void> callback) {
+        return addEventListener(CustomUIEventBindingType.Activating, callback);
+    }
+
+    /**
+     * Adds an event listener for the Activating event with context.
+     */
+    public CustomButtonBuilder onClick(BiConsumer<Void, UIContext> callback) {
+        return addEventListener(CustomUIEventBindingType.Activating, callback);
+    }
+
+    /**
      * Adds an event listener for the DoubleClicking event.
      */
     public CustomButtonBuilder onDoubleClicking(Consumer<MouseEventData> callback) {
