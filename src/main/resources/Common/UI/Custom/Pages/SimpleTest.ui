@@ -1,0 +1,41 @@
+$C = "../Common.ui";
+
+$C.@PageOverlay {
+  $C.@Container {
+    Anchor: (Width: 950, Height: 950);
+
+    #Title {
+      Group {
+        LayoutMode: Top;
+        $C.@Title {
+          @Text = "Chat Customization";
+        }
+      }
+    }
+
+    #Content {
+      Group {
+        LayoutMode: Left;
+        Anchor: (Height: 50, Bottom: 15);
+        $C.@CheckBoxWithLabel #PrefixBold {
+            @Text = "Bold";
+            Anchor: (Right: 20);
+        }
+        $C.@TextButton #TabEditor {
+          @Text = "Editor";
+          Anchor: (Width: 120, Height: 46, Right: 10);
+        }
+        $C.@TextButton #TabGradients {
+          @Text = "Gradients";
+          Anchor: (Width: 160, Height: 46, Right: 10);
+        }
+        $C.@TextButton #TabHelp {
+          @Text = "Commands";
+          Anchor: (Width: 170, Height: 46);
+        }
+      }
+    }
+  }
+}
+
+$C.@BackButton #BackButton6345508d {}

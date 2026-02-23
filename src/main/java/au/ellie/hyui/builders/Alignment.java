@@ -19,5 +19,5 @@
 package au.ellie.hyui.builders;
 
 public enum Alignment {
-        Left, Center, Right, End, Start
+        Start, Center, End
 }

@@ -45,6 +45,10 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.UUID;
 
+/**
+ * Base implementation for HyUI pages and HUDs.
+ * Handles template processing, element building, and event dispatch.
+ */
 public abstract class HyUInterface implements UIContext {
 
     protected String uiFile;
@@ -59,6 +63,17 @@ public abstract class HyUInterface implements UIContext {
     protected final InterfaceBuilder<?> rootElementBuilder;
     protected final Set<String> dirtyValueIds = new HashSet<>();
 
+    /**
+     * Creates a new interface wrapper.
+     *
+     * @param uiFile UI file path (nullable)
+     * @param elements top-level elements to build
+     * @param editCallbacks edit callbacks to apply before building
+     * @param templateHtml optional template HTML
+     * @param templateProcessor template processor for runtime updates
+     * @param runtimeTemplateUpdatesEnabled whether to reprocess templates at runtime
+     * @param rootElementBuilder root builder that owns this interface
+     */
     public HyUInterface(String uiFile,
                         List<UIElementBuilder<?>> elements,
                         List<BiConsumer<UICommandBuilder, UIEventBuilder>> editCallbacks,
@@ -75,11 +90,20 @@ public abstract class HyUInterface implements UIContext {
         this.rootElementBuilder = rootElementBuilder;
     }
 
+    /**
+     * @return a copy of the UI command log for debugging
+     */
     @Override
     public List<String> getCommandLog() {
         return new ArrayList<>(commandLog);
     }
 
+    /**
+     * Retrieves the last known value for an element ID.
+     *
+     * @param id element id
+     * @return optional value
+     */
     @Override
     public Optional<Object> getValue(String id) {
         if (HyUIPluginLogger.IS_DEV) {
@@ -91,14 +115,25 @@ public abstract class HyUInterface implements UIContext {
         return Optional.ofNullable(elementValues.get(id));
     }
 
+    /**
+     * @return the active page if this interface is a page
+     */
     @Override
     public Optional<HyUIPage> getPage() {
         return Optional.empty();
     }
 
+    /**
+     * Updates the page; implementations decide behavior.
+     *
+     * @param shouldClose whether to close/clear before rebuilding
+     */
     @Override
     public void updatePage(boolean shouldClose) {}
     
+    /**
+     * Builds the UI into command/event builders.
+     */
     public void build(@Nonnull Ref<EntityStore> ref,
                       @Nonnull UICommandBuilder uiCommandBuilder,
                       @Nonnull UIEventBuilder uiEventBuilder,
@@ -106,6 +141,11 @@ public abstract class HyUInterface implements UIContext {
         build(ref, uiCommandBuilder, uiEventBuilder, store, false);
     }
 
+    /**
+     * Builds the UI into command/event builders with optional update-only mode.
+     *
+     * @param updateOnly if true, only update existing elements
+     */
     public void build(@Nonnull Ref<EntityStore> ref,
                       @Nonnull UICommandBuilder uiCommandBuilder,
                       @Nonnull UIEventBuilder uiEventBuilder,
@@ -172,10 +212,18 @@ public abstract class HyUInterface implements UIContext {
         this.hasBuilt = true;
     }
 
+    /**
+     * Builds using an existing {@link UICommandBuilder}.
+     */
     public void buildFromCommandBuilder(@Nonnull UICommandBuilder uiCommandBuilder, @Nonnull UIEventBuilder uiEventBuilder) {
         buildFromCommandBuilder(uiCommandBuilder, false, uiEventBuilder);
     }
 
+    /**
+     * Builds using an existing {@link UICommandBuilder}, with optional update-only mode.
+     *
+     * @param updateOnly if true, only update existing elements
+     */
     public void buildFromCommandBuilder(@Nonnull UICommandBuilder uiCommandBuilder, boolean updateOnly, @Nonnull UIEventBuilder uiEventBuilder) {
         HyUIPlugin.getLog().logFinest("REBUILD: HyUInterface buildFromCommandBuilder updateOnly=" + updateOnly);
         HyUIPlugin.getLog().logFinest("Building HyUInterface " + (uiFile != null ? " from file: " + uiFile : ""));
@@ -234,6 +282,9 @@ public abstract class HyUInterface implements UIContext {
         this.hasBuilt = true;
     }
 
+    /**
+     * Captures initial values from an element tree into the value cache.
+     */
     protected void captureInitialValues(UIElementBuilder<?> element) {
         String id = element.getId();
         if (id != null && element.initialValue != null) {
@@ -244,10 +295,16 @@ public abstract class HyUInterface implements UIContext {
         }
     }
 
+    /**
+     * Dispatches a data event to all elements using this interface as context.
+     */
     protected void handleDataEventInternal(DynamicPageData data) {
         handleDataEventInternal(data, this);
     }
 
+    /**
+     * Dispatches a data event to all elements using the provided context.
+     */
     protected void handleDataEventInternal(DynamicPageData data, UIContext context) {
         HyUIPlugin.getLog().logFinest("Received DataEvent: Action=" + data.action);
         data.values.forEach((key, value) -> {
@@ -259,6 +316,9 @@ public abstract class HyUInterface implements UIContext {
         }
     }
 
+    /**
+     * Routes event callbacks for a single element and its children.
+     */
     protected void handleElementEvents(UIElementBuilder<?> element, DynamicPageData data, UIContext context) {
         String internalId = element.getEffectiveId();
         String userId = element.getId();
@@ -364,6 +424,12 @@ public abstract class HyUInterface implements UIContext {
         }
     }
 
+    /**
+     * Looks up a UI element by its user-defined id.
+     *
+     * @param id element id
+     * @return optional builder
+     */
     public Optional<UIElementBuilder<?>> getById(String id) {
         for (UIElementBuilder<?> element : elements) {
             Optional<UIElementBuilder<?>> found = findByIdRecursive(element, id);
@@ -372,6 +438,9 @@ public abstract class HyUInterface implements UIContext {
         return Optional.empty();
     }
 
+    /**
+     * Raw lookup of an element by id.
+     */
     @Override
     public Optional<UIElementBuilder<?>> getByIdRaw(String id) {
         return getById(id);
@@ -388,46 +457,79 @@ public abstract class HyUInterface implements UIContext {
         return Optional.empty();
     }
 
+    /**
+     * Looks up and casts an element by id.
+     */
     public <E extends UIElementBuilder<E>> Optional<E> getById(String id, Class<E> clazz) {
         return getById(id).filter(clazz::isInstance).map(clazz::cast);
     }
 
+    /**
+     * @return the UI file path, if any
+     */
     public String getUiFile() {
         return uiFile;
     }
 
+    /**
+     * Sets the UI file path for this interface.
+     */
     protected void setUiFile(String uiFile) {
         this.uiFile = uiFile;
     }
 
+    /**
+     * @return top-level elements managed by this interface
+     */
     public List<UIElementBuilder<?>> getElements() {
         return elements;
     }
 
+    /**
+     * Replaces the current top-level element list.
+     */
     protected void setElements(List<UIElementBuilder<?>> elements) {
         this.elements = elements;
     }
 
+    /**
+     * @return edit callbacks applied before building
+     */
     public List<BiConsumer<UICommandBuilder, UIEventBuilder>> getEditCallbacks() {
         return editCallbacks;
     }
 
+    /**
+     * Replaces the current edit callbacks list.
+     */
     protected void setEditCallbacks(List<BiConsumer<UICommandBuilder, UIEventBuilder>> editCallbacks) {
         this.editCallbacks = editCallbacks;
     }
 
+    /**
+     * @return cached element values by id
+     */
     public Map<String, Object> getElementValues() {
         return elementValues;
     }
 
+    /**
+     * Replaces the current element value cache.
+     */
     protected void setElementValues(Map<String, Object> elementValues) {
         this.elementValues = elementValues;
     }
 
+    /**
+     * Resets the built state for this interface.
+     */
     protected void resetBuildState() {
         this.hasBuilt = false;
     }
 
+    /**
+     * Releases any dynamic image slots assigned for this player.
+     */
     public void releaseDynamicImages(UUID playerUuid) {
         getElements().forEach(element -> releaseDynamicImagesRecursive(element, playerUuid));
     }
@@ -581,12 +683,20 @@ public abstract class HyUInterface implements UIContext {
         }
     }
 
+    /**
+     * Reopens this interface when a referenced asset changes.
+     *
+     * @return the rebuilt builder, or null if not applicable
+     */
     public InterfaceBuilder<?> reopenFromAsset(Player player, PlayerRef ref, Store<EntityStore> store, Asset asset) {
         if (rootElementBuilder instanceof PageBuilder pageBuilder) {
             // TODO: EndsWith or some parsing?
             if (uiFile != null && asset.name.contains(uiFile)) {
                 pageBuilder.elementRegistry.clear();
-                pageBuilder.fromFile(uiFile);
+                if (pageBuilder.parsedUIFile)
+                    pageBuilder.fromUIFile(uiFile);
+                else
+                    pageBuilder.fromFile(uiFile);
                 pageBuilder.open(ref, store);
                 return pageBuilder;
             }
@@ -618,7 +728,10 @@ public abstract class HyUInterface implements UIContext {
         } else if (rootElementBuilder instanceof HudBuilder hudBuilder) {
             if (uiFile != null && asset.name.contains(uiFile)) {
                 hudBuilder.elementRegistry.clear();
-                hudBuilder.fromFile(uiFile);
+                if (hudBuilder.parsedUIFile)
+                    hudBuilder.fromUIFile(uiFile);
+                else
+                    hudBuilder.fromFile(uiFile);
                 // DO NOT ever show.
                 return hudBuilder;
             }
@@ -649,6 +762,9 @@ public abstract class HyUInterface implements UIContext {
         return null;
     }
 
+    /**
+     * Determines whether an asset change should trigger a reopen.
+     */
     public boolean willReopenFromAsset(Player player, PlayerRef playerRef, Store<EntityStore> store, Asset asset) {
         if (rootElementBuilder instanceof PageBuilder pageBuilder) {
             // TODO: EndsWith or some parsing?

@@ -24,6 +24,9 @@ import au.ellie.hyui.elements.UIType;
 import au.ellie.hyui.events.UIContext;
 import au.ellie.hyui.html.HtmlParser;
 import au.ellie.hyui.html.TemplateProcessor;
+import au.ellie.hyui.uiparser.UIFileParser;
+import au.ellie.hyui.uiparser.UIParseOptions;
+import au.ellie.hyui.uiparser.UIParseResult;
 import au.ellie.hyui.utils.HyvatarUtils;
 import au.ellie.hyui.utils.PngDownloadUtils;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
@@ -56,7 +59,9 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
     private static final ExecutorService DYNAMIC_IMAGE_EXECUTOR = Executors.newCachedThreadPool();
     protected String htmlFilePath;
     protected String uiStyleFilePath;
-
+    protected UIParseResult lastParseResult;
+    protected boolean parsedUIFile;
+    
     @SuppressWarnings("unchecked")
     protected T self() {
         return (T) this;
@@ -75,6 +80,65 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
         this.templateProcessor = null;
         this.runtimeTemplateUpdatesEnabled = false;
         return self();
+    }
+
+    /**
+     * Parses a .ui file into builders and attaches them to this interface.
+     * This clears the UI file path to avoid double-loading the file at build time.
+     *
+     * @param uiFile  The path to the .ui file (e.g. "Pages/MyInterface.ui")
+     * @param options Parsing options, including asset sources (optional)
+     * @return This builder instance for method chaining
+     */
+    public T fromUIFile(String uiFile, UIParseOptions options) {
+        fromFile(uiFile);
+        UIFileParser parser = new UIFileParser(options);
+        UIParseResult result = parser.parse(uiFile);
+        this.lastParseResult = result;
+        if (!result.getElements().isEmpty()) {
+            GroupBuilder rootGroup = GroupBuilder.group().withRawId("HyUIRoot");
+            for (UIElementBuilder<?> element : result.getElements()) {
+                rootGroup.addChild(element);
+            }
+            registerElement(rootGroup);
+            this.uiFile = uiFile;
+            this.parsedUIFile = true;
+            //this.htmlFilePath = "";
+        }
+        return self();
+    }
+
+    /**
+     * Parses a .ui file into builders using the provided assets zip file for resolution.
+     *
+     * @param uiFile The path to the .ui file (e.g. "Pages/MyInterface.ui")
+     * @param assetsZipPath Path to the Assets.zip file
+     * @return This builder instance for method chaining
+     */
+    public T fromUIFile(String uiFile, Path assetsZipPath) {
+        UIParseOptions options = assetsZipPath != null
+                ? UIParseOptions.builder().assetsZipPath(assetsZipPath).build()
+                : null;
+        return fromUIFile(uiFile, options);
+    }
+
+    /**
+     * Parses a .ui file into builders using the default game asset sources.
+     *
+     * @param uiFile The path to the .ui file (e.g. "Pages/MyInterface.ui")
+     * @return This builder instance for method chaining
+     */
+    public T fromUIFile(String uiFile) {
+        return fromUIFile(uiFile, UIParseOptions.builder().build());
+    }
+
+    /**
+     * Returns the most recent .ui parse result, if any.
+     *
+     * @return The last parse result or {@code null} if none was recorded
+     */
+    public UIParseResult getLastParseResult() {
+        return lastParseResult;
     }
 
     /**
@@ -576,12 +640,32 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
      */
     public List<UIElementBuilder<?>> getTopLevelElements() {
         List<UIElementBuilder<?>> topLevel = new ArrayList<>();
+        UIElementBuilder<?> rootGroup = elementRegistry.get("HyUIRoot");
+        Set<UIElementBuilder<?>> rootDescendants = new HashSet<>();
+        if (rootGroup != null) {
+            collectDescendants(rootGroup, rootDescendants);
+            topLevel.add(rootGroup);
+        }
         for (UIElementBuilder<?> element : elementRegistry.values()) {
+            if (element == rootGroup) {
+                continue;
+            }
             if ("#HyUIRoot".equals(element.parentSelector)) {
+                if (rootGroup != null && rootDescendants.contains(element)) {
+                    continue;
+                }
                 topLevel.add(element);
             }
         }
         return topLevel;
+    }
+
+    private void collectDescendants(UIElementBuilder<?> element, Set<UIElementBuilder<?>> descendants) {
+        for (UIElementBuilder<?> child : element.children) {
+            if (descendants.add(child)) {
+                collectDescendants(child, descendants);
+            }
+        }
     }
 
     /**

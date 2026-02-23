@@ -1,8 +1,11 @@
+import kotlin.OptIn
+
 plugins {
     id 'java'
     alias(libs.plugins.shadow)
     alias(libs.plugins.idea.ext)
     alias(libs.plugins.hytalegradle)
+    alias(libs.plugins.dokka)
 }
 
 dependencies {
@@ -10,13 +13,23 @@ dependencies {
     shadow libs.jsoup
     implementation libs.jsoup
 
+    // UI parsing
+    shadow libs.hytaleuiparser
+    implementation libs.hytaleuiparser
+    
     // Unit testing
     testImplementation libs.junit
     testRuntimeOnly libs.junit.launcher
+
+    dokkaPlugin 'org.jetbrains.dokka:gfm-plugin:2.1.0'
 }
 
 repositories {
     mavenCentral()
+    maven(m -> {
+        m.url("https://mvn.ultradev.app/snapshots")
+        m.name("ultradevSnapshots")
+    })
 }
 
 java {
@@ -39,7 +52,8 @@ hytale {
         version = project.version.toString()
         // Pre-release 2026.02.11-891910c77
         // Release 2026.02.17-255364b8e, 2026.02.18-f3b8fff95
-        serverVersion = "2026.02.18-f3b8fff95"
+        //serverVersion = "2026.02.18-f3b8fff95"
+        serverVersion = "2026.02.19-1a311a592"
         author(author_name, "ellie@ellie.au", "https://ellie.au")
         optionalDependencies.put("Buuz135:MultipleHUD", "*");
     }
@@ -83,6 +97,8 @@ tasks.register('releaseJar', Jar) {
     from(zipTree(shadowJarTask.archiveFile)) {
         exclude(
                 'Common/UI/Custom/Pages/*.html',
+                'Common/UI/Custom/Pages/ComplexTest.ui',
+                'Common/UI/Custom/Pages/SimpleTest.ui',
                 'Common/UI/Custom/*.png',
                 'au/ellie/hyui/commands/**',
         )

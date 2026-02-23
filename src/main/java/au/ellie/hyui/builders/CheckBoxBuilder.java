@@ -83,12 +83,10 @@ public class CheckBoxBuilder extends UIElementBuilder<CheckBoxBuilder> {
         return withSecondaryStyle("UncheckedStyle", uncheckedStyle);
     }
 
-    // TODO: Work out how I can set a variable within a variable given the Label for a checkbox with label has 
-    //       no ID to work with.
-    /*public CheckBoxBuilder withText(String text) {
+    public CheckBoxBuilder withText(String text) {
         this.text = text;
         return this;
-    }*/
+    }
 
     /**
      * Registers an event listener for the checkbox being constructed. The listener is triggered 
@@ -166,6 +164,10 @@ public class CheckBoxBuilder extends UIElementBuilder<CheckBoxBuilder> {
             // For CheckBoxWithLabel, the actual CheckBox is a child
             HyUIPlugin.getLog().logFinest("Setting Value: " + value + " for " + selector + " #CheckBox");
             commands.set(selector + " #CheckBox.Value", value);
+        }
+        if (text != null) {
+            HyUIPlugin.getLog().logFinest("Setting Text: " + text + " for " + selector);
+            commands.set(selector + "[1].Text", text);
         }
 
         if ( hyUIStyle == null && typedStyle == null  && style != null) {

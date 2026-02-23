@@ -253,6 +253,21 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
         return (T) this;
     }
 
+    /**
+     * Sets the element ID without normalizing it.
+     *
+     * @param id the raw id to set for the element, without leading #
+     * @return the builder instance for method chaining
+     */
+    @SuppressWarnings("unchecked")
+    public T withRawId(String id) {
+        if (id != null) {
+            this.userId = id;
+            this.id = id;
+        }
+        return (T) this;
+    }
+
     private String sanitizeId(String id) {
         if (id == null) return null;
         StringBuilder sb = new StringBuilder();
@@ -725,8 +740,17 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
                     commands.appendInline(parentSelector, inline);
                 } else {
                     String inline = generateBasicInlineMarkup();
-                    HyUIPlugin.getLog().logFinest("Appending inline: " + inline + " to " + parentSelector);
-                    commands.appendInline(parentSelector, inline);
+                    if (this instanceof GroupBuilder) {
+                        if (id != null && id.equals("HyUIRoot")) {
+                            commands.appendInline(null, inline);
+                        } else {
+                            HyUIPlugin.getLog().logFinest("Appending inline: " + inline + " to " + parentSelector);
+                            commands.appendInline(parentSelector, inline);
+                        }
+                    } else {
+                        HyUIPlugin.getLog().logFinest("Appending inline: " + inline + " to " + parentSelector);
+                        commands.appendInline(parentSelector, inline);
+                    }
                 }
             }
             

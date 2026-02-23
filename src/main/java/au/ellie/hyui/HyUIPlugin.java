@@ -18,11 +18,11 @@
 
 package au.ellie.hyui;
 
-import au.ellie.hyui.builders.HudBuilder;
-import au.ellie.hyui.builders.HyUIPage;
-import au.ellie.hyui.builders.LabelBuilder;
+import au.ellie.hyui.builders.*;
 import au.ellie.hyui.commands.*;
 import au.ellie.hyui.html.TemplateProcessor;
+import au.ellie.hyui.uiparser.UIParseOptions;
+import au.ellie.hyui.uiparser.UnifiedAssetSource;
 import au.ellie.hyui.utils.HyvatarUtils;
 import au.ellie.hyui.utils.MultiHudWrapper;
 import au.ellie.hyui.utils.PngDownloadUtils;
@@ -31,13 +31,12 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.Asset;
 import com.hypixel.hytale.protocol.Packet;
-import com.hypixel.hytale.protocol.packets.setup.AssetFinalize;
+import com.hypixel.hytale.protocol.packets.interface_.CustomPage;
+import com.hypixel.hytale.protocol.packets.interface_.CustomUICommand;
+import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.protocol.packets.setup.AssetInitialize;
-import com.hypixel.hytale.protocol.packets.setup.AssetPart;
-import com.hypixel.hytale.protocol.packets.setup.RequestCommonAssetsRebuild;
-import com.hypixel.hytale.server.core.asset.common.events.SendCommonAssetsEvent;
+import com.hypixel.hytale.server.core.Options;
 import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.entity.entities.player.hud.HudManager;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.PageManager;
 import com.hypixel.hytale.server.core.event.events.player.PlayerReadyEvent;
 import com.hypixel.hytale.server.core.io.PacketHandler;
@@ -48,9 +47,11 @@ import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import app.ultradev.hytaleuiparser.source.AssetSource;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -101,6 +102,27 @@ public class HyUIPlugin extends JavaPlugin {
             }
 
         });
+        /*PacketAdapters.registerOutbound((PacketHandler handler, Packet packet) -> {
+            var packetName = packet.getClass().getSimpleName();
+            if (packetName.equals("CustomPage")) {
+                var uiCmd = (CustomPage) packet;
+                var sb = new StringBuilder();
+                for (CustomUICommand command : uiCmd.commands) {
+                    sb.append("UICommand(");
+                    sb.append("UICommand.Type." + command.type.name());
+                    sb.append(", ");
+                    sb.append(command.selector == null ? "null" : "\"" + command.selector + "\"");
+                    sb.append(", ");
+                    sb.append(command.data == null ? "null" : "\"" + command.data.replace("\"", "\\\"") + "\"");
+                    sb.append(", ");
+                    sb.append(command.text == null ? "null" : "\"" + command.text.replace("\"", "\\\"") + "\"");
+                    sb.append(")\n");
+                }
+                HytaleLogger.forEnclosingClass().atInfo().log(sb.toString());
+            }
+
+        });*/
+        UIParseOptions.setDefaultAssetSource(buildAssetSource());
 
         if (ADD_CMDS) {
             instance.logFinest("Setting up plugin " + this.getName());
@@ -112,6 +134,12 @@ public class HyUIPlugin extends JavaPlugin {
             this.getCommandRegistry().registerCommand(new HyUITemplateRuntimeCommand());
             this.getCommandRegistry().registerCommand(new HyUIBountyCommand());
             this.getCommandRegistry().registerCommand(new HyUITabsCommand());
+            
+            var pb = PageBuilder.detachedPage()
+                    .fromUIFile("Pages/ComplexTest.ui");
+            pb.getById("SaveButton", ButtonBuilder.class).ifPresent((b) -> {
+                b.addEventListener(CustomUIEventBindingType.Activating, (e) -> HytaleLogger.forEnclosingClass().atInfo().log(b.toString()));
+            });
             
             this.getEventRegistry().registerGlobal(PlayerReadyEvent.class, event -> {
                 instance.logFinest("Player ready event triggered for " + event.getPlayer().getDisplayName());
@@ -136,6 +164,7 @@ public class HyUIPlugin extends JavaPlugin {
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
+
                     String html = "Pages/HudTest.html";
                     var tp = new TemplateProcessor();
                     tp.setVariable("playerName", player.getDisplayName());
@@ -148,6 +177,7 @@ public class HyUIPlugin extends JavaPlugin {
                                 });
                             })
                             .show(playerRef);
+                    pb.open(playerRef, store);
                 });
 
             });
@@ -196,6 +226,14 @@ public class HyUIPlugin extends JavaPlugin {
                 REBUILD_SCHEDULED.remove(playerRef);
             }
         });
+    }
+
+    private AssetSource buildAssetSource() {
+        UnifiedAssetSource source = new UnifiedAssetSource();
+        for (Path assetPath : Options.getOptionSet().valuesOf(Options.ASSET_DIRECTORY)) {
+            source.addPath(assetPath);
+        }
+        return source.listUIFiles().isEmpty() ? null : source;
     }
 
     private static Set<Asset> drainAssets(PlayerRef playerRef) {
