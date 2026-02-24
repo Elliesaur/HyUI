@@ -701,7 +701,7 @@ public abstract class HyUInterface implements UIContext {
                 return pageBuilder;
             }
             // Generally the resource html path is more specific than the asset name.
-            if (pageBuilder.htmlFilePath.contains(asset.name)) {
+            if (pageBuilder.htmlFilePath != null && pageBuilder.htmlFilePath.contains(asset.name)) {
                 var normalizedHtmlPath = pageBuilder.htmlFilePath.replace("/Common/UI/Custom/", "");
                 var style = pageBuilder.uiStyleFilePath != null ? 
                         pageBuilder.uiStyleFilePath.contains("hywind") ? UIType.HYWIND : UIType.NONE
@@ -736,7 +736,7 @@ public abstract class HyUInterface implements UIContext {
                 return hudBuilder;
             }
             // Generally the resource html path is more specific than the asset name.
-            if (hudBuilder.htmlFilePath.contains(asset.name)) {
+            if (hudBuilder.htmlFilePath != null && hudBuilder.htmlFilePath.contains(asset.name)) {
                 var normalizedHtmlPath = hudBuilder.htmlFilePath.replace("/Common/UI/Custom/", "");
                 var style = hudBuilder.uiStyleFilePath != null ?
                         hudBuilder.uiStyleFilePath.contains("hywind") ? UIType.HYWIND : UIType.NONE
