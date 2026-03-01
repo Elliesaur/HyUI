@@ -51,6 +51,7 @@ import java.util.function.Consumer;
 public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
     protected final Map<String, UIElementBuilder<?>> elementRegistry = new LinkedHashMap<>();
     protected final List<BiConsumer<UICommandBuilder, UIEventBuilder>> editCallbacks = new ArrayList<>();
+    protected final List<BiConsumer<UIContext, Boolean>> builtCallbacks = new ArrayList<>();
     protected String uiFile;
     protected String templateHtml;
     protected TemplateProcessor templateProcessor;
@@ -61,6 +62,8 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
     protected String uiStyleFilePath;
     protected UIParseResult lastParseResult;
     protected boolean parsedUIFile;
+    protected boolean persistentElementEditsEnabled;
+    private final Map<String, List<ElementEdit>> persistentElementEdits = new LinkedHashMap<>();
     
     @SuppressWarnings("unchecked")
     protected T self() {
@@ -79,6 +82,19 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
         this.templateHtml = null;
         this.templateProcessor = null;
         this.runtimeTemplateUpdatesEnabled = false;
+        return self();
+    }
+
+    /**
+     * Registers a callback to be triggered after a page/hud build completes.
+     *
+     * @param callback The callback, with UIContext and updateOnly flag.
+     * @return This builder instance for method chaining.
+     */
+    public T onBuild(BiConsumer<UIContext, Boolean> callback) {
+        if (callback != null) {
+            builtCallbacks.add(callback);
+        }
         return self();
     }
 
@@ -375,14 +391,182 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
         return self();
     }
 
+    /**
+     * Enables or disables persistence of element edits across rebuilds.
+     *
+     * @param enabled whether to persist edits made via editById
+     * @return Self, for chaining.
+     */
+    public T enablePersistentElementEdits(boolean enabled) {
+        this.persistentElementEditsEnabled = enabled;
+        return self();
+    }
+
+    /**
+     * Edits an element by ID while keeping method chaining.
+     * Optionally logs the edit for reapplication on rebuild when enabled.
+     *
+     * @param id The ID of the element.
+     * @param clazz The expected element type.
+     * @param edit The edit to apply.
+     * @param <E> The element type.
+     * @return Self, for chaining.
+     */
+    public <E extends UIElementBuilder<E>> T editById(String id, Class<E> clazz, Consumer<E> edit) {
+        if (id == null || id.isBlank() || clazz == null || edit == null) {
+            return self();
+        }
+        if (persistentElementEditsEnabled) {
+            registerPersistentEdit(id, clazz, element -> edit.accept(clazz.cast(element)));
+        }
+        getById(id, clazz).ifPresent(edit);
+        return self();
+    }
+
+    /**
+     * Edits an element by ID without a concrete type.
+     * Optionally logs the edit for reapplication on rebuild when enabled.
+     *
+     * @param id The ID of the element.
+     * @param edit The edit to apply.
+     * @return Self, for chaining.
+     */
+    public T editById(String id, Consumer<UIElementBuilder<?>> edit) {
+        if (id == null || id.isBlank() || edit == null) {
+            return self();
+        }
+        if (persistentElementEditsEnabled) {
+            registerPersistentEdit(id, baseBuilderClass(), edit);
+        }
+        UIElementBuilder<?> element = elementRegistry.get(id);
+        if (element != null) {
+            edit.accept(element);
+        }
+        return self();
+    }
+
+    /**
+     * Removes an element (and its descendants) from the registry and any parent child lists.
+     *
+     * @param id The ID of the element to remove.
+     * @return Self, for chaining.
+     */
+    public T removeElement(String id) {
+        if (id == null || id.isBlank()) {
+            return self();
+        }
+        UIElementBuilder<?> element = elementRegistry.get(id);
+        if (element == null) {
+            return self();
+        }
+        return removeElement(element);
+    }
+
+    /**
+     * Removes an element (and its descendants) from the registry and any parent child lists.
+     *
+     * @param element The element to remove.
+     * @return Self, for chaining.
+     */
+    public T removeElement(UIElementBuilder<?> element) {
+        if (element == null) {
+            return self();
+        }
+        detachFromParents(element);
+        removeFromRegistry(element);
+        return self();
+    }
+
+    /**
+     * Exposes the internal element registry as a read-only map.
+     *
+     * @return An unmodifiable view of the element registry.
+     */
+    public Map<String, UIElementBuilder<?>> getElementRegistry() {
+        return Collections.unmodifiableMap(elementRegistry);
+    }
+
     protected void registerElement(UIElementBuilder<?> element) {
         if (element.getId() != null) {
             this.elementRegistry.put(element.getId(), element);
         }
+        applyPersistentEdits(element);
         for (UIElementBuilder<?> child : element.children) {
             registerElement(child);
         }
         linkTabElements(element);
+    }
+
+    protected void notifyBuilt(UIContext context, boolean updateOnly) {
+        if (context == null || builtCallbacks.isEmpty()) {
+            return;
+        }
+        for (BiConsumer<UIContext, Boolean> callback : builtCallbacks) {
+            callback.accept(context, updateOnly);
+        }
+    }
+
+    private void detachFromParents(UIElementBuilder<?> element) {
+        for (UIElementBuilder<?> candidate : elementRegistry.values()) {
+            if (candidate.children.remove(element)) {
+                break;
+            }
+        }
+    }
+
+    private void removeFromRegistry(UIElementBuilder<?> element) {
+        if (element.getId() != null) {
+            elementRegistry.remove(element.getId());
+        }
+        for (UIElementBuilder<?> child : element.children) {
+            removeFromRegistry(child);
+        }
+    }
+
+    private void registerPersistentEdit(String id, Class<? extends UIElementBuilder<?>> clazz, Consumer<UIElementBuilder<?>> edit) {
+        List<ElementEdit> edits = persistentElementEdits.computeIfAbsent(id, _ -> new ArrayList<>());
+        edits.add(new ElementEdit(clazz, edit));
+    }
+
+    protected void applyPersistentEdits(List<UIElementBuilder<?>> elements) {
+        if (!persistentElementEditsEnabled || elements == null || elements.isEmpty()) {
+            return;
+        }
+        for (UIElementBuilder<?> element : elements) {
+            applyPersistentEdits(element);
+        }
+    }
+
+    private void applyPersistentEdits(UIElementBuilder<?> element) {
+        if (!persistentElementEditsEnabled || element == null) {
+            return;
+        }
+        String id = element.getId();
+        if (id != null) {
+            List<ElementEdit> edits = persistentElementEdits.get(id);
+            if (edits != null) {
+                for (ElementEdit edit : edits) {
+                    if (edit.clazz.isInstance(element)) {
+                        edit.edit.accept(element);
+                    }
+                }
+            }
+        }
+    }
+
+    private static final class ElementEdit {
+        private final Class<? extends UIElementBuilder<?>> clazz;
+        private final Consumer<UIElementBuilder<?>> edit;
+
+        private ElementEdit(Class<? extends UIElementBuilder<?>> clazz, Consumer<UIElementBuilder<?>> edit) {
+            this.clazz = clazz;
+            this.edit = edit;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Class<? extends UIElementBuilder<?>> baseBuilderClass() {
+        return (Class<? extends UIElementBuilder<?>>) (Class<?>) UIElementBuilder.class;
     }
 
     private void linkTabElements(UIElementBuilder<?> element) {

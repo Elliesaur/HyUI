@@ -87,6 +87,7 @@ public class HyUITabsCommand extends AbstractAsyncCommand {
 
                         <div id="blueprints-content" class="tab-content" data-hyui-tab-id="blueprints">
                             <p>Blueprint drafts live here.</p>
+                            <img class="dynamic-image" src="Ellie_HyUI/lizards.png"/>
                         </div>
 
                         <div id="materials-content" class="tab-content" data-hyui-tab-id="materials">

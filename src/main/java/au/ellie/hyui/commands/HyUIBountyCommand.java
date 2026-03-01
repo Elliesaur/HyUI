@@ -142,26 +142,21 @@ public class HyUIBountyCommand extends AbstractAsyncCommand {
             boolean newState = !compact.get();
             compact.set(newState);
 
-            ctx.getById("list", GroupBuilder.class).ifPresent(list -> {
-                list.withLayoutMode(newState ? "LeftCenterWrap" : "Top");
-            });
-
-            ctx.getById("summary", LabelBuilder.class).ifPresent(label -> {
-                label.withText(newState ? "Compact view: 3 bounties" : "Showing 3 bounties");
-            });
-
-            ctx.getById("toggle-mode", ButtonBuilder.class).ifPresent(btn -> {
-                btn.withText(newState ? "Comfy View" : "Compact View");
-            });
+            ctx.editors()
+                .on("list", GroupBuilder.class, list ->
+                    list.withLayoutMode(newState ? "LeftCenterWrap" : "Top"))
+                .on("summary", LabelBuilder.class, label ->
+                    label.withText(newState ? "Compact view: 3 bounties" : "Showing 3 bounties"))
+                .on("toggle-mode", ButtonBuilder.class, btn ->
+                    btn.withText(newState ? "Comfy View" : "Compact View"));
 
             ctx.updatePage(true);
         });
 
         builder.addEventListener("minLevel", CustomUIEventBindingType.ValueChanged, (data, ctx) -> {
             String level = String.valueOf(data);
-            ctx.getById("summary", LabelBuilder.class).ifPresent(label -> {
-                label.withText("Min level: " + level + " (still 3 bounties)");
-            });
+            ctx.editById("summary", LabelBuilder.class, label ->
+                label.withText("Min level: " + level + " (still 3 bounties)"));
             ctx.updatePage(true);
         });
 
@@ -170,13 +165,11 @@ public class HyUIBountyCommand extends AbstractAsyncCommand {
             String title = "Urgent Bounty #" + next;
             int level = 2 + (next % 6);
 
-            ctx.getById("list", GroupBuilder.class).ifPresent(list -> {
-                list.addChild(buildBountyCard(title, level));
-            });
-
-            ctx.getById("summary", LabelBuilder.class).ifPresent(label -> {
-                label.withText("Showing " + next + " bounties");
-            });
+            ctx.editors()
+                .on("list", GroupBuilder.class, list ->
+                    list.addChild(buildBountyCard(title, level)))
+                .on("summary", LabelBuilder.class, label ->
+                    label.withText("Showing " + next + " bounties"));
 
             ctx.updatePage(true);
         });

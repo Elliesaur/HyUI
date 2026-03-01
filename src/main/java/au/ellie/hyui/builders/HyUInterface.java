@@ -158,6 +158,9 @@ public abstract class HyUInterface implements UIContext {
         //LoggingUICommandBuilder loggingBuilder = new LoggingUICommandBuilder();
 
         refreshTemplate(this);
+        if (rootElementBuilder != null) {
+            rootElementBuilder.applyPersistentEdits(this.elements);
+        }
 
         if (!updateOnly && uiFile != null) {
             //if (HyUIPluginLogger.IS_DEV)
@@ -210,6 +213,9 @@ public abstract class HyUInterface implements UIContext {
 
         //this.commandLog = loggingBuilder.getCommandLog();
         this.hasBuilt = true;
+        if (rootElementBuilder != null) {
+            rootElementBuilder.notifyBuilt(this, updateOnly);
+        }
     }
 
     /**
@@ -231,6 +237,9 @@ public abstract class HyUInterface implements UIContext {
         //LoggingUICommandBuilder loggingBuilder = new LoggingUICommandBuilder();
 
         refreshTemplate(this);
+        if (rootElementBuilder != null) {
+            rootElementBuilder.applyPersistentEdits(this.elements);
+        }
 
         if (!updateOnly && uiFile != null) {
             /*if (HyUIPluginLogger.IS_DEV)
@@ -557,6 +566,9 @@ public abstract class HyUInterface implements UIContext {
         List<UIElementBuilder<?>> updatedElements = parser.parse(processedHtml);
         
         this.elements = mergeElementLists(this.elements, updatedElements);
+/*        if (rootElementBuilder != null) {
+            rootElementBuilder.applyPersistentEdits(this.elements);
+        }*/
         applyRuntimeValues(this.elements, context);
         reapplyTabSelections(this.elements, context);
         if (hasBuilt) {

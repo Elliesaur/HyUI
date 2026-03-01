@@ -71,6 +71,9 @@ final class UIAstConverter {
     }
 
     private void applyChildren(UIElementBuilder<?> builder, NodeElement element) {
+        if (builder instanceof CodeEditorBuilder) {
+            return;
+        }
         if (builder instanceof NativeTabNavigationBuilder nativeTabs) {
             applyNativeTabChildren(nativeTabs, element);
             return;
@@ -676,7 +679,7 @@ final class UIAstConverter {
             case MultilineTextField -> TextFieldBuilder.multilineTextField();
             case ColorPickerDropdownBox -> ColorPickerDropdownBoxBuilder.colorPickerDropdownBox();
             case CircularProgressBar -> ProgressBarBuilder.circularProgressBar();
-            case CodeEditor -> null;
+            case CodeEditor -> CodeEditorBuilder.codeEditor();
             case ColorOptionGrid -> null;
             case ProgressBar -> ProgressBarBuilder.progressBar();
             case Slider -> SliderBuilder.slider();

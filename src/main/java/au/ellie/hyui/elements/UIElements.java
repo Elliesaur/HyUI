@@ -62,6 +62,7 @@ public class UIElements {
     public static final String NATIVE_TAB_BUTTON = "NativeTabButton";
     public static final String NATIVE_TAB_NAVIGATION = "NativeTabNavigation";
     public static final String NATIVE_TIMER_LABEL = "NativeTimerLabel";
+    public static final String CODE_EDITOR = "CodeEditor";
 
     // Macros (Common.ui)
     public static final String PAGE_OVERLAY = "PageOverlay";
@@ -128,7 +129,8 @@ public class UIElements {
             DYNAMIC_PANE,
             NATIVE_TAB_BUTTON,
             NATIVE_TAB_NAVIGATION,
-            NATIVE_TIMER_LABEL
+            NATIVE_TIMER_LABEL,
+            CODE_EDITOR
     );
 
     public static final Set<String> MACRO_ELEMENTS = Set.of(

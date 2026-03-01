@@ -120,6 +120,25 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                         <div class="decorated-container" style="anchor-width: 800; anchor-height: 900;" id="myContainer" data-hyui-title="HyUIML Parser Test">
                         <div style="anchor-left: 1; layout-mode: left;">
                             <div style="layout-mode: top">
+                                <code-editor id="code-editor-example"
+                                    value="public class Example {\\n    // Hello HyUI\\n}"
+                                    placeholder="Type code here..."
+                                    maxlength="2000"
+                                    rows="8"
+                                    data-hyui-max-visible-lines="8"
+                                    data-hyui-max-lines="0"
+                                    data-hyui-auto-grow="false"
+                                    data-hyui-auto-focus="true"
+                                    data-hyui-auto-select-all="true"
+                                    data-hyui-language="java"
+                                    data-hyui-line-number-width="32"
+                                    data-hyui-line-number-padding="6"
+                                    data-hyui-line-number-text-color="#99a1b3"
+                                    data-hyui-line-number-background="Common.ui InputBoxBackground"
+                                    data-hyui-scrollbar-style="Common.ui DefaultScrollbarStyle"
+                                    data-hyui-placeholder-style="Common.ui DefaultInputFieldPlaceholderStyle"
+                                    data-hyui-content-padding="(Horizontal:10, Vertical:8)">
+                                </code-editor>
                                 <button id="test">
                                     <span class="item-slot" id="itemslot" data-hyui-item-id="Tool_Pickaxe_Crude" data-hyui-show-quality-background="true"
                                     data-hyui-show-quantity="true" style="anchor-width: 64; anchor-height: 64;">
@@ -595,6 +614,29 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                                 }))
                         .addChild(LabeledCheckBoxBuilder.labeledCheckBox()
                                 .withId("LabeledCheckBoxExample"))
+                        .addChild(CodeEditorBuilder.codeEditor()
+                                .withId("CodeEditorExample")
+                                .withValue("public class Example {\\n    // Hello HyUI\\n}")
+                                .withPlaceholderText("Type code here...")
+                                .withLanguage("java")
+                                .withLineNumberWidth(32)
+                                .withLineNumberPadding(6)
+                                .withLineNumberTextColor("#99a1b3")
+                                .withLineNumberBackground(new HyUIPatchStyle().setColor("#0c0f1720"))
+                                .withScrollbarStyle("Common.ui", "DefaultScrollbarStyle")
+                                .withPlaceholderStyle(InputFieldStyle.defaultStyle())
+                                .withDecoration(new InputFieldDecorationStyle())
+                                .withContentPadding(HyUIPadding.symmetric(8, 10))
+                                .withMaxLength(2000)
+                                .withMaxLines(0)
+                                .withMaxVisibleLines(8)
+                                .withAutoGrow(false)
+                                .withAutoFocus(true)
+                                .withAutoSelectAll(true)
+                                .withAnchor(new HyUIAnchor().setWidth(320).setHeight(180))
+                                .addEventListener(CustomUIEventBindingType.ValueChanged, (val) -> {
+                                    playerRef.sendMessage(Message.raw("CodeEditor updated: " + val));
+                                }))
                         .addChild(MenuItemBuilder.menuItem()
                                 .withId("MenuItemExample")
                                 .withText("Menu Item")

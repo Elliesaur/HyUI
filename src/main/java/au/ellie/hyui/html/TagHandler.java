@@ -539,7 +539,7 @@ public interface TagHandler {
             builder.withStyle(DefaultStyles.defaultLabelStyle());
             return true;
         }
-        if (builder instanceof TextFieldBuilder || builder instanceof NumberFieldBuilder) {
+        if (builder instanceof TextFieldBuilder || builder instanceof NumberFieldBuilder || builder instanceof CodeEditorBuilder) {
             builder.withStyle(InputFieldStyle.defaultStyle());
             return true;
         }
@@ -574,6 +574,7 @@ public interface TagHandler {
     private boolean isInputFieldBuilder(UIElementBuilder<?> builder) {
         return builder instanceof TextFieldBuilder
                 || builder instanceof NumberFieldBuilder
+                || builder instanceof CodeEditorBuilder
                 || builder instanceof SliderNumberFieldBuilder
                 || builder instanceof FloatSliderNumberFieldBuilder;
     }

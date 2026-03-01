@@ -25,6 +25,7 @@ import au.ellie.hyui.builders.UIElementBuilder;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 /**
  * Provides access to the current state of UI elements on the page.
@@ -112,5 +113,83 @@ public interface UIContext {
             return Optional.of(clazz.cast(builder.get()));
         }
         return Optional.empty();
+    }
+
+    /**
+     * Edits an element by ID with a typed consumer.
+     *
+     * @param id The element ID.
+     * @param clazz The expected builder type.
+     * @param edit The edit to apply if found.
+     * @param <E> The expected builder type.
+     * @return This context for chaining.
+     */
+    default <E extends UIElementBuilder<E>> UIContext editById(String id, Class<E> clazz, Consumer<E> edit) {
+        if (edit == null) {
+            return this;
+        }
+        getById(id, clazz).ifPresent(edit);
+        return this;
+    }
+
+    /**
+     * Edits an element by ID without self-typed constraints.
+     *
+     * @param id The element ID.
+     * @param edit The edit to apply if found.
+     * @return This context for chaining.
+     */
+    default UIContext editById(String id, Consumer<UIElementBuilder<?>> edit) {
+        if (edit == null) {
+            return this;
+        }
+        getByIdRaw(id).ifPresent(element -> edit.accept(element));
+        return this;
+    }
+
+    /**
+     * Starts a scoped editor so multiple edits can be chained without repeating {@code ctx}.
+     *
+     * @return A new scoped editor bound to this context.
+     */
+    default ScopedEditor editors() {
+        return new ScopedEditor(this);
+    }
+
+    /**
+     * Helper for batching multiple edits against a single {@link UIContext}.
+     */
+    final class ScopedEditor {
+        private final UIContext context;
+
+        private ScopedEditor(UIContext context) {
+            this.context = context;
+        }
+
+        /**
+         * Edits an element by ID with a typed consumer, then returns this editor for chaining.
+         *
+         * @param id The element ID.
+         * @param clazz The expected builder type.
+         * @param edit The edit to apply if found.
+         * @param <E> The expected builder type.
+         * @return This editor for chaining.
+         */
+        public <E extends UIElementBuilder<E>> ScopedEditor on(String id, Class<E> clazz, Consumer<E> edit) {
+            context.editById(id, clazz, edit);
+            return this;
+        }
+
+        /**
+         * Edits an element by ID without self-typed constraints, then returns this editor for chaining.
+         *
+         * @param id The element ID.
+         * @param edit The edit to apply if found.
+         * @return This editor for chaining.
+         */
+        public ScopedEditor on(String id, Consumer<UIElementBuilder<?>> edit) {
+            context.editById(id, edit);
+            return this;
+        }
     }
 }

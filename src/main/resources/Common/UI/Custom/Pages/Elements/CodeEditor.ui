@@ -1,0 +1,9 @@
+$C = "../../Common.ui";
+
+CodeEditor #HyUICodeEditor {
+  FlexWeight: 1;
+  Style: (TextColor: $C.@ColorCodeText, FontSize: 11);
+  ContentPadding: 10;
+  Value: "";
+  ScrollbarStyle: $C.@DefaultScrollbarStyle;
+}

@@ -46,6 +46,7 @@ public class HtmlParser {
         registerHandler(new DivHandler());
         registerHandler(new LabelHandler());
         registerHandler(new InputHandler());
+        registerHandler(new CodeEditorHandler());
         registerHandler(new TextAreaHandler());
         registerHandler(new ButtonHandler());
         registerHandler(new ImgHandler());

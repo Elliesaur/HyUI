@@ -61,7 +61,7 @@ public class HyUIPlugin extends JavaPlugin {
 
     private static HyUIPluginLogger instance;
     
-    private static final boolean ADD_CMDS = false;
+    private static final boolean ADD_CMDS = true;
     private static final ConcurrentMap<PlayerRef, Deque<Asset>> PENDING_ASSETS =
             new ConcurrentHashMap<>();
     private static final ConcurrentMap<PlayerRef, Boolean> REBUILD_SCHEDULED =

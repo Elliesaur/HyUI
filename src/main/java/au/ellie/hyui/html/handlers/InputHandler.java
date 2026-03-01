@@ -40,6 +40,12 @@ public class InputHandler implements TagHandler {
                 builder = TextFieldBuilder.textInput();
                 applyTextFieldAttributes((TextFieldBuilder) builder, element);
                 break;
+            case "code":
+            case "code-editor":
+            case "codeeditor":
+                builder = CodeEditorBuilder.codeEditor();
+                applyCodeEditorAttributes((CodeEditorBuilder) builder, element);
+                break;
             case "password":
                 builder = TextFieldBuilder.textInput().withPassword(true);
                 applyTextFieldAttributes((TextFieldBuilder) builder, element);
@@ -134,6 +140,25 @@ public class InputHandler implements TagHandler {
         }
         if (element.hasAttr("readonly")) {
             builder.withReadOnly(true);
+        }
+    }
+
+    private void applyCodeEditorAttributes(CodeEditorBuilder builder, Element element) {
+        if (element.hasAttr("value")) {
+            builder.withValue(element.attr("value"));
+        }
+        if (element.hasAttr("placeholder")) {
+            builder.withPlaceholderText(element.attr("placeholder"));
+        }
+        if (element.hasAttr("maxlength")) {
+            ParseUtils.parseInt(element.attr("maxlength"))
+                    .ifPresent(builder::withMaxLength);
+        }
+        if (element.hasAttr("readonly")) {
+            builder.withReadOnly(true);
+        }
+        if (element.hasAttr("data-hyui-language")) {
+            builder.withLanguage(element.attr("data-hyui-language"));
         }
     }
 
