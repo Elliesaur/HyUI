@@ -744,7 +744,8 @@ final class UIValueConverter {
             style.withLabelStyle(toLabelStyle(labelStyle));
         }
         if (padding != null) {
-            style.withPadding(padding);
+            // TODO: Fix me to be proper hyuipadding.
+            style.withPadding(HyUIPadding.all(padding));
         }
         if (alignment != null) {
             style.withAlignment(alignment.toString());

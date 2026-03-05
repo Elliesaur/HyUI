@@ -795,7 +795,9 @@ public abstract class UIElementBuilder<T extends UIElementBuilder<T>> implements
 
             if (textTooltipStyle != null) {
                 HyUIPlugin.getLog().logFinest("Setting TextTooltipStyle for " + selector);
-                commands.setObject(selector + ".TextTooltipStyle", textTooltipStyle.toBsonDocument());
+                BsonDocumentHelper doc = PropertyBatcher.beginSet();
+                textTooltipStyle.applyTo(doc);
+                PropertyBatcher.endSet(selector + ".TextTooltipStyle", doc, commands);
             }
 
             if (textTooltipShowDelay != null) {

@@ -18,6 +18,7 @@
 
 package au.ellie.hyui.types;
 
+import au.ellie.hyui.builders.HyUIPadding;
 import au.ellie.hyui.builders.HyUIPatchStyle;
 import au.ellie.hyui.builders.HyUIStyle;
 import au.ellie.hyui.utils.BsonDocumentHelper;
@@ -29,7 +30,7 @@ public class TextTooltipStyle implements HyUIBsonSerializable {
     private HyUIPatchStyle background;
     private Integer maxWidth;
     private HyUIStyle labelStyle;
-    private Integer padding;
+    private HyUIPadding padding;
     private String alignment;
 
     public TextTooltipStyle withBackground(HyUIPatchStyle background) {
@@ -47,11 +48,16 @@ public class TextTooltipStyle implements HyUIBsonSerializable {
         return this;
     }
 
-    public TextTooltipStyle withPadding(int padding) {
+    public TextTooltipStyle withPadding(HyUIPadding padding) {
         this.padding = padding;
         return this;
     }
 
+    /**
+     * Must be one of TopLeft, TopRight, BottomLeft, BottomRight
+     * @param alignment Must be one of TopLeft, TopRight, BottomLeft, BottomRight
+     * @return style for chaining.
+     */
     public TextTooltipStyle withAlignment(String alignment) {
         this.alignment = alignment;
         return this;
@@ -62,7 +68,7 @@ public class TextTooltipStyle implements HyUIBsonSerializable {
         if (background != null) doc.set("Background", background.toBsonDocument());
         if (maxWidth != null) doc.set("MaxWidth", maxWidth);
         if (labelStyle != null) doc.set("LabelStyle", labelStyle.toBsonDocument());
-        if (padding != null) doc.set("Padding", padding);
+        if (padding != null) doc.set("Padding", padding.toBsonDocument());
         if (alignment != null) doc.set("Alignment", alignment);
     }
 

@@ -519,9 +519,7 @@ public final class DefaultStyles {
     }
 
     public static HyUIPatchStyle defaultTooltipBackground() {
-        // TODO: Verify images in client are available on server to send as set events...
-        //  Should be OK.
-        return patchWithBorder("InGame/Tooltips/ItemTooltipDefault.png", 24);
+        return patchWithBorder("Pages/Assets/ItemTooltipDefault.png", 24);
     }
 
     public static TextTooltipStyle buttonTextTooltipStyle() {
@@ -531,7 +529,7 @@ public final class DefaultStyles {
                 .withLabelStyle(new HyUIStyle()
                         .setWrap(true)
                         .setFontSize(16))
-                .withPadding(24);
+                .withPadding(HyUIPadding.all(24));
     }
 
     public static TabNavigationStyle iconOnlyTopTabsStyle() {

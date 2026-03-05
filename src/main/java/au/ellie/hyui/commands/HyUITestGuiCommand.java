@@ -75,7 +75,7 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                     return CompletableFuture.runAsync(() -> {
                         PlayerRef playerRef = store.getComponent(ref, PlayerRef.getComponentType());
                         if (playerRef != null) {
-                            openReplicate(playerRef, store);
+                            openTestGui(playerRef, store);
                         }
                     }, world);
                 } else {
@@ -581,7 +581,9 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                                 .withStyle(SliderStyle.defaultStyle()))
                         .addChild(LabelBuilder.label()
                                 .withText("Hey")
-                                .withTooltipTextSpans(List.of(Message.raw("Lol").bold(true), Message.raw("No").bold(false)))
+                                .withTextTooltipStyle(TextTooltipStyle.buttonTextTooltipStyle())
+                                        .withTooltipText("Someone help me")
+                                //.withTooltipTextSpans(List.of(Message.raw("Lol").bold(true), Message.raw("No").bold(false)))
                                 .addTextSpan(Message.raw("Hey3").bold(true).color(Color.RED))
                                 .addTextSpan(Message.raw("Hey4").bold(true).color(Color.RED))
                                 .addTextSpan(Message.raw("Hey5").bold(true).color(Color.YELLOW))
@@ -614,7 +616,7 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                                 }))
                         .addChild(LabeledCheckBoxBuilder.labeledCheckBox()
                                 .withId("LabeledCheckBoxExample"))
-                        .addChild(CodeEditorBuilder.codeEditor()
+                       /* .addChild(CodeEditorBuilder.codeEditor()
                                 .withId("CodeEditorExample")
                                 .withValue("public class Example {\\n    // Hello HyUI\\n}")
                                 .withPlaceholderText("Type code here...")
@@ -636,7 +638,7 @@ public class HyUITestGuiCommand extends AbstractAsyncCommand {
                                 .withAnchor(new HyUIAnchor().setWidth(320).setHeight(180))
                                 .addEventListener(CustomUIEventBindingType.ValueChanged, (val) -> {
                                     playerRef.sendMessage(Message.raw("CodeEditor updated: " + val));
-                                }))
+                                }))*/
                         .addChild(MenuItemBuilder.menuItem()
                                 .withId("MenuItemExample")
                                 .withText("Menu Item")
