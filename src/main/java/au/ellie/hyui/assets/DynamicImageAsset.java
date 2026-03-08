@@ -2,7 +2,6 @@ package au.ellie.hyui.assets;
 
 import au.ellie.hyui.HyUIPlugin;
 import com.hypixel.hytale.common.util.ArrayUtil;
-import com.hypixel.hytale.protocol.Packet;
 // TODO: Pre-release asset sending
 // import com.hypixel.hytale.protocol.ToClientPacket;
 import com.hypixel.hytale.protocol.ToClientPacket;
@@ -109,10 +108,6 @@ public class DynamicImageAsset extends CommonAsset {
     private final int slotIndex;
     private final UUID playerUuid;
     
-    public DynamicImageAsset(byte[] data) {
-        this(data, DEFAULT_PLAYER_UUID);
-    }
-
     public DynamicImageAsset(byte[] data, UUID playerUuid) {
         this(data, claimSlot(playerUuid), playerUuid);
     }
@@ -122,14 +117,13 @@ public class DynamicImageAsset extends CommonAsset {
         this.data = data;
         this.slotIndex = slotIndex;
         this.playerUuid = normalizePlayerUuid(playerUuid);
+        if (this.playerUuid == DEFAULT_PLAYER_UUID) {
+            throw new IllegalArgumentException("playerUuid cannot be null.");   
+        }
         HyUIPlugin.getLog().logFinest("Dynamic image slot allocated: " + slotIndex + " path=" + PATHS[slotIndex]);
     }
     
-    public static CommonAsset empty() {
-        return CommonAssetRegistry.getByName(PATHS[PATHS.length - 1]);
-    }
-
-    public static CommonAsset empty(int slotIndex) {
+    public static CommonAsset emptyAsset(int slotIndex) {
         if (slotIndex < 0 || slotIndex >= PATHS.length) {
             throw new IllegalArgumentException("Invalid dynamic image slot index: " + slotIndex);
         }

@@ -49,6 +49,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
+    private static Object assetSend = new Object();
     protected final Map<String, UIElementBuilder<?>> elementRegistry = new LinkedHashMap<>();
     protected final List<BiConsumer<UICommandBuilder, UIEventBuilder>> editCallbacks = new ArrayList<>();
     protected final List<BiConsumer<UIContext, Boolean>> builtCallbacks = new ArrayList<>();
@@ -552,6 +553,9 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
                 }
             }
         }
+        for (var child : element.children) {
+            applyPersistentEdits(child);
+        }
     }
 
     private static final class ElementEdit {
@@ -786,14 +790,15 @@ public abstract class InterfaceBuilder<T extends InterfaceBuilder<T>> {
                 HyUIPlugin.getLog().logFinest("Preparing dynamic image from file: " + resolvedPath);
                 imageBytes = Files.readAllBytes(resolvedPath);
             }
-
-            DynamicImageAsset asset = new DynamicImageAsset(imageBytes, playerUuid);
-            DynamicImageAsset.sendToPlayer(pRef.getPacketHandler(), DynamicImageAsset.empty(asset.getSlotIndex()));
-            dynamicImage.withImagePath(asset.getPath());
-            dynamicImage.setSlotIndex(playerUuid, asset.getSlotIndex());
-
-            DynamicImageAsset.sendToPlayer(pRef.getPacketHandler(), asset);
-            HyUIPlugin.getLog().logFinest("Dynamic image sent using path: " + asset.getPath());
+            synchronized (assetSend) {
+                DynamicImageAsset asset = new DynamicImageAsset(imageBytes, playerUuid);
+                DynamicImageAsset.sendToPlayer(pRef.getPacketHandler(), DynamicImageAsset.emptyAsset(asset.getSlotIndex()));
+                dynamicImage.withImagePath(asset.getPath());
+                dynamicImage.setSlotIndex(playerUuid, asset.getSlotIndex());
+                
+                DynamicImageAsset.sendToPlayer(pRef.getPacketHandler(), asset);
+                HyUIPlugin.getLog().logFinest("Dynamic image sent using path: " + asset.getPath());
+            }
         } catch (IllegalStateException e) {
             HyUIPlugin.getLog().logFinest("Failed to allocate dynamic image slot: " + e.getMessage());
         } catch (IOException e) {

@@ -23,6 +23,7 @@ import au.ellie.hyui.elements.UIType;
 import au.ellie.hyui.events.*;
 import au.ellie.hyui.html.HtmlParser;
 import au.ellie.hyui.html.TemplateProcessor;
+import au.ellie.hyui.utils.PngDownloadUtils;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.Asset;
@@ -158,10 +159,13 @@ public abstract class HyUInterface implements UIContext {
         //LoggingUICommandBuilder loggingBuilder = new LoggingUICommandBuilder();
 
         refreshTemplate(this);
-        if (rootElementBuilder != null) {
+        
+        // When it is only updates then we apply persistent edits here.
+        // This allows us to at most call persistent edits once per buil.
+        if (updateOnly && rootElementBuilder != null) {
             rootElementBuilder.applyPersistentEdits(this.elements);
         }
-
+        
         if (!updateOnly && uiFile != null) {
             //if (HyUIPluginLogger.IS_DEV)
             //    loggingBuilder.append(uiFile);
@@ -202,6 +206,12 @@ public abstract class HyUInterface implements UIContext {
             // This entire process below happens because we need to update the template to mimic the page.
             // and we capture the real values of the elements after they've been built.
             refreshTemplate(this);
+            
+            // After refreshing template, we need to apply persistent edits. We haven't applied them yet.
+            if (rootElementBuilder != null) {
+                rootElementBuilder.applyPersistentEdits(this.elements);
+            }
+            
             for (UIElementBuilder<?> element : elements) {
                 /*if (HyUIPluginLogger.IS_DEV) {
                     element.buildUpdates(loggingBuilder, new UIEventBuilder());
@@ -545,8 +555,13 @@ public abstract class HyUInterface implements UIContext {
 
     private void releaseDynamicImagesRecursive(UIElementBuilder<?> element, UUID playerUuid) {
         if (element instanceof DynamicImageBuilder) {
-            HyUIPlugin.getLog().logFinest("Releasing image: " + element.getEffectiveId());
-            ((DynamicImageBuilder) element).releaseSlotForPlayer(playerUuid);
+            var builder = ((DynamicImageBuilder) element);
+            var url = builder.getImageUrl();
+            var cacheInfo = PngDownloadUtils.getCachedAssetInfo(playerUuid, url);
+            if (cacheInfo == null) {
+                HyUIPlugin.getLog().logFinest("Releasing image: " + element.getEffectiveId());
+                builder.releaseSlotForPlayer(playerUuid);
+            }
         }
         for (UIElementBuilder<?> child : element.children) {
             releaseDynamicImagesRecursive(child, playerUuid);

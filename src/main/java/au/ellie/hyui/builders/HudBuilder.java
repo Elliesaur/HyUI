@@ -25,6 +25,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
@@ -126,7 +127,7 @@ public class HudBuilder extends InterfaceBuilder<HudBuilder> {
      * @return The created HyUIHud instance.
      */
     public HyUIHud show(@Nonnull PlayerRef playerRefParam) {
-        String name = "HYUIHUD" + System.currentTimeMillis();
+        String name = "HYUIHUD" + UUID.randomUUID().toString().replace("-", "");
         sendDynamicImageIfNeeded(playerRefParam);
         this.lastHud = new HyUIHud(
                 name, 

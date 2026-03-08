@@ -134,6 +134,7 @@ public class HyUIPlugin extends JavaPlugin {
             this.getCommandRegistry().registerCommand(new HyUITemplateRuntimeCommand());
             this.getCommandRegistry().registerCommand(new HyUIBountyCommand());
             this.getCommandRegistry().registerCommand(new HyUITabsCommand());
+            this.getCommandRegistry().registerCommand(new ReplicateCommand());
             
             var pb = PageBuilder.detachedPage()
                     .fromUIFile("Pages/ComplexTest.ui");

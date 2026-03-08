@@ -256,6 +256,8 @@ public class HyUIBountyCommand extends AbstractAsyncCommand {
         PageBuilder builder = PageBuilder.pageForPlayer(playerRef)
             .loadHtml("Pages/BountyRuntime.html", template)
             .enableRuntimeTemplateUpdates(true)
+            .enablePersistentElementEdits(true)
+            .editById("close-board", ButtonBuilder.class, (button) -> button.withText("Not Close"))
             .withLifetime(CustomPageLifetime.CanDismiss);
 
         builder.addEventListener("region", CustomUIEventBindingType.ValueChanged, (value, ctx) -> {

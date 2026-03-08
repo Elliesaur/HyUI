@@ -113,7 +113,7 @@ public final class PngDownloadUtils {
         }
 
         DynamicImageAsset asset = new DynamicImageAsset(bytes, pRef.getUuid());
-        DynamicImageAsset.sendToPlayer(pRef.getPacketHandler(), DynamicImageAsset.empty(asset.getSlotIndex()));
+        DynamicImageAsset.sendToPlayer(pRef.getPacketHandler(), DynamicImageAsset.emptyAsset(asset.getSlotIndex()));
         DynamicImageAsset.sendToPlayer(pRef.getPacketHandler(), asset);
         HyUIPlugin.getLog().logFinest("Dynamic image sent using path: " + asset.getPath());
 
