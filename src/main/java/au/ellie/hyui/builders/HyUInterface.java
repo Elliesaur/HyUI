@@ -45,6 +45,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 /**
  * Base implementation for HyUI pages and HUDs.
@@ -289,6 +290,10 @@ public abstract class HyUInterface implements UIContext {
 
         if (!updateOnly) {
             refreshTemplate(this);
+            // After refreshing template, we need to apply persistent edits. We haven't applied them yet.
+            if (rootElementBuilder != null) {
+                rootElementBuilder.applyPersistentEdits(this.elements);
+            }
             for (UIElementBuilder<?> element : elements) {
                 /*if (HyUIPluginLogger.IS_DEV) {
                     element.buildUpdates(loggingBuilder, null);
@@ -504,6 +509,25 @@ public abstract class HyUInterface implements UIContext {
         return elements;
     }
 
+    /**
+     * @return root builder that owns this interface, if any
+     */
+    public InterfaceBuilder<?> getRootElementBuilder() {
+        return rootElementBuilder;
+    }
+
+    @Override
+    public <E extends UIElementBuilder<E>> UIContext editById(String id, Class<E> clazz, Consumer<E> edit) {
+        rootElementBuilder.editById(id, clazz, edit);
+        return this;
+    }
+
+    @Override
+    public UIContext editById(String id, Consumer<UIElementBuilder<?>> edit) {
+        rootElementBuilder.editById(id, edit);
+        return this;
+    }
+    
     /**
      * Replaces the current top-level element list.
      */

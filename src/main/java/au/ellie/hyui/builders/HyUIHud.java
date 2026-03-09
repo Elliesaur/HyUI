@@ -152,6 +152,17 @@ public class HyUIHud extends CustomUIHud implements UIContext {
         return delegate.getById(id);
     }
 
+    // These are actually not implemented given a hud has no interactivity.
+    @Override
+    public <E extends UIElementBuilder<E>> UIContext editById(String id, Class<E> clazz, Consumer<E> edit) {
+        return this;
+    }
+
+    @Override
+    public UIContext editById(String id, Consumer<UIElementBuilder<?>> edit) {
+        return this;
+    }
+
     /**
      * Updates the HUD with the provided builder.
      * The builder can be a completely new configuration.

@@ -19,11 +19,9 @@
 package au.ellie.hyui.commands;
 
 import au.ellie.hyui.HyUIPluginLogger;
-import au.ellie.hyui.builders.ButtonBuilder;
-import au.ellie.hyui.builders.GroupBuilder;
-import au.ellie.hyui.builders.LabelBuilder;
-import au.ellie.hyui.builders.PageBuilder;
+import au.ellie.hyui.builders.*;
 import au.ellie.hyui.html.TemplateProcessor;
+import com.google.errorprone.annotations.Var;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.GameMode;
@@ -252,7 +250,7 @@ public class HyUIBountyCommand extends AbstractAsyncCommand {
         );
 
         TemplateProcessor template = createBountyTemplate(bounties);
-
+        AtomicBoolean isMinLevelVisible = new AtomicBoolean(true);
         PageBuilder builder = PageBuilder.pageForPlayer(playerRef)
             .loadHtml("Pages/BountyRuntime.html", template)
             .enableRuntimeTemplateUpdates(true)
@@ -263,6 +261,15 @@ public class HyUIBountyCommand extends AbstractAsyncCommand {
         builder.addEventListener("region", CustomUIEventBindingType.ValueChanged, (value, ctx) -> {
             // If we don't save our state here for minLevel, it will reset to default upon updatePage(true) calling.
             // YOU are responsible for tracking state. NOT HYUI!
+            
+            // You can optionally capture the min level state here.
+            ctx.editById("minLevel", NumberFieldBuilder.class, (field) -> {
+                var field2 = field;
+                var isVis = isMinLevelVisible.get();
+                isMinLevelVisible.set(!isVis);
+                field2.withVisible(isVis);
+            });
+            
             ctx.updatePage(true);
         });
         builder.addEventListener("minLevel", CustomUIEventBindingType.ValueChanged, (value, ctx) -> {

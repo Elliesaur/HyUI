@@ -38,6 +38,7 @@ import javax.annotation.Nonnull;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -221,6 +222,18 @@ public class HyUIPage extends InteractiveCustomUIPage<DynamicPageData> implement
     @Override
     public Optional<UIElementBuilder<?>> getByIdRaw(String id) {
         return delegate.getById(id);
+    }
+
+    @Override
+    public <E extends UIElementBuilder<E>> UIContext editById(String id, Class<E> clazz, Consumer<E> edit) {
+        this.delegate.editById(id, clazz, edit);
+        return this;
+    }
+
+    @Override
+    public UIContext editById(String id, Consumer<UIElementBuilder<?>> edit) {
+        this.delegate.editById(id, edit);
+        return this;
     }
 
     /**

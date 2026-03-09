@@ -20,6 +20,7 @@ package au.ellie.hyui.events;
 
 import au.ellie.hyui.builders.HyUIHud;
 import au.ellie.hyui.builders.HyUIPage;
+import au.ellie.hyui.builders.HyUInterface;
 import au.ellie.hyui.builders.LabelBuilder;
 import au.ellie.hyui.builders.UIElementBuilder;
 
@@ -124,13 +125,8 @@ public interface UIContext {
      * @param <E> The expected builder type.
      * @return This context for chaining.
      */
-    default <E extends UIElementBuilder<E>> UIContext editById(String id, Class<E> clazz, Consumer<E> edit) {
-        if (edit == null) {
-            return this;
-        }
-        getById(id, clazz).ifPresent(edit);
-        return this;
-    }
+    <E extends UIElementBuilder<E>> UIContext editById(String id, Class<E> clazz, Consumer<E> edit);
+    
 
     /**
      * Edits an element by ID without self-typed constraints.
@@ -139,13 +135,7 @@ public interface UIContext {
      * @param edit The edit to apply if found.
      * @return This context for chaining.
      */
-    default UIContext editById(String id, Consumer<UIElementBuilder<?>> edit) {
-        if (edit == null) {
-            return this;
-        }
-        getByIdRaw(id).ifPresent(element -> edit.accept(element));
-        return this;
-    }
+    UIContext editById(String id, Consumer<UIElementBuilder<?>> edit);
 
     /**
      * Starts a scoped editor so multiple edits can be chained without repeating {@code ctx}.
