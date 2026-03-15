@@ -823,7 +823,7 @@ public abstract class HyUInterface implements UIContext {
                 return true;
             }
             // Generally the resource html path is more specific than the asset name.
-            if (pageBuilder.htmlFilePath.contains(asset.name)) {
+            if (pageBuilder.htmlFilePath != null && pageBuilder.htmlFilePath.contains(asset.name)) {
                 return true;
             }
         } else if (rootElementBuilder instanceof HudBuilder hudBuilder) {
@@ -831,7 +831,7 @@ public abstract class HyUInterface implements UIContext {
                 return true;
             }
             // Generally the resource html path is more specific than the asset name.
-            if (hudBuilder.htmlFilePath.contains(asset.name)) {
+            if (hudBuilder.htmlFilePath != null && hudBuilder.htmlFilePath.contains(asset.name)) {
                 return true;
             }
         }
