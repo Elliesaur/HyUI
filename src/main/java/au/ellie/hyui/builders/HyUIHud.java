@@ -413,6 +413,15 @@ public class HyUIHud extends CustomUIHud implements UIContext {
         });
     }
 
+	public void releaseDynamicImages() {
+		var playerRefInternal = getPlayerRef();
+		Ref<EntityStore> ref = playerRefInternal.getReference();
+		if (ref == null || !ref.isValid()) {
+			return;
+		}
+		delegate.releaseDynamicImages(playerRefInternal.getUuid());
+	}
+
     public void reopenFromAsset(Player player, PlayerRef playerRef, Store<EntityStore> store, Asset asset) {
         if (delegate.willReopenFromAsset(player, playerRef, store, asset)) {
             // Remove ours.
