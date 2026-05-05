@@ -45,7 +45,6 @@ public class HyUITabsCommand extends AbstractAsyncCommand {
         if (!HyUIPluginLogger.IS_DEV) {
             return;
         }
-        this.setPermissionGroup(GameMode.Adventure);
     }
 
     @NonNullDecl
@@ -55,8 +54,8 @@ public class HyUITabsCommand extends AbstractAsyncCommand {
             return CompletableFuture.completedFuture(null);
         }
         var sender = commandContext.sender();
-        if (sender instanceof Player player) {
-            Ref<EntityStore> ref = player.getReference();
+        if (sender instanceof PlayerRef playerReff) {
+            Ref<EntityStore> ref = playerReff.getReference();
             if (ref != null && ref.isValid()) {
                 Store<EntityStore> store = ref.getStore();
                 World world = store.getExternalData().getWorld();

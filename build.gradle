@@ -45,15 +45,14 @@ javadoc {
 
 hytale {
     // Versioning
-    patchline = "release"
+    patchline = "pre-release"
 
     // Manifest auto update
     manifest {
         version = project.version.toString()
-        // Pre-release 2026.02.11-891910c77
-        // Release 2026.02.17-255364b8e, 2026.02.18-f3b8fff95
-        //serverVersion = "2026.02.18-f3b8fff95"
-        serverVersion = "2026.02.19-1a311a592"
+        
+        serverVersion = "2026.04.30-b4f6a911e"
+        //serverVersion = "2026.03.26-89796e57b"
         author(author_name, "ellie@ellie.au", "https://ellie.au")
         optionalDependencies.put("Buuz135:MultipleHUD", "*");
     }
@@ -76,6 +75,7 @@ shadowJar {
 tasks.runServer {
     jvmArgs += "-XX:+AllowEnhancedClassRedefinition"
     environment("HYUI_DEV", "true")
+    environment("HYUI_LOGGING_LEVEL", "INFO")
     //args = args + "--log FINEST"
 }
 

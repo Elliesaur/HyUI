@@ -18,6 +18,7 @@
 
 package au.ellie.hyui;
 
+import au.ellie.hyui.analytics.HStats;
 import au.ellie.hyui.builders.*;
 import au.ellie.hyui.commands.*;
 import au.ellie.hyui.html.TemplateProcessor;
@@ -42,9 +43,11 @@ import com.hypixel.hytale.server.core.event.events.player.PlayerReadyEvent;
 import com.hypixel.hytale.server.core.io.PacketHandler;
 import com.hypixel.hytale.server.core.io.adapter.PacketAdapters;
 import com.hypixel.hytale.server.core.io.handlers.game.GamePacketHandler;
+import com.hypixel.hytale.server.core.modules.entity.component.DisplayNameComponent;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import app.ultradev.hytaleuiparser.source.AssetSource;
@@ -81,6 +84,7 @@ public class HyUIPlugin extends JavaPlugin {
 
     @Override
     protected void setup() {
+        new HStats("724c8c49-8154-4bfc-bb91-3768cc06d4e7", "0.9.6");
         // Intercept: AssetFinalize, RequestCommonAssetsRebuild, AssetPart, AssetInitialize
         PacketAdapters.registerOutbound((PacketHandler handler, Packet packet) -> {
             var packetName = packet.getClass().getSimpleName();
@@ -143,8 +147,6 @@ public class HyUIPlugin extends JavaPlugin {
             });
             
             this.getEventRegistry().registerGlobal(PlayerReadyEvent.class, event -> {
-                instance.logFinest("Player ready event triggered for " + event.getPlayer().getDisplayName());
-                
                 var player = event.getPlayer();
                 if (player == null) return;
 
@@ -152,12 +154,17 @@ public class HyUIPlugin extends JavaPlugin {
                 if (!ref.isValid()) return;
 
                 Store<EntityStore> store = ref.getStore();
+                var displayNameComponent = store.getComponent(event.getPlayerRef(), DisplayNameComponent.getComponentType());
+                assert displayNameComponent != null;
+                var name = displayNameComponent.getDisplayName().getRawText();
+                instance.logFinest("Player ready event triggered for: " + name);
+                
                 World world = store.getExternalData().getWorld();
                 world.execute(() -> {
                     PlayerRef playerRef = store.getComponent(ref, PlayerRef.getComponentType());
                     try {
                         PngDownloadUtils.prefetchPngForPlayer(playerRef, HyvatarUtils.buildRenderUrl(
-                                player.getDisplayName(), 
+                                name, 
                                 HyvatarUtils.RenderType.HEAD, 
                                 64, null, null), 18000);
                     } catch (IOException e) {
@@ -168,7 +175,7 @@ public class HyUIPlugin extends JavaPlugin {
 
                     String html = "Pages/HudTest.html";
                     var tp = new TemplateProcessor();
-                    tp.setVariable("playerName", player.getDisplayName());
+                    tp.setVariable("playerName", name);
                     var hud = HudBuilder.detachedHud()
                             .loadHtml(html, tp)
                             .withRefreshRate(1000)
@@ -180,10 +187,8 @@ public class HyUIPlugin extends JavaPlugin {
                             .show(playerRef);
                     pb.open(playerRef, store);
                 });
-
             });
         }
-        
     }
 
     private static void enqueueAsset(PlayerRef playerRef, Asset asset) {
