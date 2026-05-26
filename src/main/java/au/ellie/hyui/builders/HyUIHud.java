@@ -64,7 +64,7 @@ public class HyUIHud extends CustomUIHud implements UIContext {
                    TemplateProcessor templateProcessor,
                    boolean runtimeTemplateUpdatesEnabled,
                    InterfaceBuilder<?> rootElementBuilder) {
-        super(playerRef);
+        super(playerRef, name);
         this.name = name;
         this.delegate = new HyUInterface(uiFile, elements, editCallbacks, templateHtml, templateProcessor, runtimeTemplateUpdatesEnabled, rootElementBuilder) {};
     }

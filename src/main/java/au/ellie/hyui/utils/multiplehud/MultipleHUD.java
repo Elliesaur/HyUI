@@ -3,13 +3,9 @@ package au.ellie.hyui.utils.multiplehud;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
-import com.hypixel.hytale.server.core.plugin.JavaPlugin;
-import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 
-import javax.annotation.Nonnull;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Map;
 
 /*
 
@@ -56,17 +52,7 @@ public class MultipleHUD {
 
 
     public void setCustomHud(Player player, PlayerRef playerRef, String hudIdentifier, CustomUIHud customHud) {
-        CustomUIHud currentCustomHud = player.getHudManager().getCustomHud();
-        if (currentCustomHud instanceof MultipleCustomUIHud multipleCustomUIHud) {
-            multipleCustomUIHud.add(hudIdentifier, customHud);
-        } else {
-            MultipleCustomUIHud mchud = new MultipleCustomUIHud(playerRef);
-            player.getHudManager().setCustomHud(playerRef, mchud);
-            mchud.add(hudIdentifier, customHud);
-            if (currentCustomHud != null) {
-                mchud.add("Unknown", currentCustomHud);
-            }
-        }
+        player.getHudManager().addCustomHud(playerRef, customHud);
     }
 
     @Deprecated
@@ -74,19 +60,10 @@ public class MultipleHUD {
         hideCustomHud(player, hudIdentifier);
     }
     public void hideCustomHud(Player player, String hudIdentifier) {
-        var currentCustomHud = player.getHudManager().getCustomHud();
-
-        if (currentCustomHud instanceof MultipleCustomUIHud multipleCustomUIHud) {
-            multipleCustomUIHud.remove(hudIdentifier);
-        }
+        player.getHudManager().removeCustomHud(player.getPlayerRef(), hudIdentifier);
     }
     
-    public HashMap<String, CustomUIHud> getCustomHuds(Player player) {
-        var currentCustomHud = player.getHudManager().getCustomHud();
-
-        if (currentCustomHud instanceof MultipleCustomUIHud multipleCustomUIHud) {
-            return multipleCustomUIHud.getCustomHuds();
-        }
-        return new HashMap<>();
+    public Map<String, CustomUIHud> getCustomHuds(Player player) {
+        return player.getHudManager().getCustomHuds();
     }
 }

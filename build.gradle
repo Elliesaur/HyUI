@@ -4,8 +4,9 @@ plugins {
     id 'java'
     alias(libs.plugins.shadow)
     alias(libs.plugins.idea.ext)
-    alias(libs.plugins.hytalegradle)
+    //alias(libs.plugins.hytalegradle)
     alias(libs.plugins.dokka)
+    id 'com.azuredoom.hytale-tools' version '1.0.31'
 }
 
 dependencies {
@@ -31,7 +32,10 @@ repositories {
         m.name("ultradevSnapshots")
     })
 }
-
+dependencies {
+    // + here means the latest version, but you can hard-wire any known version!
+    implementation("com.hypixel.hytale:Server:0.5.1")
+}
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(java_version)
     withSourcesJar()
@@ -43,25 +47,51 @@ javadoc {
     options.addStringOption('Xdoclint:-missing', '-quiet')
 }
 
-hytale {
+hytaleTools {
+    hytaleVersion = '0.+'
+    // Optional: override the manifest ServerVersion field.
+    // If unset, dynamic hytaleVersion selectors like '0.+'
+    // resolve to the concrete server version in manifest.json.
+    // manifestServerVersion = '>=0.5.0-pre.9 <0.6.0'
+    manifestGroup = 'Ellie'
+    modCredits = 'EllieAU'
+    patchline = 'release'
+    modId = 'HyUI'
+    mainClass = 'au.ellie.hyui.HyUIPlugin'
+    
+    modDescription = 'A library for mods that helps build GUIs faster and better.'
+    modUrl = 'ellie.au'
+    website = 'ellie.au'
+    curseforgeId = '1431415'
+    //versionString = '0.9.7'
+    manifestServerVersion = '>=0.5.0-pre.9 <0.6.0'
+    
+    // Optional: declare sub-plugins bundled with this mod
+    //subPlugin('MyFeature', 'com.example.mods.feature.MyFeaturePlugin')
+
+    // Optional: enabled by default. Injects hosted Hytale API docs into
+    // generated Vineflower server sources for easier IDE browsing.
+    injectServerJavadocsIntoSources = true
+}
+/*hytale {
     // Versioning
-    patchline = "pre-release"
+    patchline = "release" 
 
     // Manifest auto update
     manifest {
         version = project.version.toString()
         
-        serverVersion = "2026.04.30-b4f6a911e"
+        serverVersion = ">0.5.1"
         //serverVersion = "2026.03.26-89796e57b"
         author(author_name, "ellie@ellie.au", "https://ellie.au")
-        optionalDependencies.put("Buuz135:MultipleHUD", "*");
+        //optionalDependencies.put("Buuz135:MultipleHUD", "*");
     }
 
     // Server run configuration
     includeLocalMods = true
     disableSentry = true
     allowOp = true
-}
+}*/
 
 shadowJar {
     archiveBaseName = project.name
@@ -82,7 +112,7 @@ tasks.runServer {
 // Task: Generate release jar
 
 tasks.sourcesJar {
-    dependsOn tasks.updateManifest
+    //dependsOn tasks.
 }
 
 tasks.register('releaseJar', Jar) {
@@ -108,12 +138,14 @@ tasks.register('releaseJar', Jar) {
 }
 
 // Task: Test configuration
+/*
 
 configurations {
     testRuntimeOnly {
         extendsFrom configurations.hytaleServer
     }
 }
+*/
 
 tasks.test {
     useJUnitPlatform()

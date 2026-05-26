@@ -98,30 +98,12 @@ public class MultiHudWrapper {
 
     public static List<HyUIHud> getHuds(Player player, PlayerRef playerRef) {
         List<HyUIHud> huds = new ArrayList<>();
-        if (!useOwnMHUD) {
-            CustomUIHud currentHud = player.getHudManager().getCustomHud();
-            if (currentHud != null && currentHud.getClass().getName().endsWith("MultipleCustomUIHud")) {
-                try {
-                    java.lang.reflect.Field customHudsField = currentHud.getClass().getDeclaredField("customHuds");
-                    customHudsField.setAccessible(true);
-                    java.util.Map<String, CustomUIHud> customHuds = (java.util.Map<String, CustomUIHud>) customHudsField.get(currentHud);
-                    for (CustomUIHud hud : customHuds.values()) {
-                        if (hud instanceof HyUIHud) {
-                            huds.add((HyUIHud) hud);
-                        }
-                    }
-                } catch (NoSuchFieldException | IllegalAccessException e) {
-                    HyUIPlugin.getLog().logFinest("Failed to access customHuds via reflection: " + e.getMessage());
-                }
+        var ourHuds = au.ellie.hyui.utils.multiplehud.MultipleHUD.getInstance().getCustomHuds(player);
+        for (var hud : ourHuds.entrySet()) {
+            if (!(hud.getValue() instanceof HyUIHud)) {
+                continue;
             }
-        } else {
-            var ourHuds = au.ellie.hyui.utils.multiplehud.MultipleHUD.getInstance().getCustomHuds(player);
-            for (var hud : ourHuds.entrySet()) {
-                if (!(hud.getValue() instanceof HyUIHud)) {
-                    continue;
-                }
-                huds.add((HyUIHud) hud.getValue());
-            }
+            huds.add((HyUIHud) hud.getValue());
         }
         return huds;
     }

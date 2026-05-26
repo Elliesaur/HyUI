@@ -84,7 +84,7 @@ public class HyUIPlugin extends JavaPlugin {
 
     @Override
     protected void setup() {
-        new HStats("724c8c49-8154-4bfc-bb91-3768cc06d4e7", "0.9.6");
+        new HStats("724c8c49-8154-4bfc-bb91-3768cc06d4e7", "0.9.7");
         // Intercept: AssetFinalize, RequestCommonAssetsRebuild, AssetPart, AssetInitialize
         PacketAdapters.registerOutbound((PacketHandler handler, Packet packet) -> {
             var packetName = packet.getClass().getSimpleName();

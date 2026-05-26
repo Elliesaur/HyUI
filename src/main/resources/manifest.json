@@ -1,27 +1,28 @@
 {
     "Group": "Ellie",
     "Name": "HyUI",
-    "Version": "0.9.6",
+    "Version": "0.9.7",
     "Description": "A library for mods that helps build GUIs faster and better.",
     "Authors": [
         {
-            "Name": "Ellie",
-            "Email": "ellie@ellie.au",
-            "Website": "https://ellie.au"
+            "Name": "EllieAU"
         }
     ],
     "Website": "ellie.au",
-    "ServerVersion": "2026.04.30-b4f6a911e",
+    "ServerVersion": ">=0.5.0-pre.9 <0.6.0",
     "Dependencies": {
-        
+        "Hytale:AssetModule": "*"
     },
     "OptionalDependencies": {
-        "Buuz135:MultipleHUD": "*"
+        
     },
     "DisabledByDefault": false,
     "Main": "au.ellie.hyui.HyUIPlugin",
     "IncludesAssetPack": true,
     "LoadBefore": {
         
+    },
+    "UpdateChecker": {
+        "CurseForge": "1431415"
     }
 }
