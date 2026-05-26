@@ -37,6 +37,9 @@ SOFTWARE.
  */
 public class MultipleHUD {
 
+    // HUD key for HyUI's internal multi-HUD container.
+    public static final String HUD_KEY = "HyUI:MultipleHUD";
+
     private static MultipleHUD instance;
 
     public static MultipleHUD getInstance() {
@@ -56,16 +59,13 @@ public class MultipleHUD {
 
 
     public void setCustomHud(Player player, PlayerRef playerRef, String hudIdentifier, CustomUIHud customHud) {
-        CustomUIHud currentCustomHud = player.getHudManager().getCustomHud();
+        CustomUIHud currentCustomHud = player.getHudManager().getCustomHud(HUD_KEY);
         if (currentCustomHud instanceof MultipleCustomUIHud multipleCustomUIHud) {
             multipleCustomUIHud.add(hudIdentifier, customHud);
         } else {
             MultipleCustomUIHud mchud = new MultipleCustomUIHud(playerRef);
-            player.getHudManager().setCustomHud(playerRef, mchud);
+            player.getHudManager().addCustomHud(playerRef, mchud);
             mchud.add(hudIdentifier, customHud);
-            if (currentCustomHud != null) {
-                mchud.add("Unknown", currentCustomHud);
-            }
         }
     }
 
@@ -74,7 +74,7 @@ public class MultipleHUD {
         hideCustomHud(player, hudIdentifier);
     }
     public void hideCustomHud(Player player, String hudIdentifier) {
-        var currentCustomHud = player.getHudManager().getCustomHud();
+        var currentCustomHud = player.getHudManager().getCustomHud(HUD_KEY);
 
         if (currentCustomHud instanceof MultipleCustomUIHud multipleCustomUIHud) {
             multipleCustomUIHud.remove(hudIdentifier);
@@ -82,7 +82,7 @@ public class MultipleHUD {
     }
     
     public HashMap<String, CustomUIHud> getCustomHuds(Player player) {
-        var currentCustomHud = player.getHudManager().getCustomHud();
+        var currentCustomHud = player.getHudManager().getCustomHud(HUD_KEY);
 
         if (currentCustomHud instanceof MultipleCustomUIHud multipleCustomUIHud) {
             return multipleCustomUIHud.getCustomHuds();

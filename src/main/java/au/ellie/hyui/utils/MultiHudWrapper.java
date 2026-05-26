@@ -29,6 +29,7 @@ import com.hypixel.hytale.server.core.plugin.PluginManager;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 
+import au.ellie.hyui.utils.multiplehud.MultipleHUD;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -99,7 +100,7 @@ public class MultiHudWrapper {
     public static List<HyUIHud> getHuds(Player player, PlayerRef playerRef) {
         List<HyUIHud> huds = new ArrayList<>();
         if (!useOwnMHUD) {
-            CustomUIHud currentHud = player.getHudManager().getCustomHud();
+            CustomUIHud currentHud = player.getHudManager().getCustomHud(MultipleHUD.HUD_KEY);
             if (currentHud != null && currentHud.getClass().getName().endsWith("MultipleCustomUIHud")) {
                 try {
                     java.lang.reflect.Field customHudsField = currentHud.getClass().getDeclaredField("customHuds");

@@ -147,7 +147,7 @@ public class MultipleCustomUIHud extends CustomUIHud {
     private final HashMap<String, CustomUIHud> customHuds = new HashMap<>();
 
     public MultipleCustomUIHud(@NonNullDecl PlayerRef playerRef) {
-        super(playerRef);
+        super(playerRef, MultipleHUD.HUD_KEY);
     }
 
     @Override
