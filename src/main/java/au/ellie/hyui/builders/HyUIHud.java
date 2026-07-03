@@ -300,12 +300,9 @@ public class HyUIHud extends CustomUIHud implements UIContext {
         } else {
             // Re-render completely.
             if (!unsafe) {
-                this.safeAdd();
+                this.safeFullRerender();
             } else {
-                var player = getPlayer();
-                if (player == null) return;
-
-                MultiHudWrapper.setCustomHud(player, getPlayerRef(), this.name, this);
+                this.fullRerender();
             }
 
         }
@@ -367,6 +364,19 @@ public class HyUIHud extends CustomUIHud implements UIContext {
 
             MultiHudWrapper.setCustomHud(player, getPlayerRef(), this.name, this);
         });
+    }
+
+    private void safeFullRerender() {
+        var store = getStore();
+        if (store == null) return;
+
+        store.getExternalData().getWorld().execute(this::fullRerender);
+    }
+
+    private void fullRerender() {
+        UICommandBuilder uiCommandBuilder = new UICommandBuilder();
+        delegate.buildFromCommandBuilder(uiCommandBuilder, false, new UIEventBuilder());
+        this.update(true, uiCommandBuilder);
     }
 
     private Store<EntityStore> getStore() {
