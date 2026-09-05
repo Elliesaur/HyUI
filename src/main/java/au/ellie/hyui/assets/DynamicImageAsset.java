@@ -13,6 +13,8 @@ import com.hypixel.hytale.server.core.asset.common.CommonAsset;
 import com.hypixel.hytale.server.core.asset.common.CommonAssetRegistry;
 import com.hypixel.hytale.server.core.io.PacketHandler;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -44,34 +46,6 @@ SOFTWARE.
  */
 
 public class DynamicImageAsset extends CommonAsset {
-
-    private static final String[] HASHES = {
-            "00456c6c696541555f4879554901000000000000000000000000000000000000",
-            "00456c6c696541555f4879554902000000000000000000000000000000000000",
-            "00456c6c696541555f4879554903000000000000000000000000000000000000",
-            "00456c6c696541555f4879554904000000000000000000000000000000000000",
-            "00456c6c696541555f4879554905000000000000000000000000000000000000",
-            "00456c6c696541555f4879554906000000000000000000000000000000000000",
-            "00456c6c696541555f4879554907000000000000000000000000000000000000",
-            "00456c6c696541555f4879554908000000000000000000000000000000000000",
-            "00456c6c696541555f4879554909000000000000000000000000000000000000",
-            "00456c6c696541555f487955490A000000000000000000000000000000000000",
-            "00456c6c696541555f487955490B000000000000000000000000000000000000",
-            "00456c6c696541555f487955490C000000000000000000000000000000000000",
-            "00456c6c696541555f487955490D000000000000000000000000000000000000",
-            "00456c6c696541555f487955490E000000000000000000000000000000000000",
-            "00456c6c696541555f487955490F000000000000000000000000000000000000",
-            "00456c6c696541555f4879554910000000000000000000000000000000000000",
-            "00456c6c696541555f4879554911000000000000000000000000000000000000",
-            "00456c6c696541555f4879554912000000000000000000000000000000000000",
-            "00456c6c696541555f4879554913000000000000000000000000000000000000",
-            "00456c6c696541555f4879554914000000000000000000000000000000000000",
-            "00456c6c696541555f4879554915000000000000000000000000000000000000",
-            "00456c6c696541555f4879554916000000000000000000000000000000000000",
-            "00456c6c696541555f4879554917000000000000000000000000000000000000",
-            "00456c6c696541555f4879554918000000000000000000000000000000000000",
-            "00456c6c696541555f4879554919000000000000000000000000000000000000"
-    };
 
     private static final String[] PATHS = {
             "UI/Custom/Pages/Elements/DynamicImage1.png",
@@ -113,7 +87,7 @@ public class DynamicImageAsset extends CommonAsset {
     }
 
     private DynamicImageAsset(byte[] data, int slotIndex, UUID playerUuid) {
-        super(PATHS[slotIndex], HASHES[slotIndex], data);
+        super(PATHS[slotIndex], sha256Hex(data), data);
         this.data = data;
         this.slotIndex = slotIndex;
         this.playerUuid = normalizePlayerUuid(playerUuid);
@@ -134,8 +108,18 @@ public class DynamicImageAsset extends CommonAsset {
         return PATHS[slotIndex];
     }
 
-    public String getHash() {
-        return HASHES[slotIndex];
+    private static String sha256Hex(byte[] data) {
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256").digest(data);
+            StringBuilder sb = new StringBuilder(digest.length * 2);
+            for (byte b : digest) {
+                sb.append(Character.forDigit((b >> 4) & 0xF, 16));
+                sb.append(Character.forDigit(b & 0xF, 16));
+            }
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 not available", e);
+        }
     }
 
     public int getSlotIndex() {
